@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Facturier
 // @namespace    http://tampermonkey.net/
-// @version      0.3
+// @version      0.3.0001
 // @description  try to take over the world!
 // @author       Stéphane TORCHY
 // @updateURL    https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/billing.js
@@ -57,6 +57,11 @@
 // require      https://raw.githubusercontent.com/Bartozzz/queue-promise/development/dist/index.js
 // require      https://raw.githubusercontent.com/savokiss/queue/master/src/index.js
 // require     https://raw.githubusercontent.com/StephaneTy-Pro/userscripts/master/p-queue.js
+
+/*
+ * History
+ * 0.3 Première version publique
+ */
 
 
 // ==/UserScript==
@@ -669,9 +674,9 @@
         var dtTo = dayjs(dt2).add(1, 'day');
         var dtFiltered = db.get('sessions').filter(v => dayjs(v.when).isBefore(dtTo) && dayjs(v.when).isAfter(dtFrom));
          if(dtFrom.add(1,'day').isBefore(dayjs("2020-06-01"))){
-             billPhase1(dtFiltered,dtFrom.format(),dtTo.format());
+             billPhase1(dtFiltered,dt1.format("DD/MM/YYYY"),dt2.format("DD/MM/YYYY"));
          } else {
-             billPhase2(dtFiltered,dtFrom.format(),dtTo.format());
+             billPhase2(dtFiltered,dt1.format("DD/MM/YYYY"),dt2.format("DD/MM/YYYY"));
          }
     }
 
@@ -1264,8 +1269,12 @@ password.addEventListener('focus', (event) => {
 });
                */
         });
-        dtFrom = dayjs(formValues[0]).subtract(1, 'day');
-        dtTo = dayjs(formValues[1]).add(1, 'day');
+        //dtFrom = dayjs(formValues[0]).subtract(1, 'day');
+        //dtTo = dayjs(formValues[1]).add(1, 'day');
+
+        dtFrom = dayjs(formValues[0]);
+        dtTo = dayjs(formValues[1]);
+
         return [dtFrom,dtTo];
     }
 
