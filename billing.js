@@ -50,8 +50,13 @@
 // @require     https://cdn.jsdelivr.net/npm/simple-datatables@latest
 // @resource    simpledatatablecss https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css
 
-// queue - https://github.com/Bartozzz/queue-promise
-// @require     https://raw.githubusercontent.com/Bartozzz/queue-promise/development/dist/index.js
+//reqqueue https://reqqueue.github.soncodi.com/ Sequential request queue for Node.js and browsers
+// require     https://raw.githubusercontent.com/StephaneTy-Pro/userscripts/master/reqqueue.js
+// buha         https://flouthoc.github.io/buha.js/ Browser based Strictly ordered Task Queue for Sync/Async Javascript Functions
+// require     https://raw.githubusercontent.com/flouthoc/buha.js/master/buha.js
+// require      https://raw.githubusercontent.com/Bartozzz/queue-promise/development/dist/index.js
+// require      https://raw.githubusercontent.com/savokiss/queue/master/src/index.js
+// require     https://raw.githubusercontent.com/StephaneTy-Pro/userscripts/master/p-queue.js
 
 
 // ==/UserScript==
@@ -105,22 +110,46 @@
     const appName = "OC-Addons";
     const author = "Stéphane TORCHY";
 
-    const queue = new Queue({
-        concurrent: 1,
-        interval: 2000,
-        start: true
-    });
+    const sAutoFunded = "Auto-financé"; // in oc
+    const sFunded = "Financé par un tiers" ; // in oc
+
+
+    //const buhaRunner = buha(); // keep a queue
+    //const q = new ReqQueue(false);
+    //const q = new Queue(1)
+    //const queue = new PQueue({concurrency: 1});
+
+    //var inUpdateDb = false;
+
+    // Function wrapping code.
+    // fn - reference to function.
+    // context - what you want "this" to be.
+    // params - array of parameters to pass to function.
+    var wrapFunction = function(fn, context, params) {
+        return function() {
+            fn.apply(context, params);
+        };
+    }
 
 
     //----------------------------- Helpers
-    var collectChecked = function(){
+    var collectChecked = async function(){
         var sPath = "table.crud-list tbody input:checked"
         var cb = document.querySelectorAll(sPath);
-        for (var i = 0; i < cb.length; i++) {
+        for (var i = 0; i < cb.length; i+=1) {
             var oEl = cb[i].parentElement.parentElement;
             var me = parseTable(oEl);
-            console.log(me);
-            addSessionsToDbase(me);
+            //console.log(me);
+            console.log(`Wanna add a new checkbox content ${me.id}`);
+            //buhaRunner.push(() =>{addSessionsToDbase(me);console.log("queue activated playing"+me.id)}); // need a queue for stacking demands because
+            //q.add(() =>{addSessionsToDbase(me);;console.log("queue activated playing"+me.id);}); //requueue
+            //q.push(() =>{addSessionsToDbase(me);}); //savokiss_queue
+            //addSessionsToDbase(me); // charge à moi de gérer correctement une queue provisoire
+            await addSessionsToDbase(me);
+            /*(async () => {
+                await queue.add(() => addSessionsToDbase(me));
+                console.log("queue activated playing"+me.id)
+            });*/
         }
     }
     /*
@@ -176,7 +205,7 @@
     var IsSessionInDb = function(iSessionId){
         var db=sttctx.dbase; // TODO Change this to less ugly
         var r = db.get('sessions').find({id: iSessionId}).value();
-        if (r == undefined){
+        if (r === undefined){
              return false;
          }else {
              return true;
@@ -188,22 +217,32 @@
      */
     var IsInOldMode = function(date){
         var dtDate = null;
-        if (typeof date == 'string')
+        if (typeof date === 'string'){
             dtDate = dayjs(date);
-        dtDate = date
-        if(dtDate.add(1,'day').isBefore(dayjs("2020-06-01"))){
-            console.log('before');
-            return true;
+        } else {
+            dtDate = date;
         }
-        return false
+        try {
+            if(dtDate.add(1,'day').isBefore(dayjs("2020-06-01"))){
+                return true;
+            }
+            return false;
+        } catch(e) { throw Error('Erreur qui ne devrait jamais arriver en IsInOldMode (probablement un probleme sur la conversion de la date en objet dayjs:'+e.stack||e );}
     }
     //----------------------------- Helpers Students
 
 
+    const addStudentToDb = function(sStudentId,sStudentFullName="noname",sStudentPath="nopath",sStudentFundedBy="unkonw",created){
+        var db=sttctx.dbase; // TODO Change this to less ugly
+        var now = dayjs().format('YYYY-MM-DDTHH:mm:ssZ[Z]');
+        let me = {id:sStudentId,fullname:sStudentFullName,path:sStudentPath,fundedby:sStudentFundedBy,created:now}
+        db.get('students').push(JSON.parse(JSON.stringify(me))).write();
+    }
+
     const IsStudentInDb = function(iStudentId){
         var db=sttctx.dbase; // TODO Change this to less ugly
         var r = db.get('students').find({id: iStudentId}).value()
-         if (r == undefined){
+         if (r === undefined){
              return false;
          }else {
              return true;
@@ -214,9 +253,9 @@
      */
     var studentGetFunded = function(iStudentId){
         var db=sttctx.dbase; // TODO Change this to less ugly
-        console.log("Searching ....",iStudentId);
+        //console.log("Searching ....",iStudentId);
         var r = db.get('students').find({id: iStudentId}).value()
-        console.log(r);
+        //console.log(r);
          if (r == undefined){
              throw Error('IRRECOVERABLE ERROR STUDENTS NOT IN DB:');
          }else {
@@ -228,12 +267,12 @@
      * return true if student is "autofinancé"
      */
     const IsStudentAutoFunded = function(iStudentId){
+        //console.log("l'étudiant est"+studentGetFunded(iStudentId).toLowerCase());
         return studentGetFunded(iStudentId).toLowerCase() === "auto-financé"
     }
 
     var createStudentsManually = async function(sStudentId,sStudentName,sSessionDate){
-        var sHtml = "";
-        // model from https://webdesign.tutsplus.com/tutorials/how-to-build-web-form-layouts-with-css-grid--cms-28776
+		var sHtml="";
         sHtml+="<style>";
         sHtml+='form {display: grid;padding: 1em;background: #f9f9f9;border: 1px solid #c1c1c1;margin: 2rem auto 0 auto;max-width: 600px;padding: 1em;}';
         sHtml+='form input {background: #fff;border: 1px solid #9c9c9c;}';
@@ -245,21 +284,21 @@
         sHtml+='@media (min-width: 400px) {form {grid-template-columns: 200px 1fr;grid-gap: 16px;}label {text-align: right;grid-column: 1 / 2;}input,button {grid-column: 2 / 3;}}';
         sHtml+="</style>";
         sHtml+='<form class="form1" action="">';
-        sHtml+='<label for="id" class="name">Reference</label>';
-        sHtml+='<input id="id" type="text" value="'+sStudentId+'">';
-        sHtml+='<label for="name" class="name">Name</label>';
-        sHtml+='<input id="name" type="text" value="'+sStudentName+'">';
+        sHtml+='<label for="student_id" class="name">Reference</label>';
+        sHtml+='<input id="student_id" type="text" value="'+sStudentId+'">';
+        sHtml+='<label for="student_name" class="name">Name</label>';
+        sHtml+='<input id="student_name" type="text" value="'+sStudentName+'">';
         sHtml+='<label for="fundedby">Autofinancé</label>';
         sHtml+='<input id="fundedby" type="checkbox" value="autofunded">';
-        sHtml+='<label for="path">Parcours</label>';
-        sHtml+='<input id="path" type="text">';
-        sHtml+='<label for="date">Date</label>';
-        sHtml+='<input id="date" type="text" value="'+sSessionDate+'">';
+        sHtml+='<label for="student_path">Parcours</label>';
+        sHtml+='<input id="student_path" type="text">';
+        sHtml+='<label for="session_date">Date</label>';
+        sHtml+='<input id="session_date" type="date" max="2030-12-31" min="2010-12-31" value="'+dayjs(sSessionDate).format("YYYY-MM-DD")+'">';
         //sHtml+='<button>Submit</button>';
         sHtml+='</form>';
 
-        const {values: formValues} = await Swal.fire({
-            title: "<strong>Ajout Manuel d'un Etudiant</strong>",
+        const { value: formValues } = await Swal.fire({
+            title: "<strong>Ajout d'un étudiant en mode manuel</strong>",
             icon: 'info',
             html: sHtml,
             showCloseButton: true,
@@ -267,42 +306,52 @@
             focusConfirm: false,
             position: 'top-start',
             grow: 'row',
-            footer: 'votre étudiant '+sStudentName+' est absent de la base',
+            footer: `votre étudiant(e) ${sStudentName} n'a pas été trouvé`,
             preConfirm: () => {
                 return [
-                    document.getElementById('path').value,
-                    document.getElementById('funded').value
+                    document.getElementById('student_id').value,
+                    document.getElementById('student_name').value,
+                    document.getElementById('student_path').value,
+                    document.getElementById('fundedby').checked, // true mean autofunded
+                    document.getElementById('session_date').value,
                 ]
             }
+        });
 
-        })
 
-        if (formValues) {
-            Swal.fire(JSON.stringify(formValues))
+        if(formValues){
+            var sFundedBy = "";
+            if(formValues[3] === true){
+                sFundedBy = sAutoFunded;
+            } else {
+                sFundedBy = sFunded;
+            }
+
+
+            addStudentToDb(formValues[0],formValues[1],formValues[2],sFundedBy,formValues[4])
         }
+
+
     }
 
     var addSessionsToDbase = async function(oSession){
-        queue.enqueue(() => addSessionsToDbaseQ(oSession));
-        if (queue.isEmpty) queue.start();
-        // No need to call `dequeue` – you can just listen for events:
-        queue.on("resolve", data => console.dir(data));
-        queue.on("reject", error => console.dir(error));
-    }
-
-
-    var addSessionsToDbaseQ = async function(oSession){
         var db=sttctx.dbase; // TODO Change this to less ugly
         var bCheckExistsBeforAdd = true;
         if (oSession.type.toLowerCase() === 'soutenance'){
-            console.log("soutenance rien de particulier pour le moment");
+            console.log("this is a defense nothing to do specially for now");
             oSession.isFunded = true; // default
         } else {
             var bOldStudent = IsStudentInDb(oSession.who_id)
-            console.log("student in db ?", bOldStudent)
+            console.log("is student in db ?", bOldStudent)
             if (bOldStudent == false){
                 // have to update database
+                //if (inUpdateDb === true){
+                    console.warn("%ci'm updating db .... could'nt do anything else","color:magenta");
+                //    return;
+                //}
+                //inUpdateDb = true;
                 await getStudents();
+                //inUpdateDb = true;
                 var bPass2 = IsStudentInDb(oSession.who_id);
                 if(bPass2 == false){
                     // étudiant à ajouter à la main en base
@@ -310,12 +359,13 @@
                 }
             }
             // check date of session
+            console.log("will check fund mode");
             if(dayjs(oSession.when).isBefore(dayjs("2020-06-01"))){
                 console.log("on est avant juin")
                 // all students are considered as funded information note used
                 oSession.isFunded = true;
             } else {
-                oSession.isFunded = !(IsStudentAutoFunded)
+                oSession.isFunded = !(IsStudentAutoFunded(oSession.who_id));
             }
 
         }
@@ -323,8 +373,6 @@
         // because of Difference between AF and not AF
         console.log("is student funded ?", oSession.isFunded)
 
-        //var af = db.get('students').filter(v =>v.fundedby == "Auto-financé");
-        //af.find({id:"10415513"}).value()
         if(bCheckExistsBeforAdd){
             if (IsSessionInDb(oSession.id) == false){
                 db.get('sessions').push(JSON.parse(JSON.stringify(oSession))).write();
@@ -345,7 +393,7 @@
     // -- fetch
     /* TODO add a cursor for waiting */
     var _fetch = async function(sUrl="", sPath="", bAll=false){
-        setTimeout(function() {
+        /*setTimeout(function() {
             Toastify({
                 text: `Collecte des info liées à l'url : ${sUrl}`,
                 gravity: "top",
@@ -353,8 +401,8 @@
                 close: true,
                 backgroundColor: "linear-gradient(to right, #ff5f6d, #ffc371)",
             }).showToast();
-        }, 3000);
-        console.log(`_fetch() waiting return from ${sUrl}`);
+        }, 3000);*/
+        console.info(`%c_fetch() waiting return from ${sUrl}`,'background-color:green,color:white');
         const response = await GMC.XHR({
             method: 'GET',
             url: sUrl,
@@ -364,7 +412,7 @@
                 "User-Agent": "Mozilla/5.0",    // If not specified, navigator.userAgent will be used.
             },
         });
-        console.log("_fetch() proceed domparser");
+        //console.log("_fetch() proceed domparser");
         let domparser = new DOMParser();
         /*
         response.responseXML.body is malformed so i need responseText
@@ -398,7 +446,7 @@
         var pg=2;
         const oDom = await _fetch(`https://openclassrooms.com/fr/mentorship/dashboard/mentorship-sessions-history?page=${pg}`, "table.crud-list tbody");
 
-        for(var i = 0; i<oDom.children.length;i++){
+        for(var i = 0; i<oDom.children.length; i+=1){
             var row = oDom.children[i];
             //console.log(row);
             var me = parseTable(row);
@@ -545,9 +593,10 @@
                         backgroundColor: "linear-gradient(to right, #ff5f6d, #ffc371)",
                     }).showToast();
                 }, 500);
-                let me = {id:sStudentId,fullname:sStudentFullName,path:sStudentPath,fundedby:sStudentFundedBy,created:now}
+                //let me = {id:sStudentId,fullname:sStudentFullName,path:sStudentPath,fundedby:sStudentFundedBy,created:now}
                 //data.push(me);
-                db.get('students').push(JSON.parse(JSON.stringify(me))).write();
+                //db.get('students').push(JSON.parse(JSON.stringify(me))).write();
+                addStudentToDb(sStudentId, sStudentFullName, sStudentPath, sStudentFundedBy, now)
             }
 
 
@@ -614,47 +663,15 @@
         //sHtml+='<button>Submit</button>';
         sHtml+='</form>';
 
-        const { value: formValues } = await Swal.fire({
-            title: "<strong>Choix de la période</strong>",
-            icon: 'info',
-            html: sHtml,
-            showCloseButton: true,
-            //showCancelButton: true,
-            focusConfirm: false,
-            position: 'top-start',
-            grow: 'row',
-            footer: 'Choisissez la période pour la sélection des temps facturés',
-            preConfirm: () => {
-                return [
-                    document.getElementById('dd').value,
-                    document.getElementById('df').value
-                ]
-            },
-            onRender: (e) => {
-                console.dir(e);
-            },
-            onOpen: (el) => {
-                el.addEventListener('focus', (event) => {
-                    console.log(event);
-                });
-            } // plutot un mouse enter dans la box de saisie
-            // penser a enlever l'event listener
-
-               /*
-               const password = document.querySelector('input[type="password"]');
-
-password.addEventListener('focus', (event) => {
-  event.target.style.background = 'pink';
-});
-               */
-        });
-        var dtFrom = dayjs(formValues[0]).subtract(1, 'day');
-        var dtTo = dayjs(formValues[1]).add(1, 'day');
+        var dtNow = dayjs();
+        var [dt1,dt2] = await popupDateSelector(dtNow.startOf('month'),dtNow.endOf('month'));
+        var dtFrom = dayjs(dt1).subtract(1, 'day');
+        var dtTo = dayjs(dt2).add(1, 'day');
         var dtFiltered = db.get('sessions').filter(v => dayjs(v.when).isBefore(dtTo) && dayjs(v.when).isAfter(dtFrom));
          if(dtFrom.add(1,'day').isBefore(dayjs("2020-06-01"))){
-             billPhase1(dtFiltered,formValues[0],formValues[1]);
+             billPhase1(dtFiltered,dtFrom.format(),dtTo.format());
          } else {
-             billPhase2(dtFiltered,formValues[0],formValues[1]);
+             billPhase2(dtFiltered,dtFrom.format(),dtTo.format());
          }
     }
 
@@ -772,47 +789,50 @@ password.addEventListener('focus', (event) => {
         });
     }
     var billPhase2 = function(r, from, to){
+
+        console.log(`wanna bill for date from ${from} to ${to}`);
+        console.log(r);
         var iPrice1=30,iPrice2=35,iPrice3=40,iPrice4=50;
-        var l10 = r.filter( v => v.lvl == 1 && v.status === 'réalisée' && v.af === false);
-        var l11 = r.filter( v => v.lvl == 1 && v.status === 'annulée' && v.af === false);
-        var l12 = r.filter( v => v.lvl == 1 && v.status === 'annulée tardivement' && v.af === false);
-        var l13 = r.filter( v => v.lvl == 1 && v.status === 'étudiant absent' && v.af === false);
+                var l10 = r.filter( v => v.lvl == 1 && v.status === 'réalisée' && v.isFunded === true);
+        var l11 = r.filter( v => v.lvl == 1 && v.status === 'annulée' && v.isFunded === true);
+        var l12 = r.filter( v => v.lvl == 1 && v.status === 'annulée tardivement' && v.isFunded === true);
+        var l13 = r.filter( v => v.lvl == 1 && v.status === 'étudiant absent' && v.isFunded === true);
 
-        var l14 = r.filter( v => v.lvl == 1 && v.status === 'réalisée' && v.af === true);
-        var l15 = r.filter( v => v.lvl == 1 && v.status === 'annulée' && v.af === true);
-        var l16 = r.filter( v => v.lvl == 1 && v.status === 'annulée tardivement' && v.af === true);
-        var l17 = r.filter( v => v.lvl == 1 && v.status === 'étudiant absent' && v.af === true);
+        var l14 = r.filter( v => v.lvl == 1 && v.status === 'réalisée' && v.isFunded === false);
+        var l15 = r.filter( v => v.lvl == 1 && v.status === 'annulée' && v.isFunded === false);
+        var l16 = r.filter( v => v.lvl == 1 && v.status === 'annulée tardivement' && v.isFunded === false);
+        var l17 = r.filter( v => v.lvl == 1 && v.status === 'étudiant absent' && v.isFunded === false);
 
         //
-        var l20 = r.filter( v => v.lvl == 2 && v.status === 'réalisée' && v.af === false);
-        var l21 = r.filter( v => v.lvl == 2 && v.status === 'annulée' && v.af === false);
-        var l22 = r.filter( v => v.lvl == 2 && v.status === 'annulée tardivement' && v.af === false);
-        var l23 = r.filter( v => v.lvl == 2 && v.status === 'étudiant absent' && v.af === false);
+        var l20 = r.filter( v => v.lvl == 2 && v.status === 'réalisée' && v.isFunded === true);
+        var l21 = r.filter( v => v.lvl == 2 && v.status === 'annulée' && v.isFunded === true);
+        var l22 = r.filter( v => v.lvl == 2 && v.status === 'annulée tardivement' && v.isFunded === true);
+        var l23 = r.filter( v => v.lvl == 2 && v.status === 'étudiant absent' && v.isFunded === true);
 
-        var l24 = r.filter( v => v.lvl == 2 && v.status === 'réalisée' && v.af === true);
-        var l25 = r.filter( v => v.lvl == 2 && v.status === 'annulée' && v.af === true);
-        var l26 = r.filter( v => v.lvl == 2 && v.status === 'annulée tardivement' && v.af === true);
-        var l27 = r.filter( v => v.lvl == 2 && v.status === 'étudiant absent' && v.af === true);
+        var l24 = r.filter( v => v.lvl == 2 && v.status === 'réalisée' && v.isFunded === false);
+        var l25 = r.filter( v => v.lvl == 2 && v.status === 'annulée' && v.isFunded === false);
+        var l26 = r.filter( v => v.lvl == 2 && v.status === 'annulée tardivement' && v.isFunded === false);
+        var l27 = r.filter( v => v.lvl == 2 && v.status === 'étudiant absent' && v.isFunded === false);
         //
-        var l30 = r.filter( v => v.lvl == 3 && v.status === 'réalisée' && v.af === false);
-        var l31 = r.filter( v => v.lvl == 3 && v.status === 'annulée' && v.af === false);
-        var l32 = r.filter( v => v.lvl == 3 && v.status === 'annulée tardivement' && v.af === false);
-        var l33 = r.filter( v => v.lvl == 3 && v.status === 'étudiant absent' && v.af === false);
+        var l30 = r.filter( v => v.lvl == 3 && v.status === 'réalisée' && v.isFunded === true);
+        var l31 = r.filter( v => v.lvl == 3 && v.status === 'annulée' && v.isFunded === true);
+        var l32 = r.filter( v => v.lvl == 3 && v.status === 'annulée tardivement' && v.isFunded === true);
+        var l33 = r.filter( v => v.lvl == 3 && v.status === 'étudiant absent' && v.isFunded === true);
 
-        var l34 = r.filter( v => v.lvl == 3 && v.status === 'réalisée' && v.af === true);
-        var l35 = r.filter( v => v.lvl == 3 && v.status === 'annulée' && v.af === true);
-        var l36 = r.filter( v => v.lvl == 3 && v.status === 'annulée tardivement' && v.af === true);
-        var l37 = r.filter( v => v.lvl == 3 && v.status === 'étudiant absent' && v.af === true);
+        var l34 = r.filter( v => v.lvl == 3 && v.status === 'réalisée' && v.isFunded === false);
+        var l35 = r.filter( v => v.lvl == 3 && v.status === 'annulée' && v.isFunded === false);
+        var l36 = r.filter( v => v.lvl == 3 && v.status === 'annulée tardivement' && v.isFunded === false);
+        var l37 = r.filter( v => v.lvl == 3 && v.status === 'étudiant absent' && v.isFunded === false);
         //
-        var l40 = r.filter( v => v.lvl == 4 && v.status === 'réalisée' && v.af === false) ||0 ;
-        var l41 = r.filter( v => v.lvl == 4 && v.status === 'annulée' && v.af === false) || 0;
-        var l42 = r.filter( v => v.lvl == 4 && v.status === 'annulée tardivement' && v.af === false) || 0;
-        var l43 = r.filter( v => v.lvl == 4 && v.status === 'étudiant absent' && v.af === false) || 0;
+        var l40 = r.filter( v => v.lvl == 4 && v.status === 'réalisée' && v.isFunded === true) ||0 ;
+        var l41 = r.filter( v => v.lvl == 4 && v.status === 'annulée' && v.isFunded === true) || 0;
+        var l42 = r.filter( v => v.lvl == 4 && v.status === 'annulée tardivement' && v.isFunded === true) || 0;
+        var l43 = r.filter( v => v.lvl == 4 && v.status === 'étudiant absent' && v.isFunded === true) || 0;
 
-        var l44 = r.filter( v => v.lvl == 4 && v.status === 'réalisée' && v.af === true) ||0 ;
-        var l45 = r.filter( v => v.lvl == 4 && v.status === 'annulée' && v.af === true) || 0;
-        var l46 = r.filter( v => v.lvl == 4 && v.status === 'annulée tardivement' && v.af === true) || 0;
-        var l47 = r.filter( v => v.lvl == 4 && v.status === 'étudiant absent' && v.af === true) || 0;
+        var l44 = r.filter( v => v.lvl == 4 && v.status === 'réalisée' && v.isFunded === false) ||0 ;
+        var l45 = r.filter( v => v.lvl == 4 && v.status === 'annulée' && v.isFunded === false) || 0;
+        var l46 = r.filter( v => v.lvl == 4 && v.status === 'annulée tardivement' && v.isFunded === false) || 0;
+        var l47 = r.filter( v => v.lvl == 4 && v.status === 'étudiant absent' && v.isFunded === false) || 0;
         //
         var t10 = l10.reduce( (ac,cv,i,a) => ac+iPrice1 ,0);
         var t11 = l11.reduce( (ac,cv,i,a) => ac+0 ,0);
@@ -855,49 +875,49 @@ password.addEventListener('focus', (event) => {
         var t47 = l47.reduce( (ac,cv,i,a) => ac+iPrice4/4 ,0);
 
         // var soutenance
-        var def = r.filter( v => v.type.toLowerCase() === 'soutenance') || 0;
-        var d10 = def.filter( v => v.lvl == 1 && v.status === 'réalisée' && v.af === false);
-        var d11 = def.filter( v => v.lvl == 1 && v.status === 'annulée' && v.af === false);
-        var d12 = def.filter( v => v.lvl == 1 && v.status === 'annulée tardivement' && v.af === false);
-        var d13 = def.filter( v => v.lvl == 1 && v.status === 'étudiant absent' && v.af === false);
+               var def = r.filter( v => v.type.toLowerCase() === 'soutenance') || 0;
+        var d10 = def.filter( v => v.lvl == 1 && v.status === 'réalisée' && v.isFunded === true);
+        var d11 = def.filter( v => v.lvl == 1 && v.status === 'annulée' && v.isFunded === true);
+        var d12 = def.filter( v => v.lvl == 1 && v.status === 'annulée tardivement' && v.isFunded === true);
+        var d13 = def.filter( v => v.lvl == 1 && v.status === 'étudiant absent' && v.isFunded === true);
 /*
-        var l14 = r.filter( v => v.lvl == 1 && v.status === 'réalisée' && v.af === true);
-        var l15 = r.filter( v => v.lvl == 1 && v.status === 'annulée' && v.af === true);
-        var l16 = r.filter( v => v.lvl == 1 && v.status === 'annulée tardivement' && v.af === true);
-        var l17 = r.filter( v => v.lvl == 1 && v.status === 'étudiant absent' && v.af === true);
+        var l14 = r.filter( v => v.lvl == 1 && v.status === 'réalisée' && v.isFunded === false);
+        var l15 = r.filter( v => v.lvl == 1 && v.status === 'annulée' && v.isFunded === false);
+        var l16 = r.filter( v => v.lvl == 1 && v.status === 'annulée tardivement' && v.isFunded === false);
+        var l17 = r.filter( v => v.lvl == 1 && v.status === 'étudiant absent' && v.isFunded === false);
 */
         //
-        var d20 = def.filter( v => v.lvl == 2 && v.status === 'réalisée' && v.af === false);
-        var d21 = def.filter( v => v.lvl == 2 && v.status === 'annulée' && v.af === false);
-        var d22 = def.filter( v => v.lvl == 2 && v.status === 'annulée tardivement' && v.af === false);
-        var d23 = def.filter( v => v.lvl == 2 && v.status === 'étudiant absent' && v.af === false);
+        var d20 = def.filter( v => v.lvl == 2 && v.status === 'réalisée' && v.isFunded === true);
+        var d21 = def.filter( v => v.lvl == 2 && v.status === 'annulée' && v.isFunded === true);
+        var d22 = def.filter( v => v.lvl == 2 && v.status === 'annulée tardivement' && v.isFunded === true);
+        var d23 = def.filter( v => v.lvl == 2 && v.status === 'étudiant absent' && v.isFunded === true);
 /*
-        var l24 = r.filter( v => v.lvl == 2 && v.status === 'réalisée' && v.af === true);
-        var l25 = r.filter( v => v.lvl == 2 && v.status === 'annulée' && v.af === true);
-        var l26 = r.filter( v => v.lvl == 2 && v.status === 'annulée tardivement' && v.af === true);
-        var l27 = r.filter( v => v.lvl == 2 && v.status === 'étudiant absent' && v.af === true);
+        var l24 = r.filter( v => v.lvl == 2 && v.status === 'réalisée' && v.isFunded === false);
+        var l25 = r.filter( v => v.lvl == 2 && v.status === 'annulée' && v.isFunded === false);
+        var l26 = r.filter( v => v.lvl == 2 && v.status === 'annulée tardivement' && v.isFunded === false);
+        var l27 = r.filter( v => v.lvl == 2 && v.status === 'étudiant absent' && v.isFunded === false);
 */
         //
-        var d30 = def.filter( v => v.lvl == 3 && v.status === 'réalisée' && v.af === false);
-        var d31 = def.filter( v => v.lvl == 3 && v.status === 'annulée' && v.af === false);
-        var d32 = def.filter( v => v.lvl == 3 && v.status === 'annulée tardivement' && v.af === false);
-        var d33 = def.filter( v => v.lvl == 3 && v.status === 'étudiant absent' && v.af === false);
+        var d30 = def.filter( v => v.lvl == 3 && v.status === 'réalisée' && v.isFunded === true);
+        var d31 = def.filter( v => v.lvl == 3 && v.status === 'annulée' && v.isFunded === true);
+        var d32 = def.filter( v => v.lvl == 3 && v.status === 'annulée tardivement' && v.isFunded === true);
+        var d33 = def.filter( v => v.lvl == 3 && v.status === 'étudiant absent' && v.isFunded === true);
 /*
-        var l34 = r.filter( v => v.lvl == 3 && v.status === 'réalisée' && v.af === true);
-        var l35 = r.filter( v => v.lvl == 3 && v.status === 'annulée' && v.af === true);
-        var l36 = r.filter( v => v.lvl == 3 && v.status === 'annulée tardivement' && v.af === true);
-        var l37 = r.filter( v => v.lvl == 3 && v.status === 'étudiant absent' && v.af === true);
+        var l34 = r.filter( v => v.lvl == 3 && v.status === 'réalisée' && v.isFunded === false);
+        var l35 = r.filter( v => v.lvl == 3 && v.status === 'annulée' && v.isFunded === false);
+        var l36 = r.filter( v => v.lvl == 3 && v.status === 'annulée tardivement' && v.isFunded === false);
+        var l37 = r.filter( v => v.lvl == 3 && v.status === 'étudiant absent' && v.isFunded === false);
 */
         //
-        var d40 = def.filter( v => v.lvl == 4 && v.status === 'réalisée' && v.af === false) ||0 ;
-        var d41 = def.filter( v => v.lvl == 4 && v.status === 'annulée' && v.af === false) || 0;
-        var d42 = def.filter( v => v.lvl == 4 && v.status === 'annulée tardivement' && v.af === false) || 0;
-        var d43 = def.filter( v => v.lvl == 4 && v.status === 'étudiant absent' && v.af === false) || 0;
+        var d40 = def.filter( v => v.lvl == 4 && v.status === 'réalisée' && v.isFunded === true) ||0 ;
+        var d41 = def.filter( v => v.lvl == 4 && v.status === 'annulée' && v.isFunded === true) || 0;
+        var d42 = def.filter( v => v.lvl == 4 && v.status === 'annulée tardivement' && v.isFunded === true) || 0;
+        var d43 = def.filter( v => v.lvl == 4 && v.status === 'étudiant absent' && v.isFunded === true) || 0;
 /*
-        var l44 = r.filter( v => v.lvl == 4 && v.status === 'réalisée' && v.af === true) ||0 ;
-        var l45 = r.filter( v => v.lvl == 4 && v.status === 'annulée' && v.af === true) || 0;
-        var l46 = r.filter( v => v.lvl == 4 && v.status === 'annulée tardivement' && v.af === true) || 0;
-        var l47 = r.filter( v => v.lvl == 4 && v.status === 'étudiant absent' && v.af === true) || 0;
+        var l44 = r.filter( v => v.lvl == 4 && v.status === 'réalisée' && v.isFunded === false) ||0 ;
+        var l45 = r.filter( v => v.lvl == 4 && v.status === 'annulée' && v.isFunded === false) || 0;
+        var l46 = r.filter( v => v.lvl == 4 && v.status === 'annulée tardivement' && v.isFunded === false) || 0;
+        var l47 = r.filter( v => v.lvl == 4 && v.status === 'étudiant absent' && v.isFunded === false) || 0;
 */
         var df10 = d10.reduce( (ac,cv,i,a) => ac+iPrice1 ,0);
         var df11 = d11.reduce( (ac,cv,i,a) => ac+0 ,0);
@@ -1044,18 +1064,73 @@ password.addEventListener('focus', (event) => {
     }
 
     var billInDetails = async function(){
-        var [dtFrom,dtTo] = await popupDateSelector();
+        var dtNow = dayjs();
+        var [dt1,dt2] = await popupDateSelector(dtNow.startOf('month'),dtNow.endOf('month'));
+        var dtFrom = dayjs(dt1).subtract(1, 'day');
+        var dtTo = dayjs(dt2).add(1, 'day');
         var db = sttctx.dbase; // TODO Change this to less ugly
-        debugger;
+
         var dtFiltered = db.get('sessions').filter(v => dayjs(v.when).isBefore(dtTo) && dayjs(v.when).isAfter(dtFrom));
         if(dtFrom.add(1,'day').isBefore(dayjs("2020-06-01"))){
             console.log('before');
         }
         console.log(IsInOldMode('2020-06-01'));
         console.log(dtFiltered);
-        debugger;
-    }
+        // classer par date
+        var r = db.get('sessions')
+         .filter(v => dayjs(v.when).isBefore(dtTo) && dayjs(v.when).isAfter(dtFrom))
+         .sortBy(function (o){return dayjs(o.when).valueOf()})
+         //.reverse()
+         .value();
 
+        var sHtml ="";
+        sHtml += "<table>";
+
+         var iPrice1=30,iPrice2=35,iPrice3=40,iPrice4=50;
+         var aPrice = [0,iPrice1,iPrice2,iPrice3,iPrice4];
+
+        sHtml+="<thead>";
+        sHtml+="<tr><th>Quand</th><th>Qui</th><th>Financé ?</th><th>PU HT</th><th>Statut</th><th>PU (corrigé) HT</th><th>Cumul</th></tr>";
+        sHtml+="<thead>";
+        sHtml+="<tbody>";
+        var iCumul = 0
+        for(var i in r){
+            var sWhen = dayjs(r[i].when).format("DD/MM/YYYY à HH:mm:ss");
+            var iPu = r[i].isFunded === true ? aPrice[r[i].lvl] : aPrice[r[i].lvl] * 0.5;
+            var iFPu = 0;
+            if (r[i].status === "réalisée" || r[i].status === "annulé tardivement"){
+                iFPu = iPu;
+            } else {
+                if (r[i].status === "étudiant absent"  ){
+                    iFPu = iPu * 0.5;
+                }
+            }
+            //console.log(r[i]);
+            iCumul+=iFPu;
+            sHtml+="<tr>";
+            sHtml+=`<td>${sWhen}</td><td>${r[i].who_name}</td><td>${r[i].isFunded}</td><td>${iPu}</td><td>${r[i].status}</td><td>${iFPu}</td><td>${iCumul}€</td>`
+            sHtml+="</tr>";
+        }
+        sHtml+="<tbody>";
+        sHtml+="</table>";
+
+        Swal.fire({
+            title: `<strong>Liste détaillées des sessions du ${dt1.format("DD/MM/YYYY")} au ${dt2.format("DD/MM/YYYY")}</strong>`,
+            icon: 'info',
+            html: sHtml,
+            showCloseButton: true,
+            //showCancelButton: true,
+            focusConfirm: false,
+            position: 'center-start',
+            grow: 'fullscreen',
+            onOpen: (el) => {
+                var myTable = el.querySelector("table");
+                var dataTable = new simpleDatatables.DataTable(myTable);
+            },
+        });
+
+
+    }
     var about = function(){
         var sHtml ="";
 
@@ -1126,7 +1201,7 @@ password.addEventListener('focus', (event) => {
         return button
     }
 
-    var popupDateSelector = async function(){
+    var popupDateSelector = async function(dtFrom=null,dtTo=null){
 
         var sHtml="";
         sHtml+="<style>";
@@ -1140,10 +1215,18 @@ password.addEventListener('focus', (event) => {
         sHtml+='@media (min-width: 400px) {form {grid-template-columns: 200px 1fr;grid-gap: 16px;}label {text-align: right;grid-column: 1 / 2;}input,button {grid-column: 2 / 3;}}';
         sHtml+="</style>";
         sHtml+='<form class="form1" action="">';
-        sHtml+='<label for="dd" class="date">Date de début</label>';
-        sHtml+='<input id="dd" type="date" max="2030-12-31" min="2010-12-31">';
-        sHtml+='<label for="df" class="date">Date de fin</label>';
-        sHtml+='<input id="df" type="date" max="2030-12-31" min="2010-12-31">';
+        sHtml+='<label for="dtFrom" class="date">Date de début</label>';
+        if (dtFrom){
+            sHtml+='<input id="dtFrom" type="date" max="2030-12-31" min="2010-12-31" value="'+dayjs(dtFrom).format("YYYY-MM-DD")+'">';
+        } else {
+            sHtml+='<input id="dtFrom" type="date" max="2030-12-31" min="2010-12-31">';
+        }
+        sHtml+='<label for="dtTo" class="date">Date de fin</label>';
+        if (dtFrom){
+            sHtml+='<input id="dtTo" type="date" max="2030-12-31" min="2010-12-31" value="'+dayjs(dtTo).format("YYYY-MM-DD")+'">';
+        } else {
+            sHtml+='<input id="dtTo" type="date" max="2030-12-31" min="2010-12-31">';
+        }
         //sHtml+='<button>Submit</button>';
         sHtml+='</form>';
 
@@ -1159,8 +1242,8 @@ password.addEventListener('focus', (event) => {
             footer: 'Choisissez la période pour la sélection des temps facturés',
             preConfirm: () => {
                 return [
-                    document.getElementById('dd').value,
-                    document.getElementById('df').value
+                    document.getElementById('dtFrom').value,
+                    document.getElementById('dtTo').value
                 ]
             },
             onRender: (e) => {
@@ -1181,8 +1264,8 @@ password.addEventListener('focus', (event) => {
 });
                */
         });
-        var dtFrom = dayjs(formValues[0]).subtract(1, 'day');
-        var dtTo = dayjs(formValues[1]).add(1, 'day');
+        dtFrom = dayjs(formValues[0]).subtract(1, 'day');
+        dtTo = dayjs(formValues[1]).add(1, 'day');
         return [dtFrom,dtTo];
     }
 
