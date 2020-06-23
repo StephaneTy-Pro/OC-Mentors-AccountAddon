@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Facturier
 // @namespace    http://tampermonkey.net/
-// @version      0.4
+// @version      0.4.0001
 // @description  try to take over the world!
 // @author       Stéphane TORCHY
 // @updateURL    https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/billing.js
@@ -70,7 +70,7 @@
  *         + nettoyage de code
  *         BUG sur la facturation prise en compte des noshow sur tous les étudiants
  *         BUG sur la prise en compte des dates
- *
+ * 0.4.0001 Correction des libellés de menu
  * TODO
  * BUG hugo a diagnostiqué un bug en mise à jour des étudiants sur le financement dans le popup orange
  * popup qui vient dire que tout c'est bien passé suite à la collecte des données de session ( A FAIRE)
@@ -1367,14 +1367,15 @@ debugger;
         addButton('getStudents', getStudents, {},div);
         addButton('addCbox', addCbox, {},div);
         addButton('collectChecked', collectChecked, {},div);
+        addButton('CollectAuto', sandBox, {}, div);
         addButton('showBill', showBill, {},div);
-        addButton('RAZ', razDbase, {},div);
         //addButton('HideCookies', hideCookies, {},div);
         //addButton('Fetch', fetchG, {},div);
         addButton('billInDetails', billInDetails, {},div);
+        addButton('RAZ', razDbase, {},div);
         addButton('SList', showStudentsList, {}, div);
-        addButton('Sandbox', sandBox, {}, div);
-        addButton('DbgMode', debugMode, {}, div);
+        
+        //addButton('DbgMode', debugMode, {}, div);
         addButton('about', about, {},div);
     }
 
