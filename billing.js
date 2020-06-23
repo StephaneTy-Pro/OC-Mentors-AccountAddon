@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Facturier
 // @namespace    http://tampermonkey.net/
-// @version      0.4.0001
+// @version      0.4.0002
 // @description  try to take over the world!
 // @author       Stéphane TORCHY
 // @updateURL    https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/billing.js
@@ -70,7 +70,8 @@
  *         + nettoyage de code
  *         BUG sur la facturation prise en compte des noshow sur tous les étudiants
  *         BUG sur la prise en compte des dates
- * 0.4.0001 Correction des libellés de menu
+ * 0.4.0001 Correction des libellés de boutons (menu)
+ * 0.4.0002 Oubli d'une trace deboggage
  * TODO
  * BUG hugo a diagnostiqué un bug en mise à jour des étudiants sur le financement dans le popup orange
  * popup qui vient dire que tout c'est bien passé suite à la collecte des données de session ( A FAIRE)
@@ -1313,7 +1314,6 @@
             },
         });
 
-debugger;
     }
     var about = function(){
         var sHtml ="";
