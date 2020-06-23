@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Facturier
 // @namespace    http://tampermonkey.net/
-// @version      0.4.0002
+// @version      0.4.0004
 // @description  try to take over the world!
 // @author       Stéphane TORCHY
 // @updateURL    https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/billing.js
