@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Facturier
 // @namespace    http://tampermonkey.net/
-// @version      0.3.0001
+// @version      0.4
 // @description  try to take over the world!
 // @author       Stéphane TORCHY
 // @updateURL    https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/billing.js
@@ -17,28 +17,30 @@
 // STT scripts
 // @require      https://raw.githubusercontent.com/StephaneTy-Pro/userscripts/master/docready.js
 
-// @require      https://cdnjs.cloudflare.com/ajax/libs/systemjs/2.1.1/system.min.js
+// @require      //https://cdnjs.cloudflare.com/ajax/libs/systemjs/2.1.1/system.min.js
 // @require      https://cdn.jsdelivr.net/npm/lodash@4.17.11/lodash.min.js
 // @require      https://unpkg.com/lowdb@0.17/dist/low.min.js
 // @require      https://unpkg.com/lowdb@0.17/dist/LocalStorage.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.28/dayjs.min.js
-// @require      //https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.28/locale/fr.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.28/locale/fr.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.28/plugin/isBetween.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.28/plugin/isSameOrBefore.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.28/plugin/isSameOrAfter.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.28/plugin/customParseFormat.min.js
-// @require      //https://cdn.jsdelivr.net/npm/sweetalert2@7.32.2/dist/sweetalert2.all.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.28/plugin/localeData.min.js
 // @require      https://cdn.jsdelivr.net/npm/sweetalert2@9/dist/sweetalert2.all.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/draggabilly/2.2.0/draggabilly.pkgd.min.js
 // GM_Config
 // @require      https://openuserjs.org/src/libs/sizzle/GM_config.js
 
 // tingle (NOTESTThave to put it on my github) sinon https://cdn.jsdelivr.net/npm/tingle.js@0.15.3/dist/tingle.min.js
-// @require      //https://raw.githubusercontent.com/robinparisi/tingle/master/dist/tingle.min.css
-// @require      //https://raw.githubusercontent.com/robinparisi/tingle/master/dist/tingle.min.js
+// require      //https://raw.githubusercontent.com/robinparisi/tingle/master/dist/tingle.min.css
+// require      //https://raw.githubusercontent.com/robinparisi/tingle/master/dist/tingle.min.js
 
 // sweetalert 2
 
 // uhtml - https://github.com/WebReflection/uhtml#readme
-// @require     https://unpkg.com/uhtml
+// require     https://unpkg.com/uhtml
 
 // toastify
 // @require     https://cdn.jsdelivr.net/npm/toastify-js@1.8.0/src/toastify.min.js
@@ -50,7 +52,7 @@
 // @require     https://cdn.jsdelivr.net/npm/simple-datatables@latest
 // @resource    simpledatatablecss https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css
 
-//reqqueue https://reqqueue.github.soncodi.com/ Sequential request queue for Node.js and browsers
+// reqqueue https://reqqueue.github.soncodi.com/ Sequential request queue for Node.js and browsers
 // require     https://raw.githubusercontent.com/StephaneTy-Pro/userscripts/master/reqqueue.js
 // buha         https://flouthoc.github.io/buha.js/ Browser based Strictly ordered Task Queue for Sync/Async Javascript Functions
 // require     https://raw.githubusercontent.com/flouthoc/buha.js/master/buha.js
@@ -61,6 +63,17 @@
 /*
  * History
  * 0.3 Première version publique
+ * 0.3.0001 Correction d"un bug sur les dates
+ * 0.4 ajout de la mention dont X soutenances plutot que X soutenances
+ *         + ajout de la fonctionnalité sur les périodes
+ *         + le popup de selection de date incrémente automatiquement la date de fin de 1 mois si on change la date de début
+ *         + nettoyage de code
+ *         BUG sur la facturation prise en compte des noshow sur tous les étudiants
+ *         BUG sur la prise en compte des dates
+ *
+ * TODO
+ * BUG hugo a diagnostiqué un bug en mise à jour des étudiants sur le financement dans le popup orange
+ * popup qui vient dire que tout c'est bien passé suite à la collecte des données de session ( A FAIRE)
  */
 
 
@@ -220,7 +233,7 @@
      * check if something is in old mode
      * by checking the date parameters is before the changing date 01/06/2020
      */
-    var IsInOldMode = function(date){
+    var isInOldMode = function(date){
         var dtDate = null;
         if (typeof date === 'string'){
             dtDate = dayjs(date);
@@ -228,10 +241,7 @@
             dtDate = date;
         }
         try {
-            if(dtDate.add(1,'day').isBefore(dayjs("2020-06-01"))){
-                return true;
-            }
-            return false;
+            return dtDate.isBefore(dayjs("2020-06-01")); // STT note that : dayjs("2020-06-01").isBefore("2020-06-01") return false
         } catch(e) { throw Error('Erreur qui ne devrait jamais arriver en IsInOldMode (probablement un probleme sur la conversion de la date en objet dayjs:'+e.stack||e );}
     }
     //----------------------------- Helpers Students
@@ -342,39 +352,32 @@
     var addSessionsToDbase = async function(oSession){
         var db=sttctx.dbase; // TODO Change this to less ugly
         var bCheckExistsBeforAdd = true;
-        if (oSession.type.toLowerCase() === 'soutenance'){
-            console.log("this is a defense nothing to do specially for now");
-            oSession.isFunded = true; // default
+        // Before and After 01/06
+        if (isInOldMode(dayjs(oSession.when))){
+            oSession.isFunded = true;
         } else {
-            var bOldStudent = IsStudentInDb(oSession.who_id)
-            console.log("is student in db ?", bOldStudent)
-            if (bOldStudent == false){
-                // have to update database
-                //if (inUpdateDb === true){
-                    console.warn("%ci'm updating db .... could'nt do anything else","color:magenta");
-                //    return;
-                //}
-                //inUpdateDb = true;
-                await getStudents();
-                //inUpdateDb = true;
-                var bPass2 = IsStudentInDb(oSession.who_id);
-                if(bPass2 == false){
-                    // étudiant à ajouter à la main en base
-                    return createStudentsManually(oSession.who_id, oSession.who_name, oSession.when);
-                }
-            }
-            // check date of session
-            console.log("will check fund mode");
-            if(dayjs(oSession.when).isBefore(dayjs("2020-06-01"))){
-                console.log("on est avant juin")
-                // all students are considered as funded information note used
-                oSession.isFunded = true;
+            if (oSession.type.toLowerCase() === 'soutenance'){
+                //console.log("this is a defense nothing to do specially for now");
+                oSession.isFunded = true; // default
             } else {
-                oSession.isFunded = !(IsStudentAutoFunded(oSession.who_id));
+                var bOldStudent = IsStudentInDb(oSession.who_id)
+                console.log("is student in db ?", bOldStudent)
+                if (bOldStudent == false){
+                    // have to update database
+                    console.warn("%ci'm updating db .... could'nt do anything else","color:magenta");
+                    await getStudents();
+                    var bPass2 = IsStudentInDb(oSession.who_id);
+                    if(bPass2 == false){
+                        // have to add student manually
+                        return createStudentsManually(oSession.who_id, oSession.who_name, oSession.when);
+                    }
+                }
+                // check date of session
+                console.log("will check fund mode");
+                    oSession.isFunded = !(IsStudentAutoFunded(oSession.who_id));
+                }
+
             }
-
-        }
-
         // because of Difference between AF and not AF
         console.log("is student funded ?", oSession.isFunded)
 
@@ -433,86 +436,138 @@
         return oDom;
     }
 
-    var fetchG = async function (){
-        // --
+    var sandBox = async function(){
+        //fetchG()
+        let data = []
+        var [dtFrom,dtTo] = await popupDateSelector(dayjs().startOf('month'),dayjs().endOf('month'));
+        historyFetch( dtFrom, dtTo, 1, data);
+    }
+
+    
+    /*
+     *
+     * pg = current page of history
+     */
+    var historyFetch = async function (dtFrom,dtTo,pg,data=[]){
+
+        //console.log(`wanna fetch history between ${dtFrom.format()} and ${dtTo.format()} searching in page ${pg} of history`);
+
         Swal.fire({
             position: 'top-end',
             icon: 'info',
             toast: true,
-            title: 'FetchG History...\ncela peut prendre du temps',
+            title: "Collecte des sessions dans l'historique page : "+pg+"...\ncela peut prendre du temps",
             showConfirmButton: false,
             timer: 1500
-        })
-        // date de début dayjs semble utiliser la locale active
-        var dtStartOfDate = dayjs('2019-06-01'); // se limiter à juin // dayjs('2019-05-01T00:00:00+0200') pout tenir compte du décalage horaire ?
-        console.log(dtStartOfDate.format());
-        console.log(dtStartOfDate);
-        var dtLimitOfDate = dtStartOfDate.endOf('month'); // se limiter à janvier
-        var pg=2;
-        const oDom = await _fetch(`https://openclassrooms.com/fr/mentorship/dashboard/mentorship-sessions-history?page=${pg}`, "table.crud-list tbody");
+        });
 
+        let f_dtFrom = dayjs(dtFrom).subtract(1, 'day');
+        let f_dtTo = dayjs(dtTo).add(1, 'day');
+
+        const oDom = await _fetch(`https://openclassrooms.com/fr/mentorship/dashboard/mentorship-sessions-history?page=${pg}`, "table.crud-list tbody");
+        // check if first line is after start of parsing date data
+       
+        // don't load next page if date of last line is before start date of data
+        let iRecurse = 0;
+        let iMaxRecurse = 10;
+        let dtFirstRowDate = convertRowToDate(oDom,0)
+        let bBrowse = true
+        var res = {}
+        while(bBrowse){
+            if (iRecurse > iMaxRecurse) {
+                console.warn("%cEMERGENCY EXIT LOOP","color:orange");
+                break; // emergency exit
+            }
+            pg+=1
+            res = await _historyFetch(dtFrom, dtTo, pg, data)
+            //console.dir(res);console.log(res.length);
+            //Si la dernière ligne du tableau est plus récente que la date de bébut arrête
+            if(res.length>0 && dayjs(res[res.length-1].when).isSameOrBefore(dtFrom) === true){
+                bBrowse = false;
+            }
+            iRecurse+=1
+        }
+
+        console.dir(res)
+
+        for(var i in res){
+            //console.log(res[i]);
+            if(dayjs(res[i].when).isBefore(dtFrom, "day") === true){
+                Swal.fire({
+                    position: 'top-end',
+                    icon: 'info',
+                    toast: true,
+                    title: "Collecte des sessions\nCollete terminée",
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+                //console.log("BEFORE START");
+                //console.log(`session with id ${res[i].id} date: ${dayjs(res[i].when).format("DD/MM/YYYY")} is before ${dtFrom.format("DD/MM/YYYY")} don't add it to database but continue parsing`);
+                break; // if current data date is before end of filtered period STOP (rember that we are in antichronological order)
+                //continue;
+            }
+            if(dayjs(res[i].when).isAfter(dtTo, "day") === true){ //NOTE STT be careful about hours exemple : session with id 514515 date: 2020-05-31T23:00:00+02:00 is after 2020-05-31T00:00:00+02:00 don't add it to database but continue parsing === true
+                //console.log("NOT AFTER END");
+                //console.log(`session with id ${res[i].id} date: ${dayjs(res[i].when).format()} is after ${dtTo.format()} don't add it to database but continue parsing === ${dayjs(res[i].when).isAfter(dtTo)}`);
+                continue;    // if current data date is not after start of filtered period CONTNUE (rember that we are in antichronological order)
+            }
+            if(dayjs(res[i].when).isBetween(dtFrom, dtTo, 'day','[]')){
+                //console.log(`session with id ${res[i].id} date: ${dayjs(res[i].when).format("DD/MM/YYYY")} is between ${dtFrom.format("DD/MM/YYY")} ${dtTo.format("DD/MM/YYYY")} add it to database`);
+                await addSessionsToDbase(res[i]);
+            }
+        }
+    }
+
+    var convertRowToDate =  function(oDom, index=0){
+         if (index === -1) {
+            index = oDom.children.length-1
+        }
+        console.log(`index is ${index}`);
+        var sRowDate = oDom.children[index].children[0].innerText;
+        console.log(`sRowDate is ${sRowDate}`);
+        let f_sRowDate = extractDate(sRowDate);
+        //console.log(`utilise la date extraite de la chaine : ${f_sRowDate} pour trouver la date `);
+        var dtRowDate = dayjs(f_sRowDate); // -- trop simpliste n'intègre pas l'été/hiver
+        return dtRowDate;
+    }
+
+    var _historyFetch = async function(dtFrom,dtTo,pg=1,data=[]){
+        Swal.fire({
+            position: 'top-end',
+            icon: 'info',
+            toast: true,
+            title: "Collecte des sessions de l'historique\ndu "+dtFrom.format("DD/MM/YYYY")+" au "+dtTo.format("DD/MM/YYYY")+" \npage : "+pg+"\ncela peut prendre du temps...",
+            showConfirmButton: false,
+            timer: 3000
+        });
+        const oDom = await _fetch(`https://openclassrooms.com/fr/mentorship/dashboard/mentorship-sessions-history?page=${pg}`, "table.crud-list tbody");
+        if(convertRowToDate(oDom,-1).isSameOrAfter(dtTo)===true) {
+
+            console.dir(oDom[oDom.children.length-1]);
+            console.log("optimisation ne charge pas ce n'est pas encore arrivé");
+            return data;
+        }
         for(var i = 0; i<oDom.children.length; i+=1){
             var row = oDom.children[i];
+            //if first line is
+
+            //if last line is
             //console.log(row);
             var me = parseTable(row);
             //console.log(me);
-            //addSessionsToDbase(me);
+            //data = _.merge(me, data); // Object.assign(data, me) ?  -> https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/assign
+            data.push(me);
         }
-
-        console.log(dtStartOfDate.format());
-        console.log(dtStartOfDate);
-        var sLastRowDate = oDom.children[oDom.children.length-1].children[0].innerText;
-        console.log(`sLastRowDate is ${sLastRowDate}`);
-        let f_sLastRowDate = extractDate(sLastRowDate);
-        console.log(`utilise la date extraite de la chaine : ${f_sLastRowDate} pour trouver la date `);
-        var dtLastRowDate = dayjs(f_sLastRowDate); // -- trop simpliste n'intègre pas l'été/hiver
-        console.log(`dtStartOfDate is ${dtStartOfDate}, dtLastRowDate is ${dtLastRowDate}`); // --> dans ce mode on renvoie la date au format GMT alors que dans le mode console on renvoie la date au format ISO (avec TZ)
-        console.log("dtStartOfDate:",dtStartOfDate);
-        console.log('check is before');
-        console.log(dtLastRowDate.isBefore(dtStartOfDate));
+        return data;
     }
 
-    var fetchHistory = async function (pg){
-        // --
-        Swal.fire({
-            position: 'top-end',
-            icon: 'info',
-            toast: true,
-            title: 'FetchG History...\ncela peut prendre du temps',
-            showConfirmButton: false,
-            timer: 1500
-        })
-        const oDom = await _fetch(`https://openclassrooms.com/fr/mentorship/dashboard/mentorship-sessions-history?page=${pg}`, "table.crud-list tbody");
-        // attention on a ajouté des \n, il faudra faire un [string].replace(/\\n/mg,"\n")
-        const response = await GMC.XHR({
-            method: 'GET',
-            url: `https://openclassrooms.com/fr/mentorship/dashboard/mentorship-sessions-history?page=${pg}`,
-            responseType: 'text/html',
-            //binary: true,
-            headers: {
-                "User-Agent": "Mozilla/5.0",    // If not specified, navigator.userAgent will be used.
-            },
-        });
-        console.log("waiting.....");
-        //console.log(response);
-        //console.log(response.responseXML.body)
-        let domparser = new DOMParser()
-        //let doc = domparser.parseFromString(response.responseXML.body, "text/html")
-        let doc = domparser.parseFromString(response.responseText, "text/html");
-        //let doc = response.responseXML.body // not usable because xml is malformed
-        // rechercher les rendez vous
-        // attention on a ajouté des \n, il faudra faire un [string].replace(/\\n/mg,"\n")
-        var sPath = "table.crud-list tbody"
-        var aDom = doc.querySelector(sPath); // need only first
-        //var aDom = doc.querySelectorAll("table.crud-list:first-child  tbody > tr") // uniquement le premier tableau (le second ce sont les étudiants)
-        return aDom
-    }
 
 
     //----------------------------- Actions
     var addCbox = function(){
         var sPath ="table.crud-list tbody"
         var sessions = document.querySelector(sPath)// le All me retourne aussi le tableau des étudiants
+        console.log(`the sessions are ${sessions}`);
         for (const el of sessions.children) {
             //console.log(el.children[0].innerText)
             var inputElem = document.createElement('input');
@@ -524,7 +579,7 @@
             var id = getKey(el.children[0]);
             //console.log(id);
             var bChecked = IsSessionInDb(id);
-            //console.log(bChecked);
+            console.log(`is the session with id ${id} in db ? ${bChecked}`);
             if (bChecked === true) inputElem.checked = true;
             var td = document.createElement('td');
             td.appendChild(inputElem);
@@ -589,7 +644,8 @@
                     console.log(`${sStudentFullName}(uniquid:${sStudentId}) already present in database created at ${res.created}`)
             } else {
                 let sStudentFundedBy = await getFinancialMode(sStudentId);
-                setTimeout(function() {
+                console.log(`Financial Mode of student ${sStudentFullName}(id${sStudentId}) is ${sStudentFundedBy}`);
+                //setTimeout(function() {
                     Toastify({
                         text: `Ajoute l'étudiant : ${sStudentFullName}(${sStudentFundedBy}) en base`,
                         gravity: "top",
@@ -597,7 +653,7 @@
                         close: true,
                         backgroundColor: "linear-gradient(to right, #ff5f6d, #ffc371)",
                     }).showToast();
-                }, 500);
+                //}, 500);
                 //let me = {id:sStudentId,fullname:sStudentFullName,path:sStudentPath,fundedby:sStudentFundedBy,created:now}
                 //data.push(me);
                 //db.get('students').push(JSON.parse(JSON.stringify(me))).write();
@@ -634,7 +690,6 @@
             icon: 'info',
             html: sHtml,
             showCloseButton: true,
-            //showCancelButton: true,
             focusConfirm: false,
             position: 'top-start',
             grow: 'fullscreen',
@@ -668,11 +723,14 @@
         //sHtml+='<button>Submit</button>';
         sHtml+='</form>';
 
-        var dtNow = dayjs();
-        var [dt1,dt2] = await popupDateSelector(dtNow.startOf('month'),dtNow.endOf('month'));
+       
+        var [dt1,dt2] = await popupDateSelector(dayjs().startOf('month'),dayjs().endOf('month'));
         var dtFrom = dayjs(dt1).subtract(1, 'day');
         var dtTo = dayjs(dt2).add(1, 'day');
-        var dtFiltered = db.get('sessions').filter(v => dayjs(v.when).isBefore(dtTo) && dayjs(v.when).isAfter(dtFrom));
+        //var dtFiltered = db.get('sessions').filter(v => dayjs(v.when).isBefore(dtTo) && dayjs(v.when).isAfter(dtFrom));
+
+        var dtFiltered = db.get('sessions').filter(v => dayjs(v.when).isSameOrBefore(dt2,'day') && dayjs(v.when).isSameOrAfter(dt1,'day'));
+
          if(dtFrom.add(1,'day').isBefore(dayjs("2020-06-01"))){
              billPhase1(dtFiltered,dt1.format("DD/MM/YYYY"),dt2.format("DD/MM/YYYY"));
          } else {
@@ -780,8 +838,24 @@
         sHtml+= '</tr>';
         sHtml+= '</tfoot>';
         sHtml+= '</table>';
-        sHtml+= `<p>Vous avez avez également annulé ${l41.value().length+l11.value().length+l21.value().length+l31.value().length} sessions</p>`
-        sHtml+= `<p>Vous avez réalisé ${soutenances.value().length} soutenances</p>`
+        sHtml+= `<p>Vous avez avez également annulé ${l41.value().length+l11.value().length+l21.value().length+l31.value().length} sessions sur un total de ${r.value().length} sessions </p>`
+        sHtml+= `<p>Par ailleurs, le total des sessions inclut ${soutenances.value().length} soutenances</p>`
+
+        /* */
+        let sessionsWithoutStatus = r.filter( v => (v.status !== 'étudiant absent') && (v.status !== 'annulée') && (v.status !== 'annulée tardivement') && (v.status !== 'réalisée'))
+
+        if(sessionsWithoutStatus.value().length!=0){
+           sHtml+= `<p>ATTENTION vous avez ${sessionsWithoutStatus.value().length} session(s) sans statut ou dont le statut n'est pas reconnu (donc non comptabilisé(es), plus d'info dans le log js</p>`;
+           console.log("Session sans statut");
+           console.dir(sessionsWithoutStatus.value());
+        }
+        let sessionsWithoutLevel = r.filter( v => (v.lvl !== "1") && (v.lvl !== "2") && (v.lvl !== "3") && (v.lvl !== "4"))
+        if(sessionsWithoutLevel.value().length!=0){
+            sHtml+= `<p>ATTENTION vous avez ${sessionsWithoutLevel.value().length} session(s) sans niveau ou dont le niveau n'est pas reconnu (donc non comptabilisé(es), plus d'info dans le log js</p>` ;
+            console.log("Sessions sans niveau");
+            console.dir(sessionsWithoutLevel.value());
+        }
+
         Swal.fire({
             title: '<strong>Liste des formations tarifées</strong>',
             icon: 'info',
@@ -797,8 +871,9 @@
 
         console.log(`wanna bill for date from ${from} to ${to}`);
         console.log(r);
+
         var iPrice1=30,iPrice2=35,iPrice3=40,iPrice4=50;
-                var l10 = r.filter( v => v.lvl == 1 && v.status === 'réalisée' && v.isFunded === true);
+        var l10 = r.filter( v => v.lvl == 1 && v.status === 'réalisée' && v.isFunded === true);
         var l11 = r.filter( v => v.lvl == 1 && v.status === 'annulée' && v.isFunded === true);
         var l12 = r.filter( v => v.lvl == 1 && v.status === 'annulée tardivement' && v.isFunded === true);
         var l13 = r.filter( v => v.lvl == 1 && v.status === 'étudiant absent' && v.isFunded === true);
@@ -838,15 +913,17 @@
         var l45 = r.filter( v => v.lvl == 4 && v.status === 'annulée' && v.isFunded === false) || 0;
         var l46 = r.filter( v => v.lvl == 4 && v.status === 'annulée tardivement' && v.isFunded === false) || 0;
         var l47 = r.filter( v => v.lvl == 4 && v.status === 'étudiant absent' && v.isFunded === false) || 0;
+
+        // en AF il n’y a plus que le absent au bout de 10mn qui est rémunré sion c’est no show pas payé. annulé tardiement n’est plus payé pour les AF (modifié)
         //
-        var t10 = l10.reduce( (ac,cv,i,a) => ac+iPrice1 ,0);
-        var t11 = l11.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t12 = l12.reduce( (ac,cv,i,a) => ac+iPrice1 ,0);
-        var t13 = l13.reduce( (ac,cv,i,a) => ac+iPrice1/2 ,0);
+        var t10 = l10.reduce( (ac,cv,i,a) => ac+iPrice1 ,0);   // réalisé
+        var t11 = l11.reduce( (ac,cv,i,a) => ac+0 ,0);         // annulé
+        var t12 = l12.reduce( (ac,cv,i,a) => ac+iPrice1 ,0);   // annulé tardivement
+        var t13 = l13.reduce( (ac,cv,i,a) => ac+iPrice1/2 ,0); // absent
 
         var t14 = l14.reduce( (ac,cv,i,a) => ac+iPrice1/2 ,0);
         var t15 = l15.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t16 = l16.reduce( (ac,cv,i,a) => ac+iPrice1/2 ,0);
+        var t16 = l16.reduce( (ac,cv,i,a) => ac+0 ,0); // var t16 = l16.reduce( (ac,cv,i,a) => ac+iPrice1/2 ,0);
         var t17 = l17.reduce( (ac,cv,i,a) => ac+iPrice1/4 ,0);
         //
         var t20 = l20.reduce( (ac,cv,i,a) => ac+iPrice2 ,0);
@@ -856,7 +933,7 @@
 
         var t24 = l24.reduce( (ac,cv,i,a) => ac+iPrice2/2 ,0);
         var t25 = l25.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t26 = l26.reduce( (ac,cv,i,a) => ac+iPrice2/2 ,0);
+        var t26 = l26.reduce( (ac,cv,i,a) => ac+0 ,0);
         var t27 = l27.reduce( (ac,cv,i,a) => ac+iPrice2/4 ,0);
         //
         var t30 = l30.reduce( (ac,cv,i,a) => ac+iPrice3 ,0);
@@ -866,7 +943,7 @@
 
         var t34 = l34.reduce( (ac,cv,i,a) => ac+iPrice3/2 ,0);
         var t35 = l35.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t36 = l36.reduce( (ac,cv,i,a) => ac+iPrice3/2 ,0);
+        var t36 = l36.reduce( (ac,cv,i,a) => ac+0 ,0);
         var t37 = l37.reduce( (ac,cv,i,a) => ac+iPrice3/4 ,0);
         //
         var t40 = l40.reduce( (ac,cv,i,a) => ac+iPrice4 ,0);
@@ -876,11 +953,11 @@
 
         var t44 = l44.reduce( (ac,cv,i,a) => ac+iPrice4/2 ,0);
         var t45 = l45.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t46 = l46.reduce( (ac,cv,i,a) => ac+iPrice4/2 ,0);
+        var t46 = l46.reduce( (ac,cv,i,a) => ac+0 ,0);
         var t47 = l47.reduce( (ac,cv,i,a) => ac+iPrice4/4 ,0);
 
         // var soutenance
-               var def = r.filter( v => v.type.toLowerCase() === 'soutenance') || 0;
+        var def = r.filter( v => v.type.toLowerCase() === 'soutenance') || 0;
         var d10 = def.filter( v => v.lvl == 1 && v.status === 'réalisée' && v.isFunded === true);
         var d11 = def.filter( v => v.lvl == 1 && v.status === 'annulée' && v.isFunded === true);
         var d12 = def.filter( v => v.lvl == 1 && v.status === 'annulée tardivement' && v.isFunded === true);
@@ -1045,7 +1122,7 @@
         sHtml+= '</tfoot>';
         sHtml+= '</table>';
         sHtml+= `<p>Vous avez avez également annulé ${l41.value().length+l11.value().length+l21.value().length+l31.value().length+l45.value().length+l15.value().length+l25.value().length+l35.value().length} sessions</p>`
-        sHtml+= `<p>Vous avez réalisé ${def.value().length} soutenances pour un total de ${df10+df11+df12+df13+df20+df21+df22+df23+df30+df31+df32+df33+df40+df41+df42+df43} €</p>`
+        sHtml+= `<p>le total des sessions inclut ${def.value().length} soutenances pour un total de ${df10+df11+df12+df13+df20+df21+df22+df23+df30+df31+df32+df33+df40+df41+df42+df43} €</p>`
 
 
         Swal.fire({
@@ -1060,33 +1137,122 @@
         });
     }
 
-    var razDbase = function(){
+    var razDbase = async function(){
+        var sHtml="";
+        sHtml+="<style>";
+        sHtml+='form {display: grid;padding: 1em;background: #f9f9f9;border: 1px solid #c1c1c1;margin: 2rem auto 0 auto;max-width: 600px;padding: 1em;}';
+        sHtml+='form input {background: #fff;border: 1px solid #9c9c9c;}';
+        sHtml+='form button {background: lightgrey;padding: 0.7em;width: 100%;border: 0;}';
+        sHtml+='form button:hover {background: gold;}';
+        sHtml+='form label {padding: 0.5em 0.5em 0.5em 0;}';
+        sHtml+='form input {padding: 0.7em;margin-bottom: 0.5rem;}';
+        sHtml+='form input:focus {outline: 3px solid gold;}';
+        sHtml+='@media (min-width: 400px) {form {grid-template-columns: 200px 1fr;grid-gap: 16px;}label {text-align: right;grid-column: 1 / 2;}input,button {grid-column: 2 / 3;}}';
+        sHtml+="</style>";
+        sHtml+='<form class="form1" action="">';
+        sHtml+='<label for="students" class="cbox">Suppression des étudiants</label>';
+        sHtml+='<input id="students" type="checkbox" value="del_students_true" checked>';
+        sHtml+='<label for="sessions" class="cbox">Suppression des sessions</label>';
+        sHtml+='<input id="sessions" type="checkbox" value="del_sessions_true" checked>';
+        sHtml+='<label for="radio1">filtrer la date</label>';
+        sHtml+='<input type="radio" id="radio1" name="date_filter" value="false" checked>';
+        sHtml+='<label for="radio2">ne pas filtrer</label>';
+        sHtml+='<input type="radio" id="radio2" name="date_filter" value="true">';
+
+        //sHtml+='<button>Submit</button>';
+        sHtml+='</form>';
+
+        const { value: formValues } = await Swal.fire({
+            title: "<strong>RAZ des données</strong>",
+            icon: 'info',
+            html: sHtml,
+            showCloseButton: true,
+            //showCancelButton: true,
+            focusConfirm: false,
+            position: 'top-start',
+            grow: 'row',
+            footer: 'Choisissez ce que vous allez supprimer de la base de donnée',
+            preConfirm: () => {
+                let r = document.getElementsByName('date_filter');
+                let radioValue = "notfound"
+                for(var i in r){
+                    if(r[i].checked === true) radioValue = r[i].value;
+                }
+                console.dir(r);
+                return [
+                    document.getElementById('students').checked,
+                    document.getElementById('sessions').checked,
+                    radioValue,
+                ]
+            }
+
+        });
+
+
+        let bRAZStudents = formValues[0];
+        let bRAZSessions = formValues[1];
+        //console.log("radio result is " + formValues[2]);
+
+        console.log(`wanna raz students ? ${bRAZStudents}, wanna raz sessions ? ${bRAZSessions}`);
+
         var db = sttctx.dbase; // TODO Change this to less ugly
         //const newState = {}
         var newState = {};
-        db.setState(newState)
-        db.defaults({ students: [] , pricing: [], sessions: [] }).write()
+        if (bRAZStudents === true &&
+            bRAZSessions === true ){
+            setTimeout(function() {
+                Toastify({
+                    text: `Suppression de la base \ndes étudiants \net des sessions`,
+                    gravity: "top",
+                    position: 'right',
+                    close: true,
+                    backgroundColor: "linear-gradient(to right, #ff5f6d, #ffc371)",
+                }).showToast();
+            }, 500);
+            db.setState(newState);
+            db.defaults({ students: [] , pricing: [], sessions: [] }).write();
+            return
+        }
+        if (bRAZStudents === true){
+            setTimeout(function() {
+                Toastify({
+                    text: `Suppression de la base des étudiants`,
+                    gravity: "top",
+                    position: 'right',
+                    close: true,
+                    backgroundColor: "linear-gradient(to right, #ff5f6d, #ffc371)",
+                }).showToast();
+            }, 500);
+            db.get('students').remove().write(); // suppress all from students
+
+        }
+        if (bRAZSessions === true){
+            setTimeout(function() {
+                Toastify({
+                    text: `Suppression de la base des sessions`,
+                    gravity: "top",
+                    position: 'right',
+                    close: true,
+                    backgroundColor: "linear-gradient(to right, #ff5f6d, #ffc371)",
+                }).showToast();
+            }, 500);
+            db.get('sessions').remove().write(); // suppress all from sessions
+        }
     }
 
     var billInDetails = async function(){
-        var dtNow = dayjs();
-        var [dt1,dt2] = await popupDateSelector(dtNow.startOf('month'),dtNow.endOf('month'));
-        var dtFrom = dayjs(dt1).subtract(1, 'day');
-        var dtTo = dayjs(dt2).add(1, 'day');
+        var [dtFrom,dtTo] = await popupDateSelector(dayjs().startOf('month'),dayjs().endOf('month'));
+        //var dtFrom = dayjs(dt1).subtract(1, 'day');
+        //var dtTo = dayjs(dt2).add(1, 'day');
         var db = sttctx.dbase; // TODO Change this to less ugly
-
-        var dtFiltered = db.get('sessions').filter(v => dayjs(v.when).isBefore(dtTo) && dayjs(v.when).isAfter(dtFrom));
-        if(dtFrom.add(1,'day').isBefore(dayjs("2020-06-01"))){
-            console.log('before');
-        }
-        console.log(IsInOldMode('2020-06-01'));
-        console.log(dtFiltered);
         // classer par date
         var r = db.get('sessions')
-         .filter(v => dayjs(v.when).isBefore(dtTo) && dayjs(v.when).isAfter(dtFrom))
+         .filter(v => dayjs(v.when).isSameOrBefore(dtTo,"day") && dayjs(v.when).isSameOrAfter(dtFrom, "day"))
          .sortBy(function (o){return dayjs(o.when).valueOf()})
          //.reverse()
          .value();
+
+        console.dir(r);
 
         var sHtml ="";
         sHtml += "<table>";
@@ -1095,32 +1261,45 @@
          var aPrice = [0,iPrice1,iPrice2,iPrice3,iPrice4];
 
         sHtml+="<thead>";
-        sHtml+="<tr><th>Quand</th><th>Qui</th><th>Financé ?</th><th>PU HT</th><th>Statut</th><th>PU (corrigé) HT</th><th>Cumul</th></tr>";
+        sHtml+="<tr><th>Quand</th><th>Qui</th><th>Financé ?</th><th>Ancien Mode ?</th><th>PU HT</th><th>Statut</th><th>PU (corrigé) HT</th><th>Cumul</th></tr>";
         sHtml+="<thead>";
         sHtml+="<tbody>";
+
         var iCumul = 0
         for(var i in r){
             var sWhen = dayjs(r[i].when).format("DD/MM/YYYY à HH:mm:ss");
             var iPu = r[i].isFunded === true ? aPrice[r[i].lvl] : aPrice[r[i].lvl] * 0.5;
             var iFPu = 0;
-            if (r[i].status === "réalisée" || r[i].status === "annulé tardivement"){
-                iFPu = iPu;
+            var bOldMode = true;
+            if(isInOldMode(dayjs(r[i].when))){
+                if (r[i].status === "réalisée" || r[i].status === "annulée tardivement"){
+                    iFPu = iPu;
+                } else {
+                    if (r[i].status === "étudiant absent"  ){
+                        iFPu = iPu * 0.5;
+                    }
+                }
             } else {
-                if (r[i].status === "étudiant absent"  ){
-                    iFPu = iPu * 0.5;
+                bOldMode = false
+                if (r[i].status === "réalisée"){
+                    iFPu = iPu;
+                } else {
+                    if (r[i].status === "étudiant absent" || r[i].status === "annulée tardivement" ){
+                        iFPu = iPu * 0.5;
+                    }
                 }
             }
             //console.log(r[i]);
             iCumul+=iFPu;
             sHtml+="<tr>";
-            sHtml+=`<td>${sWhen}</td><td>${r[i].who_name}</td><td>${r[i].isFunded}</td><td>${iPu}</td><td>${r[i].status}</td><td>${iFPu}</td><td>${iCumul}€</td>`
+            sHtml+=`<td>${sWhen}</td><td>${r[i].who_name}</td><td>${r[i].isFunded === true ? "Oui" : "Non" }</td><td>${bOldMode === true ? "Oui" : "Non" }</td><td>${iPu}</td><td>${r[i].status}</td><td>${iFPu}</td><td>${iCumul}€</td>`
             sHtml+="</tr>";
         }
         sHtml+="<tbody>";
         sHtml+="</table>";
 
         Swal.fire({
-            title: `<strong>Liste détaillées des sessions du ${dt1.format("DD/MM/YYYY")} au ${dt2.format("DD/MM/YYYY")}</strong>`,
+            title: `<strong>Liste détaillées des sessions du ${dtFrom.format("DD/MM/YYYY")} au ${dtTo.format("DD/MM/YYYY")}</strong>`,
             icon: 'info',
             html: sHtml,
             showCloseButton: true,
@@ -1134,7 +1313,7 @@
             },
         });
 
-
+debugger;
     }
     var about = function(){
         var sHtml ="";
@@ -1154,6 +1333,10 @@
     }
 
     //----------------------------- UI
+      var debugMode = function(){
+        debugger;
+    }
+
     var initUI = function(){
         console.log('%c in initUI','background-color:green;color:white');
         buildUI();
@@ -1190,6 +1373,8 @@
         //addButton('Fetch', fetchG, {},div);
         addButton('billInDetails', billInDetails, {},div);
         addButton('SList', showStudentsList, {}, div);
+        addButton('Sandbox', sandBox, {}, div);
+        addButton('DbgMode', debugMode, {}, div);
         addButton('about', about, {},div);
     }
 
@@ -1252,25 +1437,17 @@
                 ]
             },
             onRender: (e) => {
-                console.dir(e);
+                //console.dir(e);
             },
             onOpen: (el) => {
-                el.addEventListener('focus', (event) => {
-                    console.log(event);
-                });
-            } // plutot un mouse enter dans la box de saisie
-            // penser a enlever l'event listener
+                el.querySelector('#dtFrom').addEventListener('change', function(){document.getElementById('dtTo').value = dayjs(document.getElementById('dtFrom').value).endOf('month').format("YYYY-MM-DD");})
+            },
+            onClose: (el) => {
+                el.querySelector('#dtFrom').removeEventListener("change");
+            }
 
-               /*
-               const password = document.querySelector('input[type="password"]');
-
-password.addEventListener('focus', (event) => {
-  event.target.style.background = 'pink';
-});
-               */
         });
-        //dtFrom = dayjs(formValues[0]).subtract(1, 'day');
-        //dtTo = dayjs(formValues[1]).add(1, 'day');
+       
 
         dtFrom = dayjs(formValues[0]);
         dtTo = dayjs(formValues[1]);
@@ -1300,17 +1477,26 @@ password.addEventListener('focus', (event) => {
     });
 
    var main = function(){
-        console.log('%cMainLoaded','background-color:green;color:white');
-        var adapter = new LocalStorage('db');
-        var db = low(adapter);
-        db.defaults({ students: [] , pricing: [], sessions: [] }).write()
-        var ctx = {dbase:db}
-        console.log(ctx)
-        //window['sttctx'] = ctx ; // just for playing with functions
-        window.sttctx = ctx
+       console.log('%cMainLoaded','background-color:green;color:white');
+       var adapter = new LocalStorage('db');
+       var db = low(adapter);
+       db.defaults({ students: [] , pricing: [], sessions: [] }).write()
+       var ctx = {dbase:db}
+       //console.log(ctx)
+       //window['sttctx'] = ctx ; // just for playing with functions
+       window.sttctx = ctx
+       /* dayjs extension */
+       dayjs.extend(dayjs_plugin_isSameOrAfter);
+       dayjs.extend(dayjs_plugin_isSameOrBefore);
+       dayjs.extend(dayjs_plugin_isBetween);
+       dayjs.extend(dayjs_plugin_localeData);
+       dayjs.extend(dayjs_plugin_customParseFormat);
+       //dayjs.extend(dayjs_locale_fr);
+       // https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.28/plugin/localeData.min.js
         if (document.querySelector(".panel.menuBar.flex.draggable") === null){
             initUI();
         }
+       if(GM_config.get("alwaysaddcbox") === true){addCbox();} // add checkbox to element in history
    }
 
 
@@ -1347,6 +1533,13 @@ password.addEventListener('focus', (event) => {
                     labelPos: 'left',
                     type: 'input',
                     default: '1em;',
+                },
+
+                alwaysaddcbox:{
+                    label: 'Toujours ajouter les checkbox',
+                    labelPos: 'left',
+                    type: 'checkbox',
+                    default: true,
                 },
 
 
