@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Facturier
 // @namespace    http://tampermonkey.net/
-// @version      0.4.0004
+// @version      0.5
 // @description  try to take over the world!
 // @author       Stéphane TORCHY
 // @updateURL    https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/billing.js
@@ -17,7 +17,6 @@
 // STT scripts
 // @require      https://raw.githubusercontent.com/StephaneTy-Pro/userscripts/master/docready.js
 
-// @require      //https://cdnjs.cloudflare.com/ajax/libs/systemjs/2.1.1/system.min.js
 // @require      https://cdn.jsdelivr.net/npm/lodash@4.17.11/lodash.min.js
 // @require      https://unpkg.com/lowdb@0.17/dist/low.min.js
 // @require      https://unpkg.com/lowdb@0.17/dist/LocalStorage.min.js
@@ -28,19 +27,16 @@
 // @require      https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.28/plugin/isSameOrAfter.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.28/plugin/customParseFormat.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.28/plugin/localeData.min.js
-// @require      https://cdn.jsdelivr.net/npm/sweetalert2@9/dist/sweetalert2.all.min.js
-// @require      https://cdnjs.cloudflare.com/ajax/libs/draggabilly/2.2.0/draggabilly.pkgd.min.js
+
+
 // GM_Config
 // @require      https://openuserjs.org/src/libs/sizzle/GM_config.js
 
-// tingle (NOTESTThave to put it on my github) sinon https://cdn.jsdelivr.net/npm/tingle.js@0.15.3/dist/tingle.min.js
-// require      //https://raw.githubusercontent.com/robinparisi/tingle/master/dist/tingle.min.css
-// require      //https://raw.githubusercontent.com/robinparisi/tingle/master/dist/tingle.min.js
-
 // sweetalert 2
+// @require      https://cdn.jsdelivr.net/npm/sweetalert2@9/dist/sweetalert2.all.min.js
 
-// uhtml - https://github.com/WebReflection/uhtml#readme
-// require     https://unpkg.com/uhtml
+// draggabilly
+// @require      https://cdnjs.cloudflare.com/ajax/libs/draggabilly/2.2.0/draggabilly.pkgd.min.js
 
 // toastify
 // @require     https://cdn.jsdelivr.net/npm/toastify-js@1.8.0/src/toastify.min.js
@@ -49,16 +45,13 @@
 //
 // @require     https://raw.githubusercontent.com/uzairfarooq/arrive/master/minified/arrive.min.js
 
+// simple-datatables
 // @require     https://cdn.jsdelivr.net/npm/simple-datatables@latest
 // @resource    simpledatatablecss https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css
 
-// reqqueue https://reqqueue.github.soncodi.com/ Sequential request queue for Node.js and browsers
-// require     https://raw.githubusercontent.com/StephaneTy-Pro/userscripts/master/reqqueue.js
-// buha         https://flouthoc.github.io/buha.js/ Browser based Strictly ordered Task Queue for Sync/Async Javascript Functions
-// require     https://raw.githubusercontent.com/flouthoc/buha.js/master/buha.js
-// require      https://raw.githubusercontent.com/Bartozzz/queue-promise/development/dist/index.js
-// require      https://raw.githubusercontent.com/savokiss/queue/master/src/index.js
-// require     https://raw.githubusercontent.com/StephaneTy-Pro/userscripts/master/p-queue.js
+//spectreCSS - dommage fonctionne mal avec le thème OC
+// @resource    spectrecss https://unpkg.com/spectre.css/dist/spectre.min.css
+
 
 /*
  * History
@@ -72,9 +65,25 @@
  *         BUG sur la prise en compte des dates
  * 0.4.0001 Correction des libellés de boutons (menu)
  * 0.4.0002 Oubli d'une trace deboggage
+ * 0.5 correction de la matrice de calcul après juin
+ *     intégration du calcul du bonus af
+ *     corrections diverses de texte (changements de mots principalement)
+ *     nettoyage de quelques dépendances
+ *     travail sur la fonction fetch history pour la simplifier
+ *     UI changement de texte de la facture
+ *     UI la case à cocher est renommée en "in DB"
+ *     la fonctionn addCbox ne recrée pas toute les cbox à chaque fois on peut donc l'appeller apres la collecte automatique
+ *     en création d'étudiant la liste des parcours (incomplète est proposée dans l'autocompletion
+ *     correction d'un bug dans la facturation avant 06/2020 (mauvaise affectation de la catégorie des noshow : annulé tardivement qui étaient visuellement avec les sessions)
+ *
+ *     GROS BUG A CORRIGER le statut étudiante absente existe !!!!!!
+ *
  * TODO
- * BUG hugo a diagnostiqué un bug en mise à jour des étudiants sur le financement dans le popup orange
+ * BUG hugo a diagnostiqué un bug en mise à jour des étudiants sur le financement dans le popup orange ... note STT je présume qu'il s'agit d'un probleme dû à l'async car le console.log est bon lui et l'entrée en BDD également
  * popup qui vient dire que tout c'est bien passé suite à la collecte des données de session ( A FAIRE)
+ * toaster .... passer sur une seule et unique librairie
+ * paramètres de l'application à nettoyer
+ * BUG recensé par anthony chez lui le script qui gère le chargement de la page est bloqué ....
  */
 
 
@@ -128,17 +137,14 @@
     const aMonthFrench = [{month:'janvier',id:'01'},{month:'février',id:'02'},{month:'mars',id:'03'},{month:'avril',id:'04'},{month:'mai',id:'05'},{month:'juin',id:'06'},{month:'juillet',id:'07'},{month:'août',id:'08'},{month:'septembre',id:'09'},{month:'octobre',id:'10'},{month:'novembre',id:'11'},{month:'décembre',id:'12'}]
     const appName = "OC-Addons";
     const author = "Stéphane TORCHY";
-
+    // OC
     const sAutoFunded = "Auto-financé"; // in oc
     const sFunded = "Financé par un tiers" ; // in oc
-
-
-    //const buhaRunner = buha(); // keep a queue
-    //const q = new ReqQueue(false);
-    //const q = new Queue(1)
-    //const queue = new PQueue({concurrency: 1});
-
-    //var inUpdateDb = false;
+    const status_0 = "réalisée";
+    const status_1 = "annulée";
+    const status_2 = "annulée tardivement";
+    const status_3_m = "étudiant absent";
+    const status_3_f = "étudiante absente";
 
     // Function wrapping code.
     // fn - reference to function.
@@ -160,15 +166,7 @@
             var me = parseTable(oEl);
             //console.log(me);
             console.log(`Wanna add a new checkbox content ${me.id}`);
-            //buhaRunner.push(() =>{addSessionsToDbase(me);console.log("queue activated playing"+me.id)}); // need a queue for stacking demands because
-            //q.add(() =>{addSessionsToDbase(me);;console.log("queue activated playing"+me.id);}); //requueue
-            //q.push(() =>{addSessionsToDbase(me);}); //savokiss_queue
-            //addSessionsToDbase(me); // charge à moi de gérer correctement une queue provisoire
             await addSessionsToDbase(me);
-            /*(async () => {
-                await queue.add(() => addSessionsToDbase(me));
-                console.log("queue activated playing"+me.id)
-            });*/
         }
     }
     /*
@@ -178,10 +176,10 @@
         //var _t = sWhen.split(' ');
         var _t = sWhen.trim().split(' '); // NOTESTT: parfois la date est précédée d'un espace je dois donc compresser la chaine sinon j'ai trop d'élements dans le tableau
         var oMonth = {month:'void',id:'void'}
-            try {
-                oMonth = _.find( aMonthFrench, ['month', _t[1]]);
-            } catch(e) { throw Error('Erreur qui ne devrait jamais arriver en conversion de date :'+e.stack||e );}
-        return `${_t[2]}-${oMonth.id}-${_t[0]}T${_t[4]}`; // correspond plus ou moins au format std day js YYYY-MM-DDTHH:MM
+        try {
+            oMonth = _.find( aMonthFrench, ['month', _t[1]]);
+        } catch(e) { throw Error('Erreur qui ne devrait jamais arriver en conversion de date :'+e.stack||e );}
+        return `${_t[2]}-${oMonth.id}-${_t[0]}T${_t[4]}`; // NOTESTT correspond plus ou moins au format std day js YYYY-MM-DDTHH:MM
     }
 
      //----------------------------- Helpers Sessions
@@ -216,7 +214,7 @@
     var getKey = function(el,idx=-1){
         try {
             var _t1 = (el.children[0].href || "/").split("/");
-            return _t1[_t1.length+idx];
+           return _t1[_t1.length+idx];
         } catch(e) { throw Error('Erreur qui ne devrait jamais arriver en getkey :'+e.stack||e );}
     }
 
@@ -273,7 +271,7 @@
         var r = db.get('students').find({id: iStudentId}).value()
         //console.log(r);
          if (r == undefined){
-             throw Error('IRRECOVERABLE ERROR STUDENTS NOT IN DB:');
+             throw Error('IRRECOVERABLE ERROR STUDENT NOT IN DB:');
          }else {
              return r.fundedby;
          }
@@ -288,6 +286,7 @@
     }
 
     var createStudentsManually = async function(sStudentId,sStudentName,sSessionDate){
+        let aPathList = ["non présent dans la liste","Chef de projet digital", "Chef de projet SI", "Développeur d'application - Frontend", "Développeur Web", "Expert en stratégie marketing et communication ", "Production de contenu web avec CMS et Content Marketing ","Tech lead"]
 		var sHtml="";
         sHtml+="<style>";
         sHtml+='form {display: grid;padding: 1em;background: #f9f9f9;border: 1px solid #c1c1c1;margin: 2rem auto 0 auto;max-width: 600px;padding: 1em;}';
@@ -307,7 +306,13 @@
         sHtml+='<label for="fundedby">Autofinancé</label>';
         sHtml+='<input id="fundedby" type="checkbox" value="autofunded">';
         sHtml+='<label for="student_path">Parcours</label>';
-        sHtml+='<input id="student_path" type="text">';
+        sHtml+='<input id="student_path" name="student_path" type="text" list="student_path-list">';
+        sHtml+='<datalist id="student_path-list">';
+        for(var i in aPathList){
+            sHtml+=`<option>${aPathList[i]}</option>`;
+        }
+        sHtml+='/<datalist>';
+
         sHtml+='<label for="session_date">Date</label>';
         sHtml+='<input id="session_date" type="date" max="2030-12-31" min="2010-12-31" value="'+dayjs(sSessionDate).format("YYYY-MM-DD")+'">';
         //sHtml+='<button>Submit</button>';
@@ -342,8 +347,6 @@
             } else {
                 sFundedBy = sFunded;
             }
-
-
             addStudentToDb(formValues[0],formValues[1],formValues[2],sFundedBy,formValues[4])
         }
 
@@ -438,10 +441,7 @@
     }
 
     var sandBox = async function(){
-        //fetchG()
-        let data = []
-        var [dtFrom,dtTo] = await popupDateSelector(dayjs().startOf('month'),dayjs().endOf('month'));
-        historyFetch( dtFrom, dtTo, 1, data);
+
     }
 
     
@@ -449,10 +449,13 @@
      *
      * pg = current page of history
      */
-    var historyFetch = async function (dtFrom,dtTo,pg,data=[]){
+    var historyFetch = async function (){
+
+        var [dtFrom,dtTo] = await popupDateSelector(dayjs().startOf('month'),dayjs().endOf('month'));
+
 
         //console.log(`wanna fetch history between ${dtFrom.format()} and ${dtTo.format()} searching in page ${pg} of history`);
-
+        /*
         Swal.fire({
             position: 'top-end',
             icon: 'info',
@@ -466,30 +469,35 @@
         let f_dtTo = dayjs(dtTo).add(1, 'day');
 
         const oDom = await _fetch(`https://openclassrooms.com/fr/mentorship/dashboard/mentorship-sessions-history?page=${pg}`, "table.crud-list tbody");
+        */
         // check if first line is after start of parsing date data
        
         // don't load next page if date of last line is before start date of data
         let iRecurse = 0;
-        let iMaxRecurse = 10;
-        let dtFirstRowDate = convertRowToDate(oDom,0)
+        let iMaxRecurse = GM_config.get('maxfetchpg');
+        //let dtFirstRowDate = convertRowToDate(oDom,0)
         let bBrowse = true
         var res = {}
+        let data = []
+        let pg=1
         while(bBrowse){
+            console.log(`iRecurse > iMaxRecurse ? ${iRecurse} > ${iMaxRecurse} = ${iRecurse > iMaxRecurse}`);
             if (iRecurse > iMaxRecurse) {
                 console.warn("%cEMERGENCY EXIT LOOP","color:orange");
                 break; // emergency exit
             }
-            pg+=1
+            
             res = await _historyFetch(dtFrom, dtTo, pg, data)
             //console.dir(res);console.log(res.length);
             //Si la dernière ligne du tableau est plus récente que la date de bébut arrête
             if(res.length>0 && dayjs(res[res.length-1].when).isSameOrBefore(dtFrom) === true){
                 bBrowse = false;
             }
+            pg+=1
             iRecurse+=1
         }
 
-        console.dir(res)
+        //console.dir(res)
 
         for(var i in res){
             //console.log(res[i]);
@@ -517,15 +525,17 @@
                 await addSessionsToDbase(res[i]);
             }
         }
+
+        addCbox(); // addCbox onn
     }
 
     var convertRowToDate =  function(oDom, index=0){
          if (index === -1) {
             index = oDom.children.length-1
         }
-        console.log(`index is ${index}`);
+        //console.log(`index is ${index}`);
         var sRowDate = oDom.children[index].children[0].innerText;
-        console.log(`sRowDate is ${sRowDate}`);
+        //console.log(`sRowDate is ${sRowDate}`);
         let f_sRowDate = extractDate(sRowDate);
         //console.log(`utilise la date extraite de la chaine : ${f_sRowDate} pour trouver la date `);
         var dtRowDate = dayjs(f_sRowDate); // -- trop simpliste n'intègre pas l'été/hiver
@@ -568,36 +578,61 @@
     var addCbox = function(){
         var sPath ="table.crud-list tbody"
         var sessions = document.querySelector(sPath)// le All me retourne aussi le tableau des étudiants
-        console.log(`the sessions are ${sessions}`);
-        for (const el of sessions.children) {
-            //console.log(el.children[0].innerText)
-            var inputElem = document.createElement('input');
+        var bChecked = false;
+        //console.log(`the sessions are ${sessions}`);
+        if (sessions.querySelector("[type=checkbox]") === null) {
+            for (const el of sessions.children) {
+                //console.log(el.children[0].innerText)
+                var id = getKey(el.children[0]);
+                var inputElem = document.createElement('input');
+                inputElem.type = "checkbox";
+                inputElem.name = "name";
+                inputElem.value = id;
+                inputElem.id = "id";
+                //console.log(el);
+                //console.log(id);
+                bChecked = IsSessionInDb(id);
+                //console.log(`is the session with id ${id} in db ? ${bChecked}`);
+                if (bChecked === true) inputElem.checked = true;
+                var td = document.createElement('td');
+                td.style = "text-align: center";
+                td.appendChild(inputElem);
+                el.appendChild(td);
+            }
+            // ajout d'une case selectionner tout
+            sPath ="table.crud-list thead tr";
+            var el = document.querySelector(sPath)
+            inputElem = document.createElement('input');
             inputElem.type = "checkbox";
             inputElem.name = "name";
             inputElem.value = "value";
             inputElem.id = "id";
-            //console.log(el);
-            var id = getKey(el.children[0]);
-            //console.log(id);
-            var bChecked = IsSessionInDb(id);
-            console.log(`is the session with id ${id} in db ? ${bChecked}`);
-            if (bChecked === true) inputElem.checked = true;
-            var td = document.createElement('td');
-            td.appendChild(inputElem);
+            inputElem.onclick = function (){document.querySelectorAll("tbody input[type=checkbox]").forEach( e => e.checked = !e.checked);}
+            inputElem.style = "visibility: hidden;"
+            var label = document.createElement('label');
+            label.innerText = "in DB";
+            label.style="display:block;";
+            label.onMouseOver="this.style.cursor=pointer;";
+            label.onMouseOut="this.style.cursor=auto;";
+            label.appendChild(inputElem);
+            td = document.createElement('td');
+            td.style = "text-align: center";
+            //td.appendChild(inputElem);
+            td.appendChild(label);//td.appendChild(inputElem);
             el.appendChild(td);
+        } else {
+            var _t = sessions.querySelectorAll("[type=checkbox]"); // NOTESTT could be CPU Consumer ? so by precaution define it here
+            var i = _t.length, aChkBox = new Array(i);for(; i--; aChkBox[i] = _t[i]); // NOTESTT those two lines are more optimized than ? var aChkBox = Array.prototype.slice.call(_t)
+            for(var v in aChkBox){
+                bChecked = IsSessionInDb(aChkBox[v].value);
+                //console.log(`is the session with id ${aChkBox[v].value} in db ? ${bChecked}`);
+                if (bChecked === true){
+                    aChkBox[v].checked = true;
+                } else {
+                    aChkBox[v].checked = false;
+                }
+            }
         }
-        // ajout d'une case selectionner tout
-        sPath ="table.crud-list thead tr";
-        var el = document.querySelector(sPath)
-        inputElem = document.createElement('input');
-        inputElem.type = "checkbox";
-        inputElem.name = "name";
-        inputElem.value = "value";
-        inputElem.id = "id";
-        inputElem.onclick = function (){document.querySelectorAll("tbody input[type=checkbox]").forEach( e => e.checked = !e.checked);}
-        td = document.createElement('td');
-        td.appendChild(inputElem);
-        el.appendChild(td);
     }
 
     //var getStudents = async function(e,ctx){
@@ -723,24 +758,19 @@
         sHtml+='<input id="df" type="date" max="2030-12-31" min="2010-12-31">';
         //sHtml+='<button>Submit</button>';
         sHtml+='</form>';
-
-       
-        var [dt1,dt2] = await popupDateSelector(dayjs().startOf('month'),dayjs().endOf('month'));
-        var dtFrom = dayjs(dt1).subtract(1, 'day');
-        var dtTo = dayjs(dt2).add(1, 'day');
+        var [dtFrom,dtTo] = await popupDateSelector(dayjs().startOf('month'),dayjs().endOf('month'));
         //var dtFiltered = db.get('sessions').filter(v => dayjs(v.when).isBefore(dtTo) && dayjs(v.when).isAfter(dtFrom));
 
-        var dtFiltered = db.get('sessions').filter(v => dayjs(v.when).isSameOrBefore(dt2,'day') && dayjs(v.when).isSameOrAfter(dt1,'day'));
+        var dtFiltered = db.get('sessions').filter(v => dayjs(v.when).isSameOrBefore(dtTo,'day') && dayjs(v.when).isSameOrAfter(dtFrom,'day'));
 
-         if(dtFrom.add(1,'day').isBefore(dayjs("2020-06-01"))){
-             billPhase1(dtFiltered,dt1.format("DD/MM/YYYY"),dt2.format("DD/MM/YYYY"));
+         if(isInOldMode(dtFrom)){
+             billPhase1(dtFiltered,dtFrom,dtTo);
          } else {
-             billPhase2(dtFiltered,dt1.format("DD/MM/YYYY"),dt2.format("DD/MM/YYYY"));
+             billPhase2(dtFiltered,dtFrom,dtTo);
          }
     }
 
-    var billPhase1 = function(r,from,to){
-        console.log('billPhase1');
+    var billPhase1 = function(r,dtFrom,dtTo){
         var iPrice1=30,iPrice2=35,iPrice3=40,iPrice4=50;
         var l10 = r.filter( v => v.lvl == 1 && v.status === 'réalisée');
         var l11 = r.filter( v => v.lvl == 1 && v.status === 'annulée');
@@ -764,26 +794,66 @@
         //
         var t10 = l10.reduce( (ac,cv,i,a) => ac+iPrice1 ,0);
         var t11 = l11.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t12 = l12.reduce( (ac,cv,i,a) => ac+iPrice1 ,0);
+        var t12 = l12.reduce( (ac,cv,i,a) => ac+iPrice1/2 ,0);
         var t13 = l13.reduce( (ac,cv,i,a) => ac+iPrice1/2 ,0);
         //
         var t20 = l20.reduce( (ac,cv,i,a) => ac+iPrice2 ,0);
         var t21 = l21.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t22 = l22.reduce( (ac,cv,i,a) => ac+iPrice2 ,0);
+        var t22 = l22.reduce( (ac,cv,i,a) => ac+iPrice2/2 ,0);
         var t23 = l23.reduce( (ac,cv,i,a) => ac+iPrice2/2 ,0);
         //
         var t30 = l30.reduce( (ac,cv,i,a) => ac+iPrice3 ,0);
         var t31 = l31.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t32 = l32.reduce( (ac,cv,i,a) => ac+iPrice3 ,0);
+        var t32 = l32.reduce( (ac,cv,i,a) => ac+iPrice3/2 ,0);
         var t33 = l33.reduce( (ac,cv,i,a) => ac+iPrice3/2 ,0);
         //
         var t40 = l40.reduce( (ac,cv,i,a) => ac+iPrice4 ,0);
         var t41 = l41.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t42 = l42.reduce( (ac,cv,i,a) => ac+iPrice4 ,0);
+        var t42 = l42.reduce( (ac,cv,i,a) => ac+iPrice4/2 ,0);
         var t43 = l43.reduce( (ac,cv,i,a) => ac+iPrice4/2 ,0);
 
-        // var soutenance
-        var soutenances = r.filter( v => v.type.toLowerCase() === 'soutenance') || 0;
+        // calculate defense
+        var def = r.filter( v => v.type.toLowerCase() === 'soutenance') || 0;
+        var d10 = def.filter( v => v.lvl == 1 && v.status === 'réalisée' && v.isFunded === true);
+        var d11 = def.filter( v => v.lvl == 1 && v.status === 'annulée' && v.isFunded === true);
+        var d12 = def.filter( v => v.lvl == 1 && v.status === 'annulée tardivement' && v.isFunded === true);
+        var d13 = def.filter( v => v.lvl == 1 && v.status === 'étudiant absent' && v.isFunded === true);
+        //
+        var d20 = def.filter( v => v.lvl == 2 && v.status === 'réalisée' && v.isFunded === true);
+        var d21 = def.filter( v => v.lvl == 2 && v.status === 'annulée' && v.isFunded === true);
+        var d22 = def.filter( v => v.lvl == 2 && v.status === 'annulée tardivement' && v.isFunded === true);
+        var d23 = def.filter( v => v.lvl == 2 && v.status === 'étudiant absent' && v.isFunded === true);
+        //
+        var d30 = def.filter( v => v.lvl == 3 && v.status === 'réalisée' && v.isFunded === true);
+        var d31 = def.filter( v => v.lvl == 3 && v.status === 'annulée' && v.isFunded === true);
+        var d32 = def.filter( v => v.lvl == 3 && v.status === 'annulée tardivement' && v.isFunded === true);
+        var d33 = def.filter( v => v.lvl == 3 && v.status === 'étudiant absent' && v.isFunded === true);
+        //
+        var d40 = def.filter( v => v.lvl == 4 && v.status === 'réalisée' && v.isFunded === true) ||0 ;
+        var d41 = def.filter( v => v.lvl == 4 && v.status === 'annulée' && v.isFunded === true) || 0;
+        var d42 = def.filter( v => v.lvl == 4 && v.status === 'annulée tardivement' && v.isFunded === true) || 0;
+        var d43 = def.filter( v => v.lvl == 4 && v.status === 'étudiant absent' && v.isFunded === true) || 0;
+
+        var df10 = d10.reduce( (ac,cv,i,a) => ac+iPrice1 ,0);
+        var df11 = d11.reduce( (ac,cv,i,a) => ac+0 ,0);
+        var df12 = d12.reduce( (ac,cv,i,a) => ac+iPrice1/2 ,0);
+        var df13 = d13.reduce( (ac,cv,i,a) => ac+iPrice1/2 ,0);
+        //
+        var df20 = d20.reduce( (ac,cv,i,a) => ac+iPrice2 ,0);
+        var df21 = d21.reduce( (ac,cv,i,a) => ac+0 ,0);
+        var df22 = d22.reduce( (ac,cv,i,a) => ac+iPrice2/2 ,0);
+        var df23 = d23.reduce( (ac,cv,i,a) => ac+iPrice2/2 ,0);
+        //
+        var df30 = d30.reduce( (ac,cv,i,a) => ac+iPrice3 ,0);
+        var df31 = d31.reduce( (ac,cv,i,a) => ac+0 ,0);
+        var df32 = d32.reduce( (ac,cv,i,a) => ac+iPrice3/2 ,0);
+        var df33 = d33.reduce( (ac,cv,i,a) => ac+iPrice3/2 ,0);
+        //
+        var df40 = d40.reduce( (ac,cv,i,a) => ac+iPrice4 ,0);
+        var df41 = d41.reduce( (ac,cv,i,a) => ac+0 ,0);
+        var df42 = d42.reduce( (ac,cv,i,a) => ac+iPrice4/2 ,0);
+        var df43 = d43.reduce( (ac,cv,i,a) => ac+iPrice4/2 ,0);
+
 
         var sHtml = '<table>';
         sHtml+= '<caption>Sessions de mentorat</caption>';
@@ -794,21 +864,21 @@
         sHtml+= '</thead>';
         sHtml+= '<tbody>';
         sHtml+= '<tr>';
-        sHtml+= `<td>Sessions de groupe</td><td>${l40.value().length+l42.value().length}</td><td>${iPrice4}</td><td>${t40+t42}€</td>`;
+        sHtml+= `<td>Sessions de groupe</td><td>${l40.value().length}</td><td>${iPrice4}</td><td>${t40}€</td>`;
         sHtml+= '</tr>';
         sHtml+= '<tr>';
-        sHtml+= `<td>de Niveau d'expertise 1</td><td>${l10.value().length+l12.value().length}</td><td>${iPrice1}</td><td>${t10+t12}€</td>`;
+        sHtml+= `<td>de Niveau d'expertise 1</td><td>${l10.value().length}</td><td>${iPrice1}</td><td>${t10}€</td>`;
         sHtml+= '</tr>';
         sHtml+= '<tr>';
-        sHtml+= `<td>de Niveau d'expertise 2</td><td>${l20.value().length+l22.value().length}</td><td>${iPrice2}</td><td>${t20+t22}€</td>`;
+        sHtml+= `<td>de Niveau d'expertise 2</td><td>${l20.value().length}</td><td>${iPrice2}</td><td>${t20}€</td>`;
         sHtml+= '</tr>';
         sHtml+= '<tr>';
-        sHtml+= `<td>de Niveau d'expertise 3</td><td>${l30.value().length+l32.value().length}</td><td>${iPrice3}</td><td>${t30+t32}€</td>`;
+        sHtml+= `<td>de Niveau d'expertise 3</td><td>${l30.value().length}</td><td>${iPrice3}</td><td>${t30}€</td>`;
         sHtml+= '</tr>';
         sHtml+= '</tbody>';
         sHtml+= '<tfoot>';
         sHtml+= '<tr>';
-        sHtml+= `<td>Total</td><td>${l40.value().length+l10.value().length+l20.value().length+l30.value().length+l42.value().length+l12.value().length+l22.value().length+l32.value().length}</td><td></td><td>${t10+t20+t30+t40+t12+t22+t32+t42}€</td>`;
+        sHtml+= `<td>Total</td><td>${l40.value().length+l10.value().length+l20.value().length+l30.value().length}</td><td></td><td>${t10+t20+t30+t40}€</td>`;
         sHtml+= '</tr>';
         sHtml+= '</tfoot>';
         sHtml+= '</table>'
@@ -821,44 +891,49 @@
         sHtml+= '</thead>';
         sHtml+= '<tbody>';
         sHtml+= '<tr>';
-        sHtml+= `<td>Sessions de groupe</td><td>${l43.value().length}</td><td>${iPrice4/2}</td><td>${t43}€</td>`;
+        sHtml+= `<td>Sessions de groupe</td><td>${l43.value().length+l42.value().length}</td><td>${iPrice4/2}</td><td>${t43+t42}€</td>`;
         sHtml+= '</tr>';
         sHtml+= '<tr>';
-        sHtml+= `<td>de Niveau d'expertise 1</td><td>${l13.value().length}</td><td>${iPrice1/2}</td><td>${t13}€</td>`;
+        sHtml+= `<td>de Niveau d'expertise 1</td><td>${l13.value().length+l12.value().length}</td><td>${iPrice1/2}</td><td>${t13+t12}€</td>`;
         sHtml+= '</tr>';
         sHtml+= '<tr>';
-        sHtml+= `<td>de Niveau d'expertise 2</td><td>${l23.value().length}</td><td>${iPrice2/2}</td><td>${t23}€</td>`;
+        sHtml+= `<td>de Niveau d'expertise 2</td><td>${l23.value().length+l22.value().length}</td><td>${iPrice2/2}</td><td>${t23+t22}€</td>`;
         sHtml+= '</tr>';
         sHtml+= '<tr>';
-        sHtml+= `<td>de Niveau d'expertise 3</td><td>${l33.value().length}</td><td>${iPrice3/2}</td><td>${t33}€</td>`;
+        sHtml+= `<td>de Niveau d'expertise 3</td><td>${l33.value().length+l32.value().length}</td><td>${iPrice3/2}</td><td>${t33+t32}€</td>`;
         sHtml+= '</tr>';
         sHtml+= '</tbody>';
         sHtml+= '<tfoot>';
         sHtml+= '<tr>';
-        sHtml+= `<td>Total</td><td>${l43.value().length+l13.value().length+l23.value().length+l33.value().length}</td><td></td><td>${t13+t23+t33+t43}€</td>`;
+        sHtml+= `<td>Total</td><td>${l43.value().length+l13.value().length+l23.value().length+l33.value().length+l42.value().length+l12.value().length+l22.value().length+l32.value().length}</td><td></td><td>${t13+t23+t33+t43+t12+t22+t32+t42}€</td>`;
         sHtml+= '</tr>';
         sHtml+= '</tfoot>';
         sHtml+= '</table>';
-        sHtml+= `<p>Vous avez avez également annulé ${l41.value().length+l11.value().length+l21.value().length+l31.value().length} sessions sur un total de ${r.value().length} sessions </p>`
-        sHtml+= `<p>Par ailleurs, le total des sessions inclut ${soutenances.value().length} soutenances</p>`
-
-        /* */
+        //sHtml+= `<p>Vous avez avez également annulé ${l41.value().length+l11.value().length+l21.value().length+l31.value().length} sessions sur un total de ${r.value().length} sessions </p>`
+        //sHtml+= `<p>Par ailleurs, le total des sessions inclut ${soutenances.value().length} soutenances</p>`
+        // suggestion de A Massé : Vous avez fait un total de x sessions (xx.xx€) dont y soutenances (xx.xx€) Z sessions de mentorat (xx.xx€) et W no shows (xx.xx€)
+        sHtml+= `<p>Vous avez fait un total de ${r.value().length} session(s) (${t10+t20+t30+t40+t12+t22+t32+t42+t13+t23+t33+t43}€) `;
+        sHtml+= `dont ${def.value().length} soutenance(s) (${df10+df11+df12+df13+df20+df21+df22+df23+df30+df31+df32+df33+df40+df41+df42+df43}€)</p>`;
+        sHtml+= `<p>Ces ${r.value().length} session(s)se répartissent en ${l40.value().length+l10.value().length+l20.value().length+l30.value().length} session(s) de mentorat (${t10+t20+t30+t40}€)`
+        sHtml+= `, ${l43.value().length+l13.value().length+l23.value().length+l33.value().length+l42.value().length+l12.value().length+l22.value().length+l32.value().length} NoShows (${t13+t23+t33+t43+t12+t22+t32+t42}€)`
+        sHtml+= ` et ${l41.value().length+l11.value().length+l21.value().length+l31.value().length} session(s) annulée(s) (${t11+t21+t31+t41}€)</p>`
+        /* prevent some errors when data not present */
         let sessionsWithoutStatus = r.filter( v => (v.status !== 'étudiant absent') && (v.status !== 'annulée') && (v.status !== 'annulée tardivement') && (v.status !== 'réalisée'))
 
         if(sessionsWithoutStatus.value().length!=0){
-           sHtml+= `<p>ATTENTION vous avez ${sessionsWithoutStatus.value().length} session(s) sans statut ou dont le statut n'est pas reconnu (donc non comptabilisé(es), plus d'info dans le log js</p>`;
+           sHtml+= `<p>ATTENTION vous avez ${sessionsWithoutStatus.value().length} session(s) sans statut ou dont le statut n'est pas reconnu, plus d'info dans le log js</p>`;
            console.log("Session sans statut");
            console.dir(sessionsWithoutStatus.value());
         }
         let sessionsWithoutLevel = r.filter( v => (v.lvl !== "1") && (v.lvl !== "2") && (v.lvl !== "3") && (v.lvl !== "4"))
         if(sessionsWithoutLevel.value().length!=0){
-            sHtml+= `<p>ATTENTION vous avez ${sessionsWithoutLevel.value().length} session(s) sans niveau ou dont le niveau n'est pas reconnu (donc non comptabilisé(es), plus d'info dans le log js</p>` ;
+            sHtml+= `<p>ATTENTION vous avez ${sessionsWithoutLevel.value().length} session(s) sans niveau ou dont le niveau n'est pas reconnu, plus d'info dans le log js</p>` ;
             console.log("Sessions sans niveau");
             console.dir(sessionsWithoutLevel.value());
         }
 
         Swal.fire({
-            title: '<strong>Liste des formations tarifées</strong>',
+            title: `<strong>Liste des formations tarifées du ${dtFrom.format("DD/MM/YYYY")} au ${dtTo.format("DD/MM/YYYY")}</strong>`,
             icon: 'info',
             html: sHtml,
             showCloseButton: true,
@@ -868,10 +943,15 @@
             grow: 'column',
         });
     }
-    var billPhase2 = function(r, from, to){
+    var billPhase2 = function(r, dtFrom, dtTo){
 
-        console.log(`wanna bill for date from ${from} to ${to}`);
-        console.log(r);
+        Swal.fire({
+            position: 'top-end',
+            icon: 'success',
+            title: 'computing......',
+            showConfirmButton: false,
+            timer: 2000
+        })
 
         var iPrice1=30,iPrice2=35,iPrice3=40,iPrice4=50;
         var l10 = r.filter( v => v.lvl == 1 && v.status === 'réalisée' && v.isFunded === true);
@@ -915,11 +995,11 @@
         var l46 = r.filter( v => v.lvl == 4 && v.status === 'annulée tardivement' && v.isFunded === false) || 0;
         var l47 = r.filter( v => v.lvl == 4 && v.status === 'étudiant absent' && v.isFunded === false) || 0;
 
-        // en AF il n’y a plus que le absent au bout de 10mn qui est rémunré sion c’est no show pas payé. annulé tardiement n’est plus payé pour les AF (modifié)
-        //
+        // en AF il n’y a plus que le absent au bout de 10mn qui est rémuneré sinon c’est no show pas payé. annulé tardivement n’est plus payé pour les AF (modifié)
+        // idem à priori pour les financés
         var t10 = l10.reduce( (ac,cv,i,a) => ac+iPrice1 ,0);   // réalisé
         var t11 = l11.reduce( (ac,cv,i,a) => ac+0 ,0);         // annulé
-        var t12 = l12.reduce( (ac,cv,i,a) => ac+iPrice1 ,0);   // annulé tardivement
+        var t12 = l12.reduce( (ac,cv,i,a) => ac+0 ,0);   //var t12 = l12.reduce( (ac,cv,i,a) => ac+iPrice1 ,0);   // annulé tardivement
         var t13 = l13.reduce( (ac,cv,i,a) => ac+iPrice1/2 ,0); // absent
 
         var t14 = l14.reduce( (ac,cv,i,a) => ac+iPrice1/2 ,0);
@@ -929,7 +1009,7 @@
         //
         var t20 = l20.reduce( (ac,cv,i,a) => ac+iPrice2 ,0);
         var t21 = l21.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t22 = l22.reduce( (ac,cv,i,a) => ac+iPrice2 ,0);
+        var t22 = l22.reduce( (ac,cv,i,a) => ac+0 ,0);
         var t23 = l23.reduce( (ac,cv,i,a) => ac+iPrice2/2 ,0);
 
         var t24 = l24.reduce( (ac,cv,i,a) => ac+iPrice2/2 ,0);
@@ -939,7 +1019,7 @@
         //
         var t30 = l30.reduce( (ac,cv,i,a) => ac+iPrice3 ,0);
         var t31 = l31.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t32 = l32.reduce( (ac,cv,i,a) => ac+iPrice3 ,0);
+        var t32 = l32.reduce( (ac,cv,i,a) => ac+0 ,0);
         var t33 = l33.reduce( (ac,cv,i,a) => ac+iPrice3/2 ,0);
 
         var t34 = l34.reduce( (ac,cv,i,a) => ac+iPrice3/2 ,0);
@@ -949,7 +1029,7 @@
         //
         var t40 = l40.reduce( (ac,cv,i,a) => ac+iPrice4 ,0);
         var t41 = l41.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t42 = l42.reduce( (ac,cv,i,a) => ac+iPrice4 ,0);
+        var t42 = l42.reduce( (ac,cv,i,a) => ac+0 ,0);
         var t43 = l43.reduce( (ac,cv,i,a) => ac+iPrice4/2 ,0);
 
         var t44 = l44.reduce( (ac,cv,i,a) => ac+iPrice4/2 ,0);
@@ -957,7 +1037,7 @@
         var t46 = l46.reduce( (ac,cv,i,a) => ac+0 ,0);
         var t47 = l47.reduce( (ac,cv,i,a) => ac+iPrice4/4 ,0);
 
-        // var soutenance
+        // var defense
         var def = r.filter( v => v.type.toLowerCase() === 'soutenance') || 0;
         var d10 = def.filter( v => v.lvl == 1 && v.status === 'réalisée' && v.isFunded === true);
         var d11 = def.filter( v => v.lvl == 1 && v.status === 'annulée' && v.isFunded === true);
@@ -1043,6 +1123,32 @@
         var t47 = l47.reduce( (ac,cv,i,a) => ac+iPrice4/4 ,0);
 */
 
+        var iSessionCanceledTotal = 0
+        iSessionCanceledTotal+=l11.value().length+l12.value().length+l13.value().length
+        iSessionCanceledTotal+=l21.value().length+l22.value().length+l23.value().length
+        iSessionCanceledTotal+=l31.value().length+l32.value().length+l33.value().length
+        iSessionCanceledTotal+=l41.value().length+l42.value().length+l43.value().length
+        iSessionCanceledTotal+=l15.value().length+l16.value().length+l17.value().length
+        iSessionCanceledTotal+=l25.value().length+l26.value().length+l27.value().length
+        iSessionCanceledTotal+=l35.value().length+l36.value().length+l37.value().length
+        iSessionCanceledTotal+=l45.value().length+l46.value().length+l47.value().length
+
+        var iDefenseCanceledTotal = 0
+        iDefenseCanceledTotal+=d11.value().length+d12.value().length+d13.value().length
+        iDefenseCanceledTotal+=d21.value().length+d22.value().length+d23.value().length
+        iDefenseCanceledTotal+=d31.value().length+d32.value().length+d33.value().length
+        iDefenseCanceledTotal+=d41.value().length+d42.value().length+d43.value().length
+
+        /* Prepare facturation of Boni for AF*/
+
+        var oSessionsAf = r.filter( v => v.type.toLowerCase() !== 'soutenance' && v.status === 'réalisée' && v.isFunded === false);
+        var _temp = oSessionsAf.groupBy( v => v.who_id);
+        var oBonus = []
+        for( var n in _temp.value()){
+            oBonus.push({who_id:n,who_name:_temp.value()[n][0].who_name,sessions:_temp.value()[n].length}); // all elements of test.value()[n] must be the same name because of groupBy id
+        }
+
+
         /* https://www.w3.org/WAI/tutorials/tables/multi-level/ */
         var sHtml ="";
         sHtml+= "<style>.wrapper{  display: grid;grid-gap: 10px;grid-template-column: 1fr 1fr;}</style>";
@@ -1122,13 +1228,55 @@
         sHtml+= '</tr>';
         sHtml+= '</tfoot>';
         sHtml+= '</table>';
-        sHtml+= `<p>Vous avez avez également annulé ${l41.value().length+l11.value().length+l21.value().length+l31.value().length+l45.value().length+l15.value().length+l25.value().length+l35.value().length} sessions</p>`
-        sHtml+= `<p>le total des sessions inclut ${def.value().length} soutenances pour un total de ${df10+df11+df12+df13+df20+df21+df22+df23+df30+df31+df32+df33+df40+df41+df42+df43} €</p>`
+        //sHtml+= `<p>Vous avez avez également annulé ${l41.value().length+l11.value().length+l21.value().length+l31.value().length+l45.value().length+l15.value().length+l25.value().length+l35.value().length} sessions sur un total de ${r.value().length} sessions </p>`
 
+        //sHtml+= `<p>Vous avez avez également annulé ${iSessionCanceledTotal} sessions sur un total de ${r.value().length} sessions </p>`;
+        //sHtml+= `<p>le total des sessions inclut ${def.value().length} soutenances pour un total de ${df10+df11+df12+df13+df20+df21+df22+df23+df30+df31+df32+df33+df40+df41+df42+df43} €</p>`
+        //sHtml+= `<p>Vous avez avez également annulé ${iDefenseCanceledTotal} soutenance sur un total de ${def.value().length} soutenances </p>`;
+        sHtml+= `<p>Soit un total de ${r.value().length} sessions (dont ${iSessionCanceledTotal} annulée(s). Ce total comprend ${def.value().length} soutenance(s) facturées ${df10+df11+df12+df13+df20+df21+df22+df23+df30+df31+df32+df33+df40+df41+df42+df43} €</p>`;
+
+        // suggestion de A Massé : Vous avez fait un total de x sessions (xx.xx€) dont y soutenances (xx.xx€) Z sessions de mentorat (xx.xx€) et W no shows (xx.xx€)
+
+        /* prevent some errors when data not present */
+        let sessionsWithoutStatus = r.filter( v => (v.status !== 'étudiant absent') && (v.status !== 'annulée') && (v.status !== 'annulée tardivement') && (v.status !== 'réalisée'))
+
+        if(sessionsWithoutStatus.value().length!=0){
+           sHtml+= `<p>ATTENTION vous avez ${sessionsWithoutStatus.value().length} session(s) sans statut ou dont le statut n'est pas reconnu (donc non comptabilisé(es), plus d'info dans le log js</p>`;
+           console.log("Session sans statut");
+           console.dir(sessionsWithoutStatus.value());
+        }
+        let sessionsWithoutLevel = r.filter( v => (v.lvl !== "1") && (v.lvl !== "2") && (v.lvl !== "3") && (v.lvl !== "4"))
+        if(sessionsWithoutLevel.value().length!=0){
+            sHtml+= `<p>ATTENTION vous avez ${sessionsWithoutLevel.value().length} session(s) sans niveau ou dont le niveau n'est pas reconnu (donc non comptabilisé(es), plus d'info dans le log js</p>` ;
+            console.log("Sessions sans niveau");
+            console.dir(sessionsWithoutLevel.value());
+        }
+
+        sHtml+="<table>";
+        sHtml+='<caption>Sessions de mentorat Bonus AF</caption>';
+        sHtml+="<thead>";
+        sHtml+="<th>Qui</th><th>Nb Sessions</th><th>PU</th><th>Total</th>";
+        sHtml+="</thead>";
+        sHtml+="<tbody>";
+        var iTotG = 0;
+        for(var t in oBonus){
+            // console.log(`${oBonus[t].sessions*30*4}`)
+            //sHtml+=`<tr><td>${oBonus[t].who_name}</td><td>${oBonus[t].sessions}/4</td><td>30</td><td>${(oBonus[t].session*1)*30/4} €</td></tr>`; //NOTE STT last column evaluated to NaN ... why ?
+            var iTot = oBonus[t].sessions > 4 ? oBonus[t].sessions*30/5 : oBonus[t].sessions*30/4;
+            iTotG+=iTot
+            sHtml+=`<tr><td>${oBonus[t].who_name}</td><td>${oBonus[t].sessions}/${oBonus[t].sessions > 4 ? 5 : 4}</td><td>30</td><td>${iTot} €</td></tr>`;
+        }
+        sHtml+="</tbody>";
+        sHtml+="<tfoot>";
+        //sHtml+=`<tr>total</tr><tr colspan=3>${oBonus.reduce( (r,v,k) => r+v.sessions*30,0 )}</tr>`; // NOTE STT don't work because must be /4 or /5 dependings on total sessions per month per users
+        sHtml+=`<tr><td>total</td><td colspan=3 style="text-align:rigth;padding-rigth:5em;">${iTotG} €</td></tr>`;
+        sHtml+="</tfoot>";
+
+        sHtml+="</table>";
 
         Swal.fire({
-            title: `<strong>Liste des formations tarifées du ${from} au ${to}</strong>`,
-            icon: 'info',
+            title: `<strong>Liste des formations tarifées du ${dtFrom.format("DD/MM/YYYY")} au ${dtTo.format("DD/MM/YYYY")}</strong>`,
+            //icon: 'info',
             html: sHtml,
             showCloseButton: true,
             //showCancelButton: true,
@@ -1136,6 +1284,218 @@
             position: 'center-start',
             grow: 'fullscreen',
         });
+    }
+
+    var calculateBill = function (dtFrom, dtTo){
+
+        var db=sttctx.dbase; // TODO Change this to less ugly
+        var r = db.get('sessions').filter(v => dayjs(v.when).isSameOrBefore(dtTo,'day') && dayjs(v.when).isSameOrAfter(dtFrom,'day'));
+        var iPrice1=30,iPrice2=35,iPrice3=40,iPrice4=50;
+        var aPrice = [0,iPrice1,iPrice2,iPrice3,iPrice4];
+        // segments are the same in all the versions (pre or past) june 2020
+        // lvl1
+ 		var l10 = r.filter( v => v.lvl == 1 && v.status === status_0 && v.isFunded === true);
+        var l11 = r.filter( v => v.lvl == 1 && v.status === status_1 && v.isFunded === true);
+        var l12 = r.filter( v => v.lvl == 1 && v.status === status_2 && v.isFunded === true);
+        var l13 = r.filter( v => v.lvl == 1 && (v.status === status_3_m || v.status === status_3_f) && v.isFunded === true);
+
+        var l14 = r.filter( v => v.lvl == 1 && v.status === status_0 && v.isFunded === false);
+        var l15 = r.filter( v => v.lvl == 1 && v.status === status_1 && v.isFunded === false);
+        var l16 = r.filter( v => v.lvl == 1 && v.status === status_2 && v.isFunded === false);
+        var l17 = r.filter( v => v.lvl == 1 && (v.status === status_3_m || v.status === status_3_f) && v.isFunded === false);
+
+        // lvl 2
+        var l20 = r.filter( v => v.lvl == 2 && v.status === status_0 && v.isFunded === true);
+        var l21 = r.filter( v => v.lvl == 2 && v.status === status_1 && v.isFunded === true);
+        var l22 = r.filter( v => v.lvl == 2 && v.status === status_2 && v.isFunded === true);
+        var l23 = r.filter( v => v.lvl == 2 && (v.status === status_3_m || v.status === status_3_f) && v.isFunded === true);
+
+        var l24 = r.filter( v => v.lvl == 2 && v.status === status_0 && v.isFunded === false);
+        var l25 = r.filter( v => v.lvl == 2 && v.status === status_1 && v.isFunded === false);
+        var l26 = r.filter( v => v.lvl == 2 && v.status === status_2 && v.isFunded === false);
+        var l27 = r.filter( v => v.lvl == 2 && (v.status === status_3_m || v.status === status_3_f) && v.isFunded === false);
+
+        //lvl 3
+        var l30 = r.filter( v => v.lvl == 3 && v.status === status_0 && v.isFunded === true);
+        var l31 = r.filter( v => v.lvl == 3 && v.status === status_1 && v.isFunded === true);
+        var l32 = r.filter( v => v.lvl == 3 && v.status === status_2 && v.isFunded === true);
+        var l33 = r.filter( v => v.lvl == 3 && (v.status === status_3_m || v.status === status_3_f) && v.isFunded === true);
+
+        var l34 = r.filter( v => v.lvl == 3 && v.status === status_0 && v.isFunded === false);
+        var l35 = r.filter( v => v.lvl == 3 && v.status === status_1 && v.isFunded === false);
+        var l36 = r.filter( v => v.lvl == 3 && v.status === status_2 && v.isFunded === false);
+        var l37 = r.filter( v => v.lvl == 3 && (v.status === status_3_m || v.status === status_3_f) && v.isFunded === false);
+
+        // lvl 4
+        var l40 = r.filter( v => v.lvl == 4 && v.status === status_0 && v.isFunded === true) ||0 ;
+        var l41 = r.filter( v => v.lvl == 4 && v.status === status_1 && v.isFunded === true) || 0;
+        var l42 = r.filter( v => v.lvl == 4 && v.status === status_2 && v.isFunded === true) || 0;
+        var l43 = r.filter( v => v.lvl == 4 && (v.status === status_3_m || v.status === status_3_f) && v.isFunded === true) || 0;
+
+        var l44 = r.filter( v => v.lvl == 4 && v.status === status_0 && v.isFunded === false) ||0 ;
+        var l45 = r.filter( v => v.lvl == 4 && v.status === status_1 && v.isFunded === false) || 0;
+        var l46 = r.filter( v => v.lvl == 4 && v.status === status_2 && v.isFunded === false) || 0;
+        var l47 = r.filter( v => v.lvl == 4 && (v.status === status_3_m || v.status === status_3_f) && v.isFunded === false) || 0;
+
+        // var defense
+        var def = r.filter( v => v.type.toLowerCase() === 'soutenance') || 0;
+        var d10 = def.filter( v => v.lvl == 1 && v.status === status_0 && v.isFunded === true);
+        var d11 = def.filter( v => v.lvl == 1 && v.status === status_1 && v.isFunded === true);
+        var d12 = def.filter( v => v.lvl == 1 && v.status === status_2 && v.isFunded === true);
+        var d13 = def.filter( v => v.lvl == 1 && (v.status === status_3_m || v.status === status_3_f) && v.isFunded === true);
+        // must be empty for the moment
+        var d14 = r.filter( v => v.lvl == 1 && v.status === status_0 && v.isFunded === false);
+        var d15 = r.filter( v => v.lvl == 1 && v.status === status_1 && v.isFunded === false);
+        var d16 = r.filter( v => v.lvl == 1 && v.status === status_2 && v.isFunded === false);
+        var d17 = r.filter( v => v.lvl == 1 && (v.status === status_3_m || v.status === status_3_f) && v.isFunded === false);
+
+        //
+        var d20 = def.filter( v => v.lvl == 2 && v.status === status_0 && v.isFunded === true);
+        var d21 = def.filter( v => v.lvl == 2 && v.status === status_1 && v.isFunded === true);
+        var d22 = def.filter( v => v.lvl == 2 && v.status === status_2 && v.isFunded === true);
+        var d23 = def.filter( v => v.lvl == 2 && (v.status === status_3_m || v.status === status_3_f) && v.isFunded === true);
+        // must be empty for the moment
+        var d24 = r.filter( v => v.lvl == 2 && v.status === status_0 && v.isFunded === false);
+        var d25 = r.filter( v => v.lvl == 2 && v.status === status_1 && v.isFunded === false);
+        var d26 = r.filter( v => v.lvl == 2 && v.status === status_2 && v.isFunded === false);
+        var d27 = r.filter( v => v.lvl == 2 && (v.status === status_3_m || v.status === status_3_f) && v.isFunded === false);
+
+        //
+        var d30 = def.filter( v => v.lvl == 3 && v.status === status_0 && v.isFunded === true);
+        var d31 = def.filter( v => v.lvl == 3 && v.status === status_1 && v.isFunded === true);
+        var d32 = def.filter( v => v.lvl == 3 && v.status === status_2 && v.isFunded === true);
+        var d33 = def.filter( v => v.lvl == 3 && (v.status === status_3_m || v.status === status_3_f) && v.isFunded === true);
+        // must be empty for the moment
+        var d34 = r.filter( v => v.lvl == 3 && v.status === status_0 && v.isFunded === false);
+        var d35 = r.filter( v => v.lvl == 3 && v.status === status_1 && v.isFunded === false);
+        var d36 = r.filter( v => v.lvl == 3 && v.status === status_2 && v.isFunded === false);
+        var d37 = r.filter( v => v.lvl == 3 && (v.status === status_3_m || v.status === status_3_f) && v.isFunded === false);
+
+        //
+        var d40 = def.filter( v => v.lvl == 4 && v.status === status_0 && v.isFunded === true) ||0 ;
+        var d41 = def.filter( v => v.lvl == 4 && v.status === status_1 && v.isFunded === true) || 0;
+        var d42 = def.filter( v => v.lvl == 4 && v.status === status_2 && v.isFunded === true) || 0;
+        var d43 = def.filter( v => v.lvl == 4 && (v.status === status_3_m || v.status === status_3_f) && v.isFunded === true) || 0;
+        // must be empty for the moment
+        var d44 = r.filter( v => v.lvl == 4 && v.status === status_0 && v.isFunded === false) ||0 ;
+        var d45 = r.filter( v => v.lvl == 4 && v.status === status_1 && v.isFunded === false) || 0;
+        var d46 = r.filter( v => v.lvl == 4 && v.status === status_2 && v.isFunded === false) || 0;
+        var d47 = r.filter( v => v.lvl == 4 && (v.status === status_3_m || v.status === status_3_f) && v.isFunded === false) || 0;
+
+
+        var myArray = [];
+        var now = dayjs().format('YYYY-MM-DDTHH:mm:ssZ[Z]');
+
+        // ce mode de calcul a un risque majeur .... si on travaille à cheval sur deux mois, ou plus les périodes doivent être du 01 au .... et durer au plus un mois ou etre post 2020
+        // au pire il faudra s'amuser à recalculer ligne à ligne
+        var aPu=[];
+        if(isInOldMode(dtFrom)){
+            aPu[1] = [aPrice[1],0,aPrice[1]/2,aPrice[1]/2,aPrice[1],0,aPrice[1]/2,aPrice[1]/2];
+            aPu[2] = [aPrice[2],0,aPrice[2]/2,aPrice[2]/2,aPrice[2],0,aPrice[2]/2,aPrice[2]/2];
+            aPu[3] = [aPrice[3],0,aPrice[3]/2,aPrice[3]/2,aPrice[3],0,aPrice[3]/2,aPrice[3]/2];
+            aPu[4] = [aPrice[4],0,aPrice[4]/2,aPrice[4]/2,aPrice[4],0,aPrice[4]/2,aPrice[4]/2];
+        } else {
+            aPu[1] = [aPrice[1],0,0,aPrice[1]/2,aPrice[1]/2,0,0,aPrice[1]/4];
+            aPu[2] = [aPrice[2],0,0,aPrice[2]/2,aPrice[2]/2,0,0,aPrice[2]/4];
+            aPu[3] = [aPrice[3],0,0,aPrice[3]/2,aPrice[3]/2,0,0,aPrice[3]/4];
+            aPu[4] = [aPrice[4],0,0,aPrice[4]/2,aPrice[4]/2,0,0,aPrice[4]/4];
+        }
+
+        myArray.push({dtFrom,dtTo,now,errors:[]});
+
+        myArray.push({sessions:{number:[l10,l11,l12,l13,l14,l15,l16,l17],pu:aPu[1]},defenses:{number:[d10,d11,d12,d13,d14,d15,d16,d17],pu:aPu[1]}});
+        myArray.push({sessions:{number:[l20,l21,l22,l23,l24,l25,l26,l27],pu:aPu[2]},defenses:{number:[d20,d21,d22,d23,d24,d25,d26,d27],pu:aPu[2]}});
+        myArray.push({sessions:{number:[l30,l31,l32,l33,l34,l35,l36,l37],pu:aPu[3]},defenses:{number:[d30,d31,d32,d33,d34,d35,d36,d37],pu:aPu[3]}});
+        myArray.push({sessions:{number:[l40,l41,l42,l43,l44,l45,l46,l47],pu:aPu[4]},defenses:{number:[d40,d41,d42,d43,d44,d45,d46,d47],pu:aPu[4]}});
+        /*
+        myArray[1].sessions.number[0].value().length -> renvoie le nombre de sessions de niveau 1 dans la catégorie l10 (autofinancés et statut = réalisée
+        myArray[1].sessions.number[0].value().length * myArray[1].sessions.pu[0] renvoie le CA des sessions de niveau expertise 1 autofinancés et réalisées
+        myArray[3].sessions.pu[4] renvoie le prix unitaire des sessions de niveau 4
+        */
+        return myArray;
+
+    }
+
+    var showBill4= function (){
+        var dtFrom=dayjs("2020-06-01");
+        var dtTo=dayjs("2020-06-30");
+        var r = calculateBill(dtFrom, dtTo);
+        console.log(r);
+   /* https://www.w3.org/WAI/tutorials/tables/multi-level/ */
+        var sHtml ="";
+        var _ref = null;
+        var iTotQ1 = 0
+        var iTotQ2 = 0;
+        var iTotM1 = 0
+        var iTotM2 = 0;
+        sHtml+= "<style>.wrapper{  display: grid;grid-gap: 10px;grid-template-column: 1fr 1fr;}</style>";
+        sHtml+='<div class="wrapper">';
+        sHtml+='<table>';
+        sHtml+='<caption>Sessions de mentorat</caption>';
+        sHtml+='<thead>';
+        sHtml+='<tr>';
+        sHtml+='<th rowspan="2"></th><th colspan="3" scope="colgroup">Financés</th> <th colspan="3" scope="colgroup">Autofinancés</th>';
+        sHtml+='</tr>';
+        sHtml+='<tr>';
+        sHtml+='<th><abbr title="nombre">nb</abbr></th><th>PU(<abbr title="hors taxes">HT</abbr>)</th><th>Total(<abbr title="hors taxes">HT</abbr>)</th>';
+        sHtml+='<th><abbr title="nombre">nb</abbr></th><th>PU(<abbr title="hors taxes">HT</abbr>)</th><th>Total(<abbr title="hors taxes">HT</abbr>)</th>';
+        sHtml+='<th>Total <abbr title="général">G</abbr></th>';
+        sHtml+="</tr>";
+        sHtml+='</thead>';
+        sHtml+='<tbody>';
+        sHtml+='<tr>';
+        sHtml+="<td>Groupe</td>";
+        _ref = r[4].sessions
+        sHtml+=`<td>${_ref.number[0].value().length}</td><td>${_ref.pu[0]}</td><td>${_ref.number[0].value().length*_ref.pu[0]}€</td>`;
+        sHtml+=`<td>${_ref.number[4].value().length}</td><td>${_ref.pu[4]}</td><td>${_ref.number[4].value().length*_ref.pu[4]}€</td>`;
+        iTotQ1+=_ref.number[0].value().length
+        iTotQ2+=_ref.number[4].value().length
+        iTotM1+=_ref.number[0].value().length*_ref.pu[0];
+        iTotM2+=_ref.number[4].value().length*_ref.pu[4];
+        sHtml+=`<td>${iTotM1 + iTotM2}€</td>`;
+        sHtml+="</tr>";
+        sHtml+="<tr>";
+        sHtml+="<td>Niveau 1</td>";
+        _ref = r[1].sessions
+        sHtml+=`<td>${_ref.number[0].value().length}</td><td>${_ref.pu[0]}</td><td>${_ref.number[0].value().length*_ref.pu[0]}€</td>`;
+        sHtml+=`<td>${_ref.number[4].value().length}</td><td>${_ref.pu[4]}</td><td>${_ref.number[4].value().length*_ref.pu[4]}€</td>`;
+        iTotQ1+=_ref.number[0].value().length
+        iTotQ2+=_ref.number[4].value().length
+        iTotM1+=_ref.number[0].value().length*_ref.pu[0]
+        iTotM2+=_ref.number[4].value().length*_ref.pu[4]
+        sHtml+=`<td>${iTotM1 + iTotM2}€</td>`;
+        sHtml+='</tr>';
+        sHtml+='</tbody>';
+        sHtml+='<tfoot>';
+        sHtml+='<tr>';
+        sHtml+="<td>Total</td>";
+        sHtml+=`<td>${iTotQ1}</td><td></td><td>${iTotM1}€</td>`;
+        sHtml+=`<td>${iTotQ2}</td><td></td><td>${iTotM2}€</td>`;
+        sHtml+=`<td>${iTotM2+iTotM2}€</td>`;
+        sHtml+='</tr>';
+        sHtml+='<tr>';
+        sHtml+=`<td>Grand Total</td><td>${iTotQ1+iTotQ2}</td><td></td><td>${iTotM1+iTotM2}€</td>`;
+        sHtml+='</tr>';
+        sHtml+='</tfoot>';
+        sHtml+='</table>'
+
+        //sHtml+= `<p>Vous avez avez également annulé ${l41.value().length+l11.value().length+l21.value().length+l31.value().length+l45.value().length+l15.value().length+l25.value().length+l35.value().length} sessions sur un total de ${r.value().length} sessions </p>`
+
+        //sHtml+= `<p>Vous avez avez également annulé ${iSessionCanceledTotal} sessions sur un total de ${r.value().length} sessions </p>`;
+        //sHtml+= `<p>le total des sessions inclut ${def.value().length} soutenances pour un total de ${df10+df11+df12+df13+df20+df21+df22+df23+df30+df31+df32+df33+df40+df41+df42+df43} €</p>`
+        //sHtml+= `<p>Vous avez avez également annulé ${iDefenseCanceledTotal} soutenance sur un total de ${def.value().length} soutenances </p>`;
+        //sHtml+= `<p>Soit un total de ${r.value().length} sessions (dont ${iSessionCanceledTotal} annulée(s). Ce total comprend ${def.value().length} soutenance(s) facturées ${df10+df11+df12+df13+df20+df21+df22+df23+df30+df31+df32+df33+df40+df41+df42+df43} €</p>`;
+        Swal.fire({
+            title: `<strong>Liste des formations tarifées du ${dtFrom.format("DD/MM/YYYY")} au ${dtTo.format("DD/MM/YYYY")}</strong>`,
+            //icon: 'info',
+            html: sHtml,
+            showCloseButton: true,
+            //showCancelButton: true,
+            focusConfirm: false,
+            position: 'center-start',
+            grow: 'fullscreen',
+        });
+
     }
 
     var razDbase = async function(){
@@ -1253,7 +1613,7 @@
          //.reverse()
          .value();
 
-        console.dir(r);
+        //console.dir(r);
 
         var sHtml ="";
         sHtml += "<table>";
@@ -1273,10 +1633,10 @@
             var iFPu = 0;
             var bOldMode = true;
             if(isInOldMode(dayjs(r[i].when))){
-                if (r[i].status === "réalisée" || r[i].status === "annulée tardivement"){
+                if (r[i].status === "réalisée"){
                     iFPu = iPu;
                 } else {
-                    if (r[i].status === "étudiant absent"  ){
+                    if (r[i].status === "étudiant absent" || r[i].status === "annulée tardivement" ){
                         iFPu = iPu * 0.5;
                     }
                 }
@@ -1285,7 +1645,7 @@
                 if (r[i].status === "réalisée"){
                     iFPu = iPu;
                 } else {
-                    if (r[i].status === "étudiant absent" || r[i].status === "annulée tardivement" ){
+                    if (r[i].status === "étudiant absent" ){
                         iFPu = iPu * 0.5;
                     }
                 }
@@ -1367,15 +1727,15 @@
         addButton('getStudents', getStudents, {},div);
         addButton('addCbox', addCbox, {},div);
         addButton('collectChecked', collectChecked, {},div);
-        addButton('CollectAuto', sandBox, {}, div);
+        addButton('CollectAuto', historyFetch, {}, div);
         addButton('showBill', showBill, {},div);
         //addButton('HideCookies', hideCookies, {},div);
         //addButton('Fetch', fetchG, {},div);
         addButton('billInDetails', billInDetails, {},div);
         addButton('RAZ', razDbase, {},div);
         addButton('SList', showStudentsList, {}, div);
-        
         //addButton('DbgMode', debugMode, {}, div);
+        //addButton('calculateBill', showBill4, {}, div);
         addButton('about', about, {},div);
     }
 
@@ -1467,6 +1827,8 @@
         GM_addStyle( GM_getResourceText("jspanelcss") );
         GM_addStyle( GM_getResourceText("toastifycss") );
         GM_addStyle( GM_getResourceText("simpledatatablecss") );
+        /* SPECTRE CSS */
+        // fonctionne mal avec le thème oc GM_addStyle( GM_getResourceText("spectrecss") );
         GM_registerMenuCommand('OC Facturier - configure', opencfg);
         /* hacks */
         if(GM_config.get('hackheaderzindex') === true){
@@ -1474,6 +1836,7 @@
         }
         /* set size of content */
         GM_addStyle('.swal2-content{font-size:'+GM_config.get('sizeofcontentlist')+'}');
+        GM_addStyle('.swal2-title{font-size:1.275em)'); // set by default to 1.875em by CSS of SWAL
         main();
     });
 
@@ -1520,16 +1883,15 @@
             title: 'Configuration du module',
             fields:
             {
-                billdate:
-                {
-                    section: ['Facturation', 'date'],
-                    label: 'date de facturation',
+                maxfetchpg:{
+                    section: ['Application', 'optimisation'],
+                    label: "Maximum de page recherchées dans l'historique",
                     labelPos: 'left',
-                    title: 'dd/mm/yyyy', // Add a tooltip (hover over text)
-                    type: 'textarea',
+                    type: 'input',
+                    default: 1000,
                 },
-
                 sizeofcontentlist:{
+                    section: ['Interface', 'thème'],
                     label: 'taille de la police des listes',
                     labelPos: 'left',
                     type: 'input',
@@ -1537,53 +1899,13 @@
                 },
 
                 alwaysaddcbox:{
+                    section: ['Interface', 'gadget'],
                     label: 'Toujours ajouter les checkbox',
                     labelPos: 'left',
                     type: 'checkbox',
                     default: true,
                 },
-
-
-                defaultcomment:
-                {
-                    section: ['Global', 'pamètres généraux'],
-                    label: 'commentaire par défaut',
-                    labelPos: 'left',
-                    'title': 'Merci de ne saisir que du markdown!', // Add a tooltip (hover over text)
-                    type: 'textarea',
-                    default: '**Avis global & verdict sur le travail de l\'étudiant:**\n \
-\n> Le travail correspond aux attentes sur le projet à savoir\n \n> - [x] Lorem\n \
-\n**Avis sur les livrables:**\n \n**Avis sur la présentation:**\n \n- Lorem\n \
-\n**Avis sur la compréhension et la réalisation du projet:**\n  \n- Lorem\n \
-\n**Points positifs:**\n \n- Lorem\n \
-\n**Axes d\'amélioration:**\n \n- Lorem\n',
-                },
-
-                'hidecookies':{
-                    label: 'hidecookies',
-                    labelPos: 'left',
-                    type: 'checkbox',
-                    default: true,
-                },
-
-
-                'usesignature':
-                {
-                    section: ['Signature', 'tweaks signature'],
-                    label: 'utiliser une signature',
-                    labelPos: 'left',
-                    type: 'checkbox',
-                    default: true,
-                },
-                signature: {
-                    label: 'signature',
-                    labelPos: 'left',
-                    type: 'input',
-                    default: 'Anonymous',
-                },
-                'hackheaderzindex':
-                {
-                    section: ['Cache', 'option pour la sauvegarde'],
+                'hackheaderzindex':{
                     label: 'changer le zindex du bandeau haut',
                     labelPos: 'left',
                     type: 'checkbox',
@@ -1591,11 +1913,11 @@
                 },
                 support: {
                     section: ['', 'Support'],
-                    label: 'almaceleste.github.io',
-                    title: 'more info on almaceleste.github.io',
+                    label: 'StephaneTy-Pro.github.io',
+                    title: 'more info on https://github.com/StephaneTy-Pro',
                     type: 'button',
                     click: () => {
-                        GM_openInTab('https://almaceleste.github.io', {
+                        GM_openInTab('https://github.com/StephaneTy-Pro/OC-Mentors-AccountAddon', {
                             active: true,
                             insert: true,
                             setParent: true
