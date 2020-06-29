@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Facturier
 // @namespace    http://tampermonkey.net/
-// @version      0.6
+// @version      0.7
 // @description  try to take over the world!
 // @author       Stéphane TORCHY
 // @updateURL    https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/billing.js
@@ -52,6 +52,9 @@
 //spectreCSS - dommage fonctionne mal avec le thème OC
 // @resource    spectrecss https://unpkg.com/spectre.css/dist/spectre.min.css
 
+// @require https://raw.githubusercontent.com/anywhichway/nano-memoize/master/dist/nano-memoize.min.js
+// @require https://cdn.jsdelivr.net/npm/moize@5.4.7/dist/moize.min.js
+
 
 /*
  * History
@@ -80,6 +83,13 @@
  * 0.6
  *      Travail sur la pré facture : changement du code pour une meilleure performance et pour permettre la réalisation de stat mensuselle : créattion d'un module spécifique
  *      GROS BUG A CORRIGER le statut étudiante absente existe !!!!!!
+ *      debut du travail sur le module de statistique
+ * 0.7
+ *      Suite module de statistiques
+ *      Utilisation de memoize pour mettre en cache le tableau
+ *      UI Suppression du bouton getstudents qui ne sert plus à rien car lancé en automatique si l'étudiant n'est pas trouvé dans la liste
+ *      Correction du bug pour Antony (document.arrive non disponible... mise en place provisioire d'un event alternatif)
+ *      TODO ? mettre en cache les requetes pour les page historique ?
  * TODO
  * BUG hugo a diagnostiqué un bug en mise à jour des étudiants sur le financement dans le popup orange ... note STT je présume qu'il s'agit d'un probleme dû à l'async car le console.log est bon lui et l'entrée en BDD également
  * popup qui vient dire que tout c'est bien passé suite à la collecte des données de session ( A FAIRE)
@@ -1298,10 +1308,35 @@
             grow: 'fullscreen',
         });
     }
+    var calculateBill = function(dtFrom, dtTo){
 
-    var calculateBill = function (dtFrom, dtTo){
+         //aData.push(memoized(dtCurFrom.format("YYYY-MM-DD"), dtCurTo.format("YYYY-MM-DD")));
+        //const memoized = nanomemoize(calculateBill,{maxAge:50000});
+        //const memoized = moize.default(_calculateBill,{maxAge:500000,  onCacheAdd: function(c,o,m){console.log("cache add");console.dir(c.keys);/*console.dir(o);console.dir(m)*/;}, onCacheHit: function(){console.log("cache hit");}});
+
+        // NOTESTT for a unknow reason object are not converted to same date (perhaps because of conversion to endofmoth so for cachine only use string keys
+        // example : 0: Array [ "|\"2020-03-31T22:00:00.000Z\"|\"2020-04-29T22:00:00.000Z\"|" ]
+        //1: Array [ "|\"2020-04-30T22:00:00.000Z\"|\"2020-05-30T22:00:00.000Z\"|" ]
+        //2: Array [ "|\"2020-05-31T22:00:00.000Z\"|\"2020-06-29T22:00:00.000Z\"|" ]
+        // 3: Array [ "|\"2020-05-31T22:00:00.000Z\"|\"2020-06-30T21:59:59.999Z\"|" ]
+        //4: Array [ "|\"2020-04-30T22:00:00.000Z\"|\"2020-05-31T21:59:59.999Z\"|" ]
+        //5: Array [ "|\"2020-03-31T22:00:00.000Z\"|\"2020-04-30T21:59:59.999Z\"|" ]
+        //6: Array [ "|\"2020-02-29T23:00:00.000Z\"|\"2020-03-31T21:59:59.999Z\"|" ]
+        //7: Array [ "|\"2020-01-31T23:00:00.000Z\"|\"2020-02-29T22:59:59.999Z\"|" ]
+        //8: Array [ "|\"2019-12-31T23:00:00.000Z\"|\"2020-01-31T22:59:59.999Z\"|" ]
+        if (typeof dtFrom !== 'string'){ dtFrom = dayjs(dtFrom).format("YYYY-MM-DD");};
+        if (typeof dtTo !== 'string'){ dtTo = dayjs(dtTo).format("YYYY-MM-DD"); }
+
+        return memoized(dtFrom, dtTo);
+    }
+
+    var _calculateBill = function (dtFrom, dtTo){
 
         //UIShowLoading();
+
+        // cast to date type
+        if (typeof dtFrom === 'string'){ dtFrom = dayjs(dtFrom)};
+        if (typeof dtTo === 'string'){ dtTo = dayjs(dtTo) }
 
         var t0 = performance.now();
 
@@ -1855,7 +1890,7 @@
             if (_k == 0) continue; // NOTESTT === is an error cause this is a ref not an integer
             for (_i in [...Array(8).keys()]){ // NOTESTT: ~ pythonic range ... could use _range too
                 let _t = r[_k].defenses.number[_i]//.value().length
-                console.log(`calcul des soutenance level ${_k}, section ${_i} (i:0=10, i:1=11 ....) = ${_t}`);
+                //console.log(`calcul des soutenance level ${_k}, section ${_i} (i:0=10, i:1=11 ....) = ${_t}`);
                 iTotalDefenses += _t;
                 iTotalHtDefenses += _t * r[_k].defenses.pu[_i];
             }
@@ -2024,6 +2059,8 @@
         while (dtCurFrom.isSameOrBefore(dtTo,'day')){
             let dtCurTo = dtCurFrom.endOf('month')
             aData.push(calculateBill(dtCurFrom, dtCurTo));
+            //aData.push(calculateBill(dtCurFrom.format("YYYY-MM-DD"), dtCurTo.format("YYYY-MM-DD")));
+            //console.log(`calculateBill(${dtCurFrom}, ${dtCurTo});`);
             dtCurFrom = dtCurFrom.add(1, 'month');
         }
 
@@ -2258,6 +2295,8 @@
     var about = function(){
         var sHtml ="";
 
+        sHtml+="dans l'idéal parse le read.me de github";
+
 
 
         Swal.fire({
@@ -2304,7 +2343,7 @@
         div.appendChild(subDiv);
         div.classList.add('panel', 'menuBar', 'flex', 'draggable');
         document.body.appendFirst(div);
-        addButton('getStudents', getStudents, {},div);
+        //addButton('getStudents', getStudents, {},div);
         addButton('addCbox', addCbox, {},div);
         addButton('collectChecked', collectChecked, {},div);
         addButton('CollectAuto', historyFetch, {}, div);
@@ -2492,8 +2531,30 @@
         main();
     });
 
+    if (typeof document.arrive !== 'function'){
+        docReady(function() {
+            // 'this' refers to the newly created element
+            console.log("%cinSetup","background-color:green;color:white");
+            // chargement des CSS de jspnael
+            GM_addStyle( GM_getResourceText("jspanelcss") );
+            GM_addStyle( GM_getResourceText("toastifycss") );
+            GM_addStyle( GM_getResourceText("simpledatatablecss") );
+            /* SPECTRE CSS */
+            // fonctionne mal avec le thème oc GM_addStyle( GM_getResourceText("spectrecss") );
+            GM_registerMenuCommand('OC Facturier - configure', opencfg);
+            /* hacks */
+            if(GM_config.get('hackheaderzindex') === true){
+                document.getElementById('header').style.zIndex = 0; // because z index is 1000 in oc rules
+            }
+            /* set size of content */
+            GM_addStyle('.swal2-content{font-size:'+GM_config.get('sizeofcontentlist')+'}');
+            GM_addStyle('.swal2-title{font-size:1.275em)'); // set by default to 1.875em by CSS of SWAL
+            main();
+        });
+    }
+
    var main = function(){
-       console.log('%cMainLoaded','background-color:green;color:white');
+       console.log('​​​%cMainLoaded​​​','background-color:green;color:white');
        var adapter = new LocalStorage('db');
        var db = low(adapter);
        db.defaults({ students: [] , pricing: [], sessions: [] }).write()
@@ -2515,13 +2576,16 @@
        if(GM_config.get("alwaysaddcbox") === true){addCbox();} // add checkbox to element in history
    }
 
-
     // Your code here...
-
-   // ----------------------------------------------------------- Tampermonkey Menu
+    // memoize
+    // isSerialized allow function to use object cf doc : isSerialized -> should the parameters be serialized instead of directly referenced
+    const memoized = moize.default(_calculateBill,{maxAge:500000,  isSerialized: true, onCacheAdd: function(c,o,m){console.log("cache add");console.dir(c.keys);/*console.dir(o);console.dir(m)*/;}, onCacheHit: function(){console.log("cache hit");}});
+    // ----------------------------------------------------------- Tampermonkey Menu
     const windowcss = '#OCAddonsCfg {background-color: lightblue;} #OCAddonsCfg .reset_holder {float: left; position: relative; bottom: -1em;} #OCAddonsCfg .saveclose_buttons {margin: .7em;}';
     const iframecss = 'height: 16.7em; width: 30em; border: 1px solid; border-radius: 3px; position: fixed; z-index: 999;';
     const dbgcss    = 'position: absolute;top: 5px; left: 5px; right: 5px; bottom: 5px;padding: 10px;overflow-y: auto;display: none;background: rgba(250, 250, 250, 0.3);border: 3px solid #888;font: 14px Consolas,Monaco,Monospace;color: #ddd;z-index: 500';
+
+
 
     function opencfg()
     {
