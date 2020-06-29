@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Facturier
 // @namespace    http://tampermonkey.net/
-// @version      0.7
+// @version      0.7.0001
 // @description  try to take over the world!
 // @author       Stéphane TORCHY
 // @updateURL    https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/billing.js
@@ -52,9 +52,11 @@
 //spectreCSS - dommage fonctionne mal avec le thème OC
 // @resource    spectrecss https://unpkg.com/spectre.css/dist/spectre.min.css
 
-// @require https://raw.githubusercontent.com/anywhichway/nano-memoize/master/dist/nano-memoize.min.js
+// require https://raw.githubusercontent.com/anywhichway/nano-memoize/master/dist/nano-memoize.min.js
 // @require https://cdn.jsdelivr.net/npm/moize@5.4.7/dist/moize.min.js
 
+// @require https://raw.githubusercontent.com/StephaneTy-Pro/userscripts/master/fetch-inject.umd.min.js
+// require https://cdn.jsdelivr.net/npm/fetch-inject
 
 /*
  * History
@@ -2353,8 +2355,8 @@
         addButton('billInDetails', billInDetails, {},div);
         addButton('RAZ', razDbase, {},div);
         addButton('SList', showStudentsList, {}, div);
-        //addButton('DbgMode', debugMode, {}, div);
-        addButton('statistics', statistics1, {}, div);
+        addButton('DbgMode', debugMode, {}, div);
+        //addButton('statistics', statistics1, {}, div);
         addButton('about', about, {},div);
     }
 
@@ -2510,8 +2512,44 @@
 
     // ----------------------------- EntryPoint
 
-    // when avatar if loaded start application
-    document.arrive(".MuiAvatar-img", function() {
+    /**
+     * More accurately check the type of a JavaScript object
+     * @param  {Object} obj The object
+     * @return {String}     The object type
+     * SRC https://github.com/cferdinandi/reef/blob/master/src/components/reef.js
+     */
+    var trueTypeOf = function (obj) {
+        return Object.prototype.toString.call(obj).slice(8, -1).toLowerCase();
+    };
+    _.trueTypeOf = trueTypeOf;
+    // adapted from https://github.com/cferdinandi
+    var checkSupport = function () {
+        if (!window.DOMParser) return false;
+        var parser = new DOMParser();
+        try {
+            parser.parseFromString('x', 'text/html');
+        } catch(err) {
+            return false;
+        }
+        return true;
+
+        if(_.trueTypeOf(document.arrive) !== 'function'){
+           fetchInject([
+            'https://raw.githubusercontent.com/StephaneTy-Pro/userscripts/master/arrive.min.js'
+           ]).then(() => {
+            console.log(`external arrive.min.js loaded`);
+            document.arrive(".MuiAvatar-img", _warmup);
+        })
+        }
+
+
+    }
+    // https://github.com/cferdinandi/reef/blob/master/src/components/reef.js
+
+
+
+    var _warmup = function(){
+
         // 'this' refers to the newly created element
         console.log("%cinSetup","background-color:green;color:white");
         // chargement des CSS de jspnael
@@ -2529,29 +2567,11 @@
         GM_addStyle('.swal2-content{font-size:'+GM_config.get('sizeofcontentlist')+'}');
         GM_addStyle('.swal2-title{font-size:1.275em)'); // set by default to 1.875em by CSS of SWAL
         main();
-    });
-
-    if (typeof document.arrive !== 'function'){
-        docReady(function() {
-            // 'this' refers to the newly created element
-            console.log("%cinSetup","background-color:green;color:white");
-            // chargement des CSS de jspnael
-            GM_addStyle( GM_getResourceText("jspanelcss") );
-            GM_addStyle( GM_getResourceText("toastifycss") );
-            GM_addStyle( GM_getResourceText("simpledatatablecss") );
-            /* SPECTRE CSS */
-            // fonctionne mal avec le thème oc GM_addStyle( GM_getResourceText("spectrecss") );
-            GM_registerMenuCommand('OC Facturier - configure', opencfg);
-            /* hacks */
-            if(GM_config.get('hackheaderzindex') === true){
-                document.getElementById('header').style.zIndex = 0; // because z index is 1000 in oc rules
-            }
-            /* set size of content */
-            GM_addStyle('.swal2-content{font-size:'+GM_config.get('sizeofcontentlist')+'}');
-            GM_addStyle('.swal2-title{font-size:1.275em)'); // set by default to 1.875em by CSS of SWAL
-            main();
-        });
     }
+
+    checkSupport(); //TODO better use it
+    // when avatar if loaded start application
+    document.arrive(".MuiAvatar-img", _warmup);
 
    var main = function(){
        console.log('​​​%cMainLoaded​​​','background-color:green;color:white');
