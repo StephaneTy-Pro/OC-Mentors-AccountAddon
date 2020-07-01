@@ -1,24 +1,45 @@
 # OC-Mentors-AccountAddon
+Cet addon vise à aider le mentor à préparer sa facture mensuelle, mais aussi à voir l'évolution de sa facturation via le module de statistiques intégré
 
 ## Installation
+
+### Préalable
 Commencer par installer tampermonkey (greasmonkey ou violetmonkey devraient fonctionner mais je n'ai pas testé)
-Aller dans le menu Tampermonkey et selectionner ajouter un nouveau script
+
+### Installation du script
+Aller dans le menu Tampermonkey et selectionner ajouter un nouveau script, ajouter le lien sur ce script
+
 
 ## Utilisation
 
-la barre de menu ne s'affiche que si on est dans l'historique OC
+Avant toute chose veuillez noter que la barre de menu ne s'affiche que si on est dans l'historique OC
+Cette barre de menu peut être déplacée en positionnant votre curseur sur le rond gris , il ne vous reste plus qu'à cliquer et déplacer 
 
 **Boutons**
 
 RAZ remise à jour de la bdd
 
-CBOX créer des checkbox pour spécifier les informations à prendre en compte 
+ADDCBOX : créée des checkbox pour spécifier les informations à prendre en compte (les ajouter à la bdd des sessions)
 
-Collect PErmet de les ajouter à la bdd
+COLLECTCHECKED :Permet d'ajouter les élements cochés à la bdd
 
-Bill Facture
+COLLECTAUTO : Permet de spécifier une période et de collecter automatiquement les sessions pour les ajouter en base
 
-Detail Facture de détail
+SHOWBILL : Afficher la facture
+
+BILLINDETAILS : Afficher la facture en détail
+
+RAZ : Suppression d'élements en bdd
+
+SLIST : Affichage de la liste des étudiants
+ 
+STATISTICS : Statistiques sur les sessions
+
+ABOUT : En savoir plus
+
+## Configuration
+
+Si vous faites un click gauche sur l'icone présent dans la barre de votre navigateur vous devriez voir apparaitre un menu avec une option "OC- facturier- configure", vous pourrez notamment définir les temps passé par type de session pour calculer votre THM
 
 ## Mise à jour
 
