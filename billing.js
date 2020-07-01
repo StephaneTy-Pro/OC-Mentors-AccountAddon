@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Facturier
 // @namespace    http://tampermonkey.net/
-// @version      0.7.0001
+// @version      0.8
 // @description  try to take over the world!
 // @author       Stéphane TORCHY
 // @updateURL    https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/billing.js
@@ -58,6 +58,9 @@
 // @require https://raw.githubusercontent.com/StephaneTy-Pro/userscripts/master/fetch-inject.umd.min.js
 // require https://cdn.jsdelivr.net/npm/fetch-inject
 
+// PARSER MKDOWN
+// @require 	 https://cdn.jsdelivr.net/npm/showdown@1.9.1/dist/showdown.min.js
+
 /*
  * History
  * 0.3 Première version publique
@@ -91,13 +94,24 @@
  *      Utilisation de memoize pour mettre en cache le tableau
  *      UI Suppression du bouton getstudents qui ne sert plus à rien car lancé en automatique si l'étudiant n'est pas trouvé dans la liste
  *      Correction du bug pour Antony (document.arrive non disponible... mise en place provisioire d'un event alternatif)
+ * 0.7.0001
+ *      Version pour corriger le bug d'antony (deuxieme essai)
+ * 0.8
+ *      Correction d'un bug sur l'affichage des prix unitaires
+ *      Ajout de la possibilité en configuration de régler le temps de mise en cache dans le menu de configuration du "plugin"
+ *      Ajout du read.me dans le about
+ *      Correction du bug sur le mois dans les stat
+ *      Corrections de bugs divers
+ *      Nettoyage du code, mises en commentaires de console
+ *      Ajout de la notion de canceled dans les statistiques
+ *      Ajout du paramétrage du nombre d'heure nécessaire par type de session pour les stats
  *      TODO ? mettre en cache les requetes pour les page historique ?
  * TODO
  * BUG hugo a diagnostiqué un bug en mise à jour des étudiants sur le financement dans le popup orange ... note STT je présume qu'il s'agit d'un probleme dû à l'async car le console.log est bon lui et l'entrée en BDD également
  * popup qui vient dire que tout c'est bien passé suite à la collecte des données de session ( A FAIRE)
  * toaster .... passer sur une seule et unique librairie
  * paramètres de l'application à nettoyer
- * BUG recensé par anthony chez lui le script qui gère le chargement de la page est bloqué ....
+ *
  */
 
 
@@ -394,13 +408,13 @@
                     }
                 }
                 // check date of session
-                console.log("will check fund mode");
-                    oSession.isFunded = !(IsStudentAutoFunded(oSession.who_id));
+                //console.log("will check fund mode");
+                oSession.isFunded = !(IsStudentAutoFunded(oSession.who_id));
                 }
 
             }
         // because of Difference between AF and not AF
-        console.log("is student funded ?", oSession.isFunded)
+        //console.log("is student funded ?", oSession.isFunded)
 
         if(bCheckExistsBeforAdd){
             if (IsSessionInDb(oSession.id) == false){
@@ -795,521 +809,10 @@
          }
     }
 
-    var billPhase1 = function(r,dtFrom,dtTo){
-        var iPrice1=30,iPrice2=35,iPrice3=40,iPrice4=50;
-        var l10 = r.filter( v => v.lvl == 1 && v.status === 'réalisée');
-        var l11 = r.filter( v => v.lvl == 1 && v.status === 'annulée');
-        var l12 = r.filter( v => v.lvl == 1 && v.status === 'annulée tardivement');
-        var l13 = r.filter( v => v.lvl == 1 && v.status === 'étudiant absent');
-        //
-        var l20 = r.filter( v => v.lvl == 2 && v.status === 'réalisée');
-        var l21 = r.filter( v => v.lvl == 2 && v.status === 'annulée');
-        var l22 = r.filter( v => v.lvl == 2 && v.status === 'annulée tardivement');
-        var l23 = r.filter( v => v.lvl == 2 && v.status === 'étudiant absent');
-        //
-        var l30 = r.filter( v => v.lvl == 3 && v.status === 'réalisée');
-        var l31 = r.filter( v => v.lvl == 3 && v.status === 'annulée');
-        var l32 = r.filter( v => v.lvl == 3 && v.status === 'annulée tardivement');
-        var l33 = r.filter( v => v.lvl == 3 && v.status === 'étudiant absent');
-        //
-        var l40 = r.filter( v => v.lvl == 4 && v.status === 'réalisée') ||0 ;
-        var l41 = r.filter( v => v.lvl == 4 && v.status === 'annulée') || 0;
-        var l42 = r.filter( v => v.lvl == 4 && v.status === 'annulée tardivement') || 0;
-        var l43 = r.filter( v => v.lvl == 4 && v.status === 'étudiant absent') || 0;
-        //
-        var t10 = l10.reduce( (ac,cv,i,a) => ac+iPrice1 ,0);
-        var t11 = l11.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t12 = l12.reduce( (ac,cv,i,a) => ac+iPrice1/2 ,0);
-        var t13 = l13.reduce( (ac,cv,i,a) => ac+iPrice1/2 ,0);
-        //
-        var t20 = l20.reduce( (ac,cv,i,a) => ac+iPrice2 ,0);
-        var t21 = l21.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t22 = l22.reduce( (ac,cv,i,a) => ac+iPrice2/2 ,0);
-        var t23 = l23.reduce( (ac,cv,i,a) => ac+iPrice2/2 ,0);
-        //
-        var t30 = l30.reduce( (ac,cv,i,a) => ac+iPrice3 ,0);
-        var t31 = l31.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t32 = l32.reduce( (ac,cv,i,a) => ac+iPrice3/2 ,0);
-        var t33 = l33.reduce( (ac,cv,i,a) => ac+iPrice3/2 ,0);
-        //
-        var t40 = l40.reduce( (ac,cv,i,a) => ac+iPrice4 ,0);
-        var t41 = l41.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t42 = l42.reduce( (ac,cv,i,a) => ac+iPrice4/2 ,0);
-        var t43 = l43.reduce( (ac,cv,i,a) => ac+iPrice4/2 ,0);
-
-        // calculate defense
-        var def = r.filter( v => v.type.toLowerCase() === 'soutenance') || 0;
-        var d10 = def.filter( v => v.lvl == 1 && v.status === 'réalisée' && v.isFunded === true);
-        var d11 = def.filter( v => v.lvl == 1 && v.status === 'annulée' && v.isFunded === true);
-        var d12 = def.filter( v => v.lvl == 1 && v.status === 'annulée tardivement' && v.isFunded === true);
-        var d13 = def.filter( v => v.lvl == 1 && v.status === 'étudiant absent' && v.isFunded === true);
-        //
-        var d20 = def.filter( v => v.lvl == 2 && v.status === 'réalisée' && v.isFunded === true);
-        var d21 = def.filter( v => v.lvl == 2 && v.status === 'annulée' && v.isFunded === true);
-        var d22 = def.filter( v => v.lvl == 2 && v.status === 'annulée tardivement' && v.isFunded === true);
-        var d23 = def.filter( v => v.lvl == 2 && v.status === 'étudiant absent' && v.isFunded === true);
-        //
-        var d30 = def.filter( v => v.lvl == 3 && v.status === 'réalisée' && v.isFunded === true);
-        var d31 = def.filter( v => v.lvl == 3 && v.status === 'annulée' && v.isFunded === true);
-        var d32 = def.filter( v => v.lvl == 3 && v.status === 'annulée tardivement' && v.isFunded === true);
-        var d33 = def.filter( v => v.lvl == 3 && v.status === 'étudiant absent' && v.isFunded === true);
-        //
-        var d40 = def.filter( v => v.lvl == 4 && v.status === 'réalisée' && v.isFunded === true) ||0 ;
-        var d41 = def.filter( v => v.lvl == 4 && v.status === 'annulée' && v.isFunded === true) || 0;
-        var d42 = def.filter( v => v.lvl == 4 && v.status === 'annulée tardivement' && v.isFunded === true) || 0;
-        var d43 = def.filter( v => v.lvl == 4 && v.status === 'étudiant absent' && v.isFunded === true) || 0;
-
-        var df10 = d10.reduce( (ac,cv,i,a) => ac+iPrice1 ,0);
-        var df11 = d11.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var df12 = d12.reduce( (ac,cv,i,a) => ac+iPrice1/2 ,0);
-        var df13 = d13.reduce( (ac,cv,i,a) => ac+iPrice1/2 ,0);
-        //
-        var df20 = d20.reduce( (ac,cv,i,a) => ac+iPrice2 ,0);
-        var df21 = d21.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var df22 = d22.reduce( (ac,cv,i,a) => ac+iPrice2/2 ,0);
-        var df23 = d23.reduce( (ac,cv,i,a) => ac+iPrice2/2 ,0);
-        //
-        var df30 = d30.reduce( (ac,cv,i,a) => ac+iPrice3 ,0);
-        var df31 = d31.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var df32 = d32.reduce( (ac,cv,i,a) => ac+iPrice3/2 ,0);
-        var df33 = d33.reduce( (ac,cv,i,a) => ac+iPrice3/2 ,0);
-        //
-        var df40 = d40.reduce( (ac,cv,i,a) => ac+iPrice4 ,0);
-        var df41 = d41.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var df42 = d42.reduce( (ac,cv,i,a) => ac+iPrice4/2 ,0);
-        var df43 = d43.reduce( (ac,cv,i,a) => ac+iPrice4/2 ,0);
-
-
-        var sHtml = '<table>';
-        sHtml+= '<caption>Sessions de mentorat</caption>';
-        sHtml+= '<thead>';
-        sHtml+= '<tr>';
-        sHtml+= `<th>Type de session</th><th>Nombre de sessions</th><th>Montant unitaire (HT)</th><th>Montant à facturer (HT)</th>`;
-        sHtml+= '</tr>';
-        sHtml+= '</thead>';
-        sHtml+= '<tbody>';
-        sHtml+= '<tr>';
-        sHtml+= `<td>Sessions de groupe</td><td>${l40.value().length}</td><td>${iPrice4}</td><td>${t40}€</td>`;
-        sHtml+= '</tr>';
-        sHtml+= '<tr>';
-        sHtml+= `<td>de Niveau d'expertise 1</td><td>${l10.value().length}</td><td>${iPrice1}</td><td>${t10}€</td>`;
-        sHtml+= '</tr>';
-        sHtml+= '<tr>';
-        sHtml+= `<td>de Niveau d'expertise 2</td><td>${l20.value().length}</td><td>${iPrice2}</td><td>${t20}€</td>`;
-        sHtml+= '</tr>';
-        sHtml+= '<tr>';
-        sHtml+= `<td>de Niveau d'expertise 3</td><td>${l30.value().length}</td><td>${iPrice3}</td><td>${t30}€</td>`;
-        sHtml+= '</tr>';
-        sHtml+= '</tbody>';
-        sHtml+= '<tfoot>';
-        sHtml+= '<tr>';
-        sHtml+= `<td>Total</td><td>${l40.value().length+l10.value().length+l20.value().length+l30.value().length}</td><td></td><td>${t10+t20+t30+t40}€</td>`;
-        sHtml+= '</tr>';
-        sHtml+= '</tfoot>';
-        sHtml+= '</table>'
-        sHtml+= '<table>';
-        sHtml+= '<caption>Sessions de mentorat(No-Show)</caption>';
-        sHtml+= '<thead>';
-        sHtml+= '<tr>';
-        sHtml+= `<th>No-Show</th><th>Nombre de sessions</th><th>Montant unitaire (HT)</th><th>Montant à facturer (HT)</th>`;
-        sHtml+= '</tr>';
-        sHtml+= '</thead>';
-        sHtml+= '<tbody>';
-        sHtml+= '<tr>';
-        sHtml+= `<td>Sessions de groupe</td><td>${l43.value().length+l42.value().length}</td><td>${iPrice4/2}</td><td>${t43+t42}€</td>`;
-        sHtml+= '</tr>';
-        sHtml+= '<tr>';
-        sHtml+= `<td>de Niveau d'expertise 1</td><td>${l13.value().length+l12.value().length}</td><td>${iPrice1/2}</td><td>${t13+t12}€</td>`;
-        sHtml+= '</tr>';
-        sHtml+= '<tr>';
-        sHtml+= `<td>de Niveau d'expertise 2</td><td>${l23.value().length+l22.value().length}</td><td>${iPrice2/2}</td><td>${t23+t22}€</td>`;
-        sHtml+= '</tr>';
-        sHtml+= '<tr>';
-        sHtml+= `<td>de Niveau d'expertise 3</td><td>${l33.value().length+l32.value().length}</td><td>${iPrice3/2}</td><td>${t33+t32}€</td>`;
-        sHtml+= '</tr>';
-        sHtml+= '</tbody>';
-        sHtml+= '<tfoot>';
-        sHtml+= '<tr>';
-        sHtml+= `<td>Total</td><td>${l43.value().length+l13.value().length+l23.value().length+l33.value().length+l42.value().length+l12.value().length+l22.value().length+l32.value().length}</td><td></td><td>${t13+t23+t33+t43+t12+t22+t32+t42}€</td>`;
-        sHtml+= '</tr>';
-        sHtml+= '</tfoot>';
-        sHtml+= '</table>';
-        //sHtml+= `<p>Vous avez avez également annulé ${l41.value().length+l11.value().length+l21.value().length+l31.value().length} sessions sur un total de ${r.value().length} sessions </p>`
-        //sHtml+= `<p>Par ailleurs, le total des sessions inclut ${soutenances.value().length} soutenances</p>`
-        // suggestion de A Massé : Vous avez fait un total de x sessions (xx.xx€) dont y soutenances (xx.xx€) Z sessions de mentorat (xx.xx€) et W no shows (xx.xx€)
-        sHtml+= `<p>Vous avez fait un total de ${r.value().length} session(s) (${t10+t20+t30+t40+t12+t22+t32+t42+t13+t23+t33+t43}€) `;
-        sHtml+= `dont ${def.value().length} soutenance(s) (${df10+df11+df12+df13+df20+df21+df22+df23+df30+df31+df32+df33+df40+df41+df42+df43}€)</p>`;
-        sHtml+= `<p>Ces ${r.value().length} session(s)se répartissent en ${l40.value().length+l10.value().length+l20.value().length+l30.value().length} session(s) de mentorat (${t10+t20+t30+t40}€)`
-        sHtml+= `, ${l43.value().length+l13.value().length+l23.value().length+l33.value().length+l42.value().length+l12.value().length+l22.value().length+l32.value().length} NoShows (${t13+t23+t33+t43+t12+t22+t32+t42}€)`
-        sHtml+= ` et ${l41.value().length+l11.value().length+l21.value().length+l31.value().length} session(s) annulée(s) (${t11+t21+t31+t41}€)</p>`
-        /* prevent some errors when data not present */
-        let sessionsWithoutStatus = r.filter( v => (v.status !== 'étudiant absent') && (v.status !== 'annulée') && (v.status !== 'annulée tardivement') && (v.status !== 'réalisée'))
-
-        if(sessionsWithoutStatus.value().length!=0){
-           sHtml+= `<p>ATTENTION vous avez ${sessionsWithoutStatus.value().length} session(s) sans statut ou dont le statut n'est pas reconnu, plus d'info dans le log js</p>`;
-           console.log("Session sans statut");
-           console.dir(sessionsWithoutStatus.value());
-        }
-        let sessionsWithoutLevel = r.filter( v => (v.lvl !== "1") && (v.lvl !== "2") && (v.lvl !== "3") && (v.lvl !== "4"))
-        if(sessionsWithoutLevel.value().length!=0){
-            sHtml+= `<p>ATTENTION vous avez ${sessionsWithoutLevel.value().length} session(s) sans niveau ou dont le niveau n'est pas reconnu, plus d'info dans le log js</p>` ;
-            console.log("Sessions sans niveau");
-            console.dir(sessionsWithoutLevel.value());
-        }
-
-        Swal.fire({
-            title: `<strong>Liste des formations tarifées du ${dtFrom.format("DD/MM/YYYY")} au ${dtTo.format("DD/MM/YYYY")}</strong>`,
-            icon: 'info',
-            html: sHtml,
-            showCloseButton: true,
-            //showCancelButton: true,
-            focusConfirm: false,
-            position: 'center-start',
-            grow: 'column',
-        });
-    }
-    var billPhase2 = function(r, dtFrom, dtTo){
-
-        Swal.fire({
-            position: 'top-end',
-            icon: 'success',
-            title: 'computing......',
-            showConfirmButton: false,
-            timer: 2000
-        })
-
-        var iPrice1=30,iPrice2=35,iPrice3=40,iPrice4=50;
-        var l10 = r.filter( v => v.lvl == 1 && v.status === 'réalisée' && v.isFunded === true);
-        var l11 = r.filter( v => v.lvl == 1 && v.status === 'annulée' && v.isFunded === true);
-        var l12 = r.filter( v => v.lvl == 1 && v.status === 'annulée tardivement' && v.isFunded === true);
-        var l13 = r.filter( v => v.lvl == 1 && v.status === 'étudiant absent' && v.isFunded === true);
-
-        var l14 = r.filter( v => v.lvl == 1 && v.status === 'réalisée' && v.isFunded === false);
-        var l15 = r.filter( v => v.lvl == 1 && v.status === 'annulée' && v.isFunded === false);
-        var l16 = r.filter( v => v.lvl == 1 && v.status === 'annulée tardivement' && v.isFunded === false);
-        var l17 = r.filter( v => v.lvl == 1 && v.status === 'étudiant absent' && v.isFunded === false);
-
-        //
-        var l20 = r.filter( v => v.lvl == 2 && v.status === 'réalisée' && v.isFunded === true);
-        var l21 = r.filter( v => v.lvl == 2 && v.status === 'annulée' && v.isFunded === true);
-        var l22 = r.filter( v => v.lvl == 2 && v.status === 'annulée tardivement' && v.isFunded === true);
-        var l23 = r.filter( v => v.lvl == 2 && v.status === 'étudiant absent' && v.isFunded === true);
-
-        var l24 = r.filter( v => v.lvl == 2 && v.status === 'réalisée' && v.isFunded === false);
-        var l25 = r.filter( v => v.lvl == 2 && v.status === 'annulée' && v.isFunded === false);
-        var l26 = r.filter( v => v.lvl == 2 && v.status === 'annulée tardivement' && v.isFunded === false);
-        var l27 = r.filter( v => v.lvl == 2 && v.status === 'étudiant absent' && v.isFunded === false);
-        //
-        var l30 = r.filter( v => v.lvl == 3 && v.status === 'réalisée' && v.isFunded === true);
-        var l31 = r.filter( v => v.lvl == 3 && v.status === 'annulée' && v.isFunded === true);
-        var l32 = r.filter( v => v.lvl == 3 && v.status === 'annulée tardivement' && v.isFunded === true);
-        var l33 = r.filter( v => v.lvl == 3 && v.status === 'étudiant absent' && v.isFunded === true);
-
-        var l34 = r.filter( v => v.lvl == 3 && v.status === 'réalisée' && v.isFunded === false);
-        var l35 = r.filter( v => v.lvl == 3 && v.status === 'annulée' && v.isFunded === false);
-        var l36 = r.filter( v => v.lvl == 3 && v.status === 'annulée tardivement' && v.isFunded === false);
-        var l37 = r.filter( v => v.lvl == 3 && v.status === 'étudiant absent' && v.isFunded === false);
-        //
-        var l40 = r.filter( v => v.lvl == 4 && v.status === 'réalisée' && v.isFunded === true) ||0 ;
-        var l41 = r.filter( v => v.lvl == 4 && v.status === 'annulée' && v.isFunded === true) || 0;
-        var l42 = r.filter( v => v.lvl == 4 && v.status === 'annulée tardivement' && v.isFunded === true) || 0;
-        var l43 = r.filter( v => v.lvl == 4 && v.status === 'étudiant absent' && v.isFunded === true) || 0;
-
-        var l44 = r.filter( v => v.lvl == 4 && v.status === 'réalisée' && v.isFunded === false) ||0 ;
-        var l45 = r.filter( v => v.lvl == 4 && v.status === 'annulée' && v.isFunded === false) || 0;
-        var l46 = r.filter( v => v.lvl == 4 && v.status === 'annulée tardivement' && v.isFunded === false) || 0;
-        var l47 = r.filter( v => v.lvl == 4 && v.status === 'étudiant absent' && v.isFunded === false) || 0;
-
-        // en AF il n’y a plus que le absent au bout de 10mn qui est rémuneré sinon c’est no show pas payé. annulé tardivement n’est plus payé pour les AF (modifié)
-        // idem à priori pour les financés
-        var t10 = l10.reduce( (ac,cv,i,a) => ac+iPrice1 ,0);   // réalisé
-        var t11 = l11.reduce( (ac,cv,i,a) => ac+0 ,0);         // annulé
-        var t12 = l12.reduce( (ac,cv,i,a) => ac+0 ,0);   //var t12 = l12.reduce( (ac,cv,i,a) => ac+iPrice1 ,0);   // annulé tardivement
-        var t13 = l13.reduce( (ac,cv,i,a) => ac+iPrice1/2 ,0); // absent
-
-        var t14 = l14.reduce( (ac,cv,i,a) => ac+iPrice1/2 ,0);
-        var t15 = l15.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t16 = l16.reduce( (ac,cv,i,a) => ac+0 ,0); // var t16 = l16.reduce( (ac,cv,i,a) => ac+iPrice1/2 ,0);
-        var t17 = l17.reduce( (ac,cv,i,a) => ac+iPrice1/4 ,0);
-        //
-        var t20 = l20.reduce( (ac,cv,i,a) => ac+iPrice2 ,0);
-        var t21 = l21.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t22 = l22.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t23 = l23.reduce( (ac,cv,i,a) => ac+iPrice2/2 ,0);
-
-        var t24 = l24.reduce( (ac,cv,i,a) => ac+iPrice2/2 ,0);
-        var t25 = l25.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t26 = l26.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t27 = l27.reduce( (ac,cv,i,a) => ac+iPrice2/4 ,0);
-        //
-        var t30 = l30.reduce( (ac,cv,i,a) => ac+iPrice3 ,0);
-        var t31 = l31.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t32 = l32.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t33 = l33.reduce( (ac,cv,i,a) => ac+iPrice3/2 ,0);
-
-        var t34 = l34.reduce( (ac,cv,i,a) => ac+iPrice3/2 ,0);
-        var t35 = l35.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t36 = l36.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t37 = l37.reduce( (ac,cv,i,a) => ac+iPrice3/4 ,0);
-        //
-        var t40 = l40.reduce( (ac,cv,i,a) => ac+iPrice4 ,0);
-        var t41 = l41.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t42 = l42.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t43 = l43.reduce( (ac,cv,i,a) => ac+iPrice4/2 ,0);
-
-        var t44 = l44.reduce( (ac,cv,i,a) => ac+iPrice4/2 ,0);
-        var t45 = l45.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t46 = l46.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t47 = l47.reduce( (ac,cv,i,a) => ac+iPrice4/4 ,0);
-
-        // var defense
-        var def = r.filter( v => v.type.toLowerCase() === 'soutenance') || 0;
-        var d10 = def.filter( v => v.lvl == 1 && v.status === 'réalisée' && v.isFunded === true);
-        var d11 = def.filter( v => v.lvl == 1 && v.status === 'annulée' && v.isFunded === true);
-        var d12 = def.filter( v => v.lvl == 1 && v.status === 'annulée tardivement' && v.isFunded === true);
-        var d13 = def.filter( v => v.lvl == 1 && v.status === 'étudiant absent' && v.isFunded === true);
-/*
-        var l14 = r.filter( v => v.lvl == 1 && v.status === 'réalisée' && v.isFunded === false);
-        var l15 = r.filter( v => v.lvl == 1 && v.status === 'annulée' && v.isFunded === false);
-        var l16 = r.filter( v => v.lvl == 1 && v.status === 'annulée tardivement' && v.isFunded === false);
-        var l17 = r.filter( v => v.lvl == 1 && v.status === 'étudiant absent' && v.isFunded === false);
-*/
-        //
-        var d20 = def.filter( v => v.lvl == 2 && v.status === 'réalisée' && v.isFunded === true);
-        var d21 = def.filter( v => v.lvl == 2 && v.status === 'annulée' && v.isFunded === true);
-        var d22 = def.filter( v => v.lvl == 2 && v.status === 'annulée tardivement' && v.isFunded === true);
-        var d23 = def.filter( v => v.lvl == 2 && v.status === 'étudiant absent' && v.isFunded === true);
-/*
-        var l24 = r.filter( v => v.lvl == 2 && v.status === 'réalisée' && v.isFunded === false);
-        var l25 = r.filter( v => v.lvl == 2 && v.status === 'annulée' && v.isFunded === false);
-        var l26 = r.filter( v => v.lvl == 2 && v.status === 'annulée tardivement' && v.isFunded === false);
-        var l27 = r.filter( v => v.lvl == 2 && v.status === 'étudiant absent' && v.isFunded === false);
-*/
-        //
-        var d30 = def.filter( v => v.lvl == 3 && v.status === 'réalisée' && v.isFunded === true);
-        var d31 = def.filter( v => v.lvl == 3 && v.status === 'annulée' && v.isFunded === true);
-        var d32 = def.filter( v => v.lvl == 3 && v.status === 'annulée tardivement' && v.isFunded === true);
-        var d33 = def.filter( v => v.lvl == 3 && v.status === 'étudiant absent' && v.isFunded === true);
-/*
-        var l34 = r.filter( v => v.lvl == 3 && v.status === 'réalisée' && v.isFunded === false);
-        var l35 = r.filter( v => v.lvl == 3 && v.status === 'annulée' && v.isFunded === false);
-        var l36 = r.filter( v => v.lvl == 3 && v.status === 'annulée tardivement' && v.isFunded === false);
-        var l37 = r.filter( v => v.lvl == 3 && v.status === 'étudiant absent' && v.isFunded === false);
-*/
-        //
-        var d40 = def.filter( v => v.lvl == 4 && v.status === 'réalisée' && v.isFunded === true) ||0 ;
-        var d41 = def.filter( v => v.lvl == 4 && v.status === 'annulée' && v.isFunded === true) || 0;
-        var d42 = def.filter( v => v.lvl == 4 && v.status === 'annulée tardivement' && v.isFunded === true) || 0;
-        var d43 = def.filter( v => v.lvl == 4 && v.status === 'étudiant absent' && v.isFunded === true) || 0;
-/*
-        var l44 = r.filter( v => v.lvl == 4 && v.status === 'réalisée' && v.isFunded === false) ||0 ;
-        var l45 = r.filter( v => v.lvl == 4 && v.status === 'annulée' && v.isFunded === false) || 0;
-        var l46 = r.filter( v => v.lvl == 4 && v.status === 'annulée tardivement' && v.isFunded === false) || 0;
-        var l47 = r.filter( v => v.lvl == 4 && v.status === 'étudiant absent' && v.isFunded === false) || 0;
-*/
-        var df10 = d10.reduce( (ac,cv,i,a) => ac+iPrice1 ,0);
-        var df11 = d11.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var df12 = d12.reduce( (ac,cv,i,a) => ac+iPrice1 ,0);
-        var df13 = d13.reduce( (ac,cv,i,a) => ac+iPrice1/2 ,0);
-/*
-        var 14 = l14.reduce( (ac,cv,i,a) => ac+iPrice1/2 ,0);
-        var t15 = l15.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t16 = l16.reduce( (ac,cv,i,a) => ac+iPrice1/2 ,0);
-        var t17 = l17.reduce( (ac,cv,i,a) => ac+iPrice1/4 ,0);
-*/        //
-        var df20 = d20.reduce( (ac,cv,i,a) => ac+iPrice2 ,0);
-        var df21 = d21.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var df22 = d22.reduce( (ac,cv,i,a) => ac+iPrice2 ,0);
-        var df23 = d23.reduce( (ac,cv,i,a) => ac+iPrice2/2 ,0);
-/*
-        var t24 = l24.reduce( (ac,cv,i,a) => ac+iPrice2/2 ,0);
-        var t25 = l25.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t26 = l26.reduce( (ac,cv,i,a) => ac+iPrice2/2 ,0);
-        var t27 = l27.reduce( (ac,cv,i,a) => ac+iPrice2/4 ,0);
-*/        //
-        var df30 = d30.reduce( (ac,cv,i,a) => ac+iPrice3 ,0);
-        var df31 = d31.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var df32 = d32.reduce( (ac,cv,i,a) => ac+iPrice3 ,0);
-        var df33 = d33.reduce( (ac,cv,i,a) => ac+iPrice3/2 ,0);
-/*
-        var t34 = l34.reduce( (ac,cv,i,a) => ac+iPrice3/2 ,0);
-        var t35 = l35.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t36 = l36.reduce( (ac,cv,i,a) => ac+iPrice3/2 ,0);
-        var t37 = l37.reduce( (ac,cv,i,a) => ac+iPrice3/4 ,0);
-*/        //
-        var df40 = d40.reduce( (ac,cv,i,a) => ac+iPrice4 ,0);
-        var df41 = d41.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var df42 = d42.reduce( (ac,cv,i,a) => ac+iPrice4 ,0);
-        var df43 = d43.reduce( (ac,cv,i,a) => ac+iPrice4/2 ,0);
-/*
-        var t44 = l44.reduce( (ac,cv,i,a) => ac+iPrice4/2 ,0);
-        var t45 = l45.reduce( (ac,cv,i,a) => ac+0 ,0);
-        var t46 = l46.reduce( (ac,cv,i,a) => ac+iPrice4/2 ,0);
-        var t47 = l47.reduce( (ac,cv,i,a) => ac+iPrice4/4 ,0);
-*/
-
-        var iSessionCanceledTotal = 0
-        iSessionCanceledTotal+=l11.value().length+l12.value().length+l13.value().length
-        iSessionCanceledTotal+=l21.value().length+l22.value().length+l23.value().length
-        iSessionCanceledTotal+=l31.value().length+l32.value().length+l33.value().length
-        iSessionCanceledTotal+=l41.value().length+l42.value().length+l43.value().length
-        iSessionCanceledTotal+=l15.value().length+l16.value().length+l17.value().length
-        iSessionCanceledTotal+=l25.value().length+l26.value().length+l27.value().length
-        iSessionCanceledTotal+=l35.value().length+l36.value().length+l37.value().length
-        iSessionCanceledTotal+=l45.value().length+l46.value().length+l47.value().length
-
-        var iDefenseCanceledTotal = 0
-        iDefenseCanceledTotal+=d11.value().length+d12.value().length+d13.value().length
-        iDefenseCanceledTotal+=d21.value().length+d22.value().length+d23.value().length
-        iDefenseCanceledTotal+=d31.value().length+d32.value().length+d33.value().length
-        iDefenseCanceledTotal+=d41.value().length+d42.value().length+d43.value().length
-
-        /* Prepare facturation of Boni for AF*/
-
-        var oSessionsAf = r.filter( v => v.type.toLowerCase() !== 'soutenance' && v.status === 'réalisée' && v.isFunded === false);
-        var _temp = oSessionsAf.groupBy( v => v.who_id);
-        var oBonus = []
-        for( var n in _temp.value()){
-            oBonus.push({who_id:n,who_name:_temp.value()[n][0].who_name,sessions:_temp.value()[n].length}); // all elements of test.value()[n] must be the same name because of groupBy id
-        }
-
-
-        /* https://www.w3.org/WAI/tutorials/tables/multi-level/ */
-        var sHtml ="";
-        sHtml+= "<style>.wrapper{  display: grid;grid-gap: 10px;grid-template-column: 1fr 1fr;}</style>";
-
-        sHtml+= '<div class="wrapper">';
-        sHtml+= '<table>';
-        sHtml+= '<caption>Sessions de mentorat</caption>';
-        sHtml+= '<thead>';
-        sHtml+= '<tr>';
-        sHtml+= '<th rowspan="2"></th><th colspan="3" scope="colgroup">Financés</th> <th colspan="3" scope="colgroup">Autofinancés</th>';
-        sHtml+= '</tr>';
-        sHtml+= '<tr>';
-        sHtml+= `<th><abbr title="nombre">nb</abbr></th><th>PU(<abbr title="hors taxes">HT</abbr>)</th><th>Total(<abbr title="hors taxes">HT</abbr>)</th>`;
-        sHtml+= `<th><abbr title="nombre">nb</abbr></th><th>PU(<abbr title="hors taxes">HT</abbr>)</th><th>Total(<abbr title="hors taxes">HT</abbr>)</th>`;
-        sHtml+= '</tr>';
-        sHtml+= '</thead>';
-        sHtml+= '<tbody>';
-        sHtml+= '<tr>';
-        sHtml+= `<td>Sessions de groupe</td><td>${l40.value().length+l42.value().length}</td><td>${iPrice4}</td><td>${t40+t42}€</td>`;
-        sHtml+= `<td>${l44.value().length+l46.value().length}</td><td>${iPrice4/2}</td><td>${t44+t46}€</td>`;
-        sHtml+= '</tr>';
-        sHtml+= '<tr>';
-        sHtml+= `<td>de Niveau d'expertise 1</td><td>${l10.value().length+l12.value().length}</td><td>${iPrice1}</td><td>${t10+t12}€</td>`;
-        sHtml+= `<td>${l14.value().length+l16.value().length}</td><td>${iPrice1/2}</td><td>${t14+t16}€</td>`;
-        sHtml+= '</tr>';
-        sHtml+= '<tr>';
-        sHtml+= `<td>de Niveau d'expertise 2</td><td>${l20.value().length+l22.value().length}</td><td>${iPrice2}</td><td>${t20+t22}€</td>`;
-        sHtml+= `<td>${l24.value().length+l26.value().length}</td><td>${iPrice2/2}</td><td>${t24+t26}€</td>`;
-        sHtml+= '</tr>';
-        sHtml+= '<tr>';
-        sHtml+= `<td>de Niveau d'expertise 3</td><td>${l30.value().length+l32.value().length}</td><td>${iPrice3}</td><td>${t30+t32}€</td>`;
-        sHtml+= `<td>${l34.value().length+l36.value().length}</td><td>${iPrice3/2}</td><td>${t34+t36}€</td>`;
-        sHtml+= '</tr>';
-        sHtml+= '</tbody>';
-        sHtml+= '<tfoot>';
-        sHtml+= '<tr>';
-        sHtml+= `<td>Total</td><td>${l40.value().length+l10.value().length+l20.value().length+l30.value().length+l42.value().length+l12.value().length+l22.value().length+l32.value().length}</td><td></td><td>${t10+t20+t30+t40+t12+t22+t32+t42}€</td>`;
-        sHtml+= `<td>${l44.value().length+l14.value().length+l24.value().length+l34.value().length+l46.value().length+l16.value().length+l26.value().length+l36.value().length}</td><td></td><td>${t14+t24+t34+t44+t16+t26+t36+t46}€</td>`;
-        sHtml+= '</tr>';
-        sHtml+= '<tr>';
-        sHtml+= `<td>Grand Total</td><td>${l40.value().length+l10.value().length+l20.value().length+l30.value().length+l42.value().length+l12.value().length+l22.value().length+l32.value().length+l44.value().length+l14.value().length+l24.value().length+l34.value().length+l46.value().length+l16.value().length+l26.value().length+l36.value().length}</td><td></td><td>${t10+t20+t30+t40+t12+t22+t32+t42+t14+t24+t34+t44+t16+t26+t36+t46}€</td>`;
-        sHtml+= '</tr>';
-        sHtml+= '</tfoot>';
-        sHtml+= '</table>'
-        sHtml+= '<table>';
-        sHtml+= '<caption>Sessions de mentorat (No-Show)</caption>';
-        sHtml+= '<thead>';
-        sHtml+= '<tr>';
-        sHtml+= '<th rowspan="2"></th><th colspan="3" scope="colgroup">Financés</th> <th colspan="3" scope="colgroup">Autofinancés</th>';
-        sHtml+= '</tr>';
-        sHtml+= '<tr>';
-        sHtml+= `<th><abbr title="nombre">nb</abbr></th><th>PU(<abbr title="hors taxes">HT</abbr>)</th><th>Total(<abbr title="hors taxes">HT</abbr>)</th>`;
-        sHtml+= `<th><abbr title="nombre">nb</abbr></th><th>PU(<abbr title="hors taxes">HT</abbr>)</th><th>Total(<abbr title="hors taxes">HT</abbr>)</th>`;
-        sHtml+= '</tr>';
-        sHtml+= '</thead>';
-        sHtml+= '<tbody>';
-        sHtml+= '<tr>';
-        sHtml+= `<td>Sessions de groupe</td><td>${l43.value().length}</td><td>${iPrice4/2}</td><td>${t43}€</td>`;
-        sHtml+= `<td>${l47.value().length}</td><td>${iPrice4/4}</td><td>${t47}€</td>`;
-        sHtml+= '</tr>';
-        sHtml+= '<tr>';
-        sHtml+= `<td>de Niveau d'expertise 1</td><td>${l13.value().length}</td><td>${iPrice1/2}</td><td>${t13}€</td>`;
-        sHtml+= `</td><td>${l17.value().length}</td><td>${iPrice1/4}</td><td>${t17}€</td>`;
-        sHtml+= '</tr>';
-        sHtml+= '<tr>';
-        sHtml+= `<td>de Niveau d'expertise 2</td><td>${l23.value().length}</td><td>${iPrice2/2}</td><td>${t23}€</td>`;
-        sHtml+= `<td>${l27.value().length}</td><td>${iPrice2/4}</td><td>${t27}€</td>`;
-        sHtml+= '</tr>';
-        sHtml+= '<tr>';
-        sHtml+= `<td>de Niveau d'expertise 3</td><td>${l33.value().length}</td><td>${iPrice3/2}</td><td>${t33}€</td>`;
-        sHtml+= `<td>${l37.value().length}</td><td>${iPrice3/4}</td><td>${t37}€</td>`;
-        sHtml+= '</tr>';
-        sHtml+= '</tbody>';
-        sHtml+= '<tfoot>';
-        sHtml+= '<tr>';
-        sHtml+= `<td>Total</td><td>${l43.value().length+l13.value().length+l23.value().length+l33.value().length}</td><td></td><td>${t13+t23+t33+t43}€</td>`;
-        sHtml+= '</tr>';
-        sHtml+= '</tfoot>';
-        sHtml+= '</table>';
-        //sHtml+= `<p>Vous avez avez également annulé ${l41.value().length+l11.value().length+l21.value().length+l31.value().length+l45.value().length+l15.value().length+l25.value().length+l35.value().length} sessions sur un total de ${r.value().length} sessions </p>`
-
-        //sHtml+= `<p>Vous avez avez également annulé ${iSessionCanceledTotal} sessions sur un total de ${r.value().length} sessions </p>`;
-        //sHtml+= `<p>le total des sessions inclut ${def.value().length} soutenances pour un total de ${df10+df11+df12+df13+df20+df21+df22+df23+df30+df31+df32+df33+df40+df41+df42+df43} €</p>`
-        //sHtml+= `<p>Vous avez avez également annulé ${iDefenseCanceledTotal} soutenance sur un total de ${def.value().length} soutenances </p>`;
-        sHtml+= `<p>Soit un total de ${r.value().length} sessions (dont ${iSessionCanceledTotal} annulée(s). Ce total comprend ${def.value().length} soutenance(s) facturées ${df10+df11+df12+df13+df20+df21+df22+df23+df30+df31+df32+df33+df40+df41+df42+df43} €</p>`;
-
-        // suggestion de A Massé : Vous avez fait un total de x sessions (xx.xx€) dont y soutenances (xx.xx€) Z sessions de mentorat (xx.xx€) et W no shows (xx.xx€)
-
-        /* prevent some errors when data not present */
-        let sessionsWithoutStatus = r.filter( v => (v.status !== 'étudiant absent') && (v.status !== 'annulée') && (v.status !== 'annulée tardivement') && (v.status !== 'réalisée'))
-
-        if(sessionsWithoutStatus.value().length!=0){
-           sHtml+= `<p>ATTENTION vous avez ${sessionsWithoutStatus.value().length} session(s) sans statut ou dont le statut n'est pas reconnu (donc non comptabilisé(es), plus d'info dans le log js</p>`;
-           console.log("Session sans statut");
-           console.dir(sessionsWithoutStatus.value());
-        }
-        let sessionsWithoutLevel = r.filter( v => (v.lvl !== "1") && (v.lvl !== "2") && (v.lvl !== "3") && (v.lvl !== "4"))
-        if(sessionsWithoutLevel.value().length!=0){
-            sHtml+= `<p>ATTENTION vous avez ${sessionsWithoutLevel.value().length} session(s) sans niveau ou dont le niveau n'est pas reconnu (donc non comptabilisé(es), plus d'info dans le log js</p>` ;
-            console.log("Sessions sans niveau");
-            console.dir(sessionsWithoutLevel.value());
-        }
-
-        sHtml+="<table>";
-        sHtml+='<caption>Sessions de mentorat Bonus AF</caption>';
-        sHtml+="<thead>";
-        sHtml+="<th>Qui</th><th>Nb Sessions</th><th>PU</th><th>Total</th>";
-        sHtml+="</thead>";
-        sHtml+="<tbody>";
-        var iTotG = 0;
-        for(var t in oBonus){
-            // console.log(`${oBonus[t].sessions*30*4}`)
-            //sHtml+=`<tr><td>${oBonus[t].who_name}</td><td>${oBonus[t].sessions}/4</td><td>30</td><td>${(oBonus[t].session*1)*30/4} €</td></tr>`; //NOTE STT last column evaluated to NaN ... why ?
-            var iTot = oBonus[t].sessions > 4 ? oBonus[t].sessions*30/5 : oBonus[t].sessions*30/4;
-            iTotG+=iTot
-            sHtml+=`<tr><td>${oBonus[t].who_name}</td><td>${oBonus[t].sessions}/${oBonus[t].sessions > 4 ? 5 : 4}</td><td>30</td><td>${iTot} €</td></tr>`;
-        }
-        sHtml+="</tbody>";
-        sHtml+="<tfoot>";
-        //sHtml+=`<tr>total</tr><tr colspan=3>${oBonus.reduce( (r,v,k) => r+v.sessions*30,0 )}</tr>`; // NOTE STT don't work because must be /4 or /5 dependings on total sessions per month per users
-        sHtml+=`<tr><td>total</td><td colspan=3 style="text-align:rigth;padding-rigth:5em;">${iTotG} €</td></tr>`;
-        sHtml+="</tfoot>";
-
-        sHtml+="</table>";
-
-        Swal.fire({
-            title: `<strong>Liste des formations tarifées du ${dtFrom.format("DD/MM/YYYY")} au ${dtTo.format("DD/MM/YYYY")}</strong>`,
-            //icon: 'info',
-            html: sHtml,
-            showCloseButton: true,
-            //showCancelButton: true,
-            focusConfirm: false,
-            position: 'center-start',
-            grow: 'fullscreen',
-        });
-    }
+    /*
+     * This function used memoized private version
+     *
+     */
     var calculateBill = function(dtFrom, dtTo){
 
          //aData.push(memoized(dtCurFrom.format("YYYY-MM-DD"), dtCurTo.format("YYYY-MM-DD")));
@@ -1826,8 +1329,8 @@
             iTotQ2+= _q2;
             iTotM1+= _m1;
             iTotM2+= _m2;
-            sHtml+=`<td>${_q1}</td><td>${_ref.pu[0]}</td><td>${_m1}€</td>`;
-            sHtml+=`<td>${_q2}</td><td>${_ref.pu[4]}</td><td>${_m2}€</td>`;
+            sHtml+=`<td>${_q1}</td><td>${_ref.pu[3]}</td><td>${_m1}€</td>`;
+            sHtml+=`<td>${_q2}</td><td>${_ref.pu[7]}</td><td>${_m2}€</td>`;
             sHtml+=`<td>${_q1 + _q2}</td><td>${_m1 + _m2}€</td>`;
             /*
             sHtml+=`<td>${_ref.number[3].value().length}</td><td>${_ref.pu[3]}</td><td>${_ref.number[3].value().length * _ref.pu[3]}€</td>`;
@@ -2065,7 +1568,7 @@
             //console.log(`calculateBill(${dtCurFrom}, ${dtCurTo});`);
             dtCurFrom = dtCurFrom.add(1, 'month');
         }
-
+        var t1 = performance.now();console.log("%cComputed data between the two dates in" + (t1 - t0) + " milliseconds.", sCStylPerf);
         var sHtml ="";
         var _iMaxIndex = dtTo.get('month')-dtFrom.get('month');
         sHtml += "<table>";
@@ -2074,32 +1577,57 @@
         var _m1=0
         while( _m1 <= _iMaxIndex){
             let _dt = dtFrom.add(_m1, 'month');
-            console.log(_dt);
-            //console.log(_m1);
-            console.log(_dt.get('month'));
-            let oMonth = _.find( aMonthFrench, ['id', _dt.get('month')]);
-            //console.log(oMonth);
-            sHtml+=`<th>${_dt.format("MM")}</th>`;
+            sHtml+=`<th>${_dt.format("MMMM")}</th>`;
             _m1+=1
         }
         sHtml+="<th>Total</th><th>Moyenne</th></tr>";
         sHtml+="</thdead>";
         sHtml+="<tbody>";
         sHtml+="<tr>";
-        sHtml+="<td>Sessions Montant HT</td>";
+        sHtml+=`<td colspan=${_iMaxIndex} style="text-align:left;">Sessions</td></tr>`;
+        sHtml+="<tr>";
+        sHtml+="<td>Sessions (Mt)</td>";
         let iTotalRow = 0;
         let _m = 0;
         let iTotal = 0;
         let aNbInMonth = [];
+        let aNbDInMonth = [];
+        let aNbMInMonth = [];
         let aAmInMonth = [];
-        var t1 = performance.now();console.log("%cCreate Columns of first line of stat in " + (t1 - t0) + " milliseconds.", sCStylPerf);
+        let aCanceledNbInMonth = [];
+        let aCanceledNbDInMonth = [];
+        let aCanceledNbMInMonth = [];
+        dtCurFrom = dtFrom;
         while(_m <= _iMaxIndex){
             let _l = 1;
             aNbInMonth[_m] = 0;
+            aNbDInMonth[_m] = 0;
+            aNbMInMonth[_m] = 0;
+            aCanceledNbInMonth[_m] = 0;
+            aCanceledNbDInMonth[_m] = 0;
+            aCanceledNbMInMonth[_m] = 0;
             while( _l < 5){
-                for (let _i in [...Array(8).keys()]){ // NOTESTT: ~ pythonic range ... could use _range too
+                let _z = [...Array(8).keys()];
+                //for (let _i in [...Array(8).keys()]){ // NOTESTT: ~ pythonic range ... could use _range too NOTE STT JAAMIS de in pour des arrays, les types de clé sont faux _i sera une string et pas un int cf reco MDN https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for...in
+                for (let _i=0; _i < _z.length; _i+=1 ){ // NOTESTT: ~ pythonic range ... could use _range too
                     iTotal+= aData[_m][_l].sessions.number[_i] * aData[_m][_l].sessions.pu[_i];
                     aNbInMonth[_m] += aData[_m][_l].sessions.number[_i];
+                    aNbDInMonth[_m] += aData[_m][_l].defenses.number[_i];
+                    aNbMInMonth[_m] += (aData[_m][_l].sessions.number[_i] - aData[_m][_l].defenses.number[_i]);
+                    // depending on date some sessions are canceled or not
+                    if(isInOldMode(dtCurFrom)){
+                        if ([1,5].includes(_i)) {
+                            aCanceledNbInMonth[_m] += aData[_m][_l].sessions.number[_i];
+                            aCanceledNbDInMonth[_m] += aData[_m][_l].defenses.number[_i];
+                            aCanceledNbMInMonth[_m] += aData[_m][_l].sessions.number[_i] - aData[_m][_l].defenses.number[_i];
+                        }
+                    } else {
+                        if ([1,2,5,6].includes(_i)) {
+                            aCanceledNbInMonth[_m] += aData[_m][_l].sessions.number[_i];
+                            aCanceledNbDInMonth[_m] += aData[_m][_l].defenses.number[_i];
+                            aCanceledNbMInMonth[_m] += aData[_m][_l].sessions.number[_i] - aData[_m][_l].defenses.number[_i];
+                        }
+                    }
                 }
             _l+=1
             }
@@ -2108,59 +1636,109 @@
             iTotalRow+=iTotal
             iTotal = 0;
             _m+=1
+            dtCurFrom = dtCurFrom.add(1, 'month');
         }
-        var t2 = performance.now();console.log("%cCreate Columns of first line of stat in " + (t2 - t1) + " milliseconds.", sCStylPerf);
-
         sHtml+=`<td>${iTotalRow}</td><td>${(iTotalRow/(_iMaxIndex+1)).toFixed(2)}</td>`;
         sHtml+="</tr>";
-
+        // -- Display nubmer of sessions
         sHtml+="<tr>";
-        sHtml+="<td>Sessions Nb</td>";
+        sHtml+="<td>Sessions (Nb)</td>";
         iTotalRow = 0;
          _m = 0;
          iTotal = 0;
-        var t3 = performance.now();console.log("%cCreate Columns of first line of stat in " + (t3 - t2) + " milliseconds.", sCStylPerf);
         while(_m <= _iMaxIndex){
-            sHtml+=`<td>${aNbInMonth[_m]}</td>`;
+            sHtml+=`<td>${aNbInMonth[_m]-aCanceledNbInMonth[_m]}(${aNbInMonth[_m]})</td>`;
             iTotalRow+=aNbInMonth[_m]
             _m+=1
         }
-        var t4 = performance.now();console.log("%cCreate Columns of first line of stat in " + (t4 - t3) + " milliseconds.", sCStylPerf);
         sHtml+=`<td>${iTotalRow}</td><td>${(iTotalRow/(_iMaxIndex+1)).toFixed(2)}</td>`;
         sHtml+="</tr>";
-
+        // -- Display price of each sessions
         sHtml+="<tr>";
-        sHtml+="<td>PU Moyen</td>";
+        sHtml+="<td>Sessions (PU)</td>";
         iTotalRow = 0;
          _m = 0;
          iTotal = 0;
-        // help to show what are params aData[0][1].sessions.number.reduce((ac,v,k)=>console.log(ac,v,k))
+        // NOTESTT: hint to show what are params aData[0][1].sessions.number.reduce((ac,v,k)=>console.log(ac,v,k))
 
-        var t5 = performance.now();console.log("%cCreate Columns of first line of stat in " + (t5 - t4) + " milliseconds.", sCStylPerf);
+        
         while(_m <= _iMaxIndex){
-            sHtml+=`<td>${(aAmInMonth[_m]/aNbInMonth[_m]).toFixed(2)}</td>`;
+            sHtml+=`<td>${(aAmInMonth[_m]/(aNbInMonth[_m]-aCanceledNbInMonth[_m])).toFixed(2)}</td>`;
             iTotalRow+=iTotal
             iTotal = 0;
             _m+=1
         }
-        var t6 = performance.now();console.log("%cCreate Columns of first line of stat in " + (t6 - t5) + " milliseconds.", sCStylPerf);
+        
         sHtml+=`<td>${iTotalRow.toFixed(2)}</td><td>n/a</td>`;
         sHtml+="</tr>";
 
+        // -- coaching
+        sHtml+="<tr>";
+        sHtml+=`<td colspan=${_iMaxIndex} style="text-align:left;">Mentorat</td></tr>`;
+        sHtml+="<tr>";
+        sHtml+="<td>Mentorat (Mt)</td>";
+        _m = 0;
+        iTotal = 0;
+        aAmInMonth = [];
+        while(_m <= _iMaxIndex){
+            let _l = 1;
+            while( _l < 5){
+                let _z = [...Array(8).keys()]; // NOTESTT: ~ pythonic range ... could use _range too
+                for (let _i=0; _i < _z.length; _i+=1 ){
+                    iTotal+= aData[_m][_l].sessions.number[_i] * aData[_m][_l].sessions.pu[_i] - (aData[_m][_l].defenses.number[_i] * aData[_m][_l].defenses.pu[_i]);
+                    aAmInMonth[_m] = iTotal;
+                }
+            _l+=1
+            }
+            sHtml+=`<td>${iTotal}</td>`;
+            _m+=1;
+            iTotal = 0;
+        }
+        sHtml+="<tr>";
+        sHtml+="<tr>";
+        sHtml+="<td>Mentorat (Nb)</td>";
+        iTotalRow = 0;
+        _m = 0;
+        iTotal = 0;
+        aNbInMonth = [];
+        //aAmInMonth = [];
+        while(_m <= _iMaxIndex){
+            sHtml+=`<td>${aNbMInMonth[_m]-aCanceledNbMInMonth[_m]}(${aNbMInMonth[_m]})</td>`;
+            //aAmInMonth[_m] = iTotal;
+            iTotalRow+=iTotal
+            iTotal = 0;
+            _m+=1
+        }
+        sHtml+=`<td>${iTotalRow}</td><td>${(iTotalRow/(_iMaxIndex+1)).toFixed(2)}</td>`;
+        sHtml+="</tr>";
+        sHtml+="<td>Mentorat (PU)</td>";
+        _m = 0;
+        while(_m <= _iMaxIndex){
+            sHtml+=`<td>${(aAmInMonth[_m]/(aNbMInMonth[_m]-aCanceledNbMInMonth[_m])).toFixed(2)}</td>`;
+            aAmInMonth[_m] = iTotal;
+            iTotalRow+=iTotal
+            iTotal = 0;
+            _m+=1
+        }
+        sHtml+=`<td>${iTotalRow}</td><td>${(iTotalRow/(_iMaxIndex+1)).toFixed(2)}</td>`;
+        sHtml+="</tr>";
         // -- defenses
         sHtml+="<tr>";
-        sHtml+="<td>Soutenances</td>";
+        sHtml+=`<td colspan=${_iMaxIndex} style="text-align:left;">Soutenances</td></tr>`;
+        sHtml+="<tr>";
+        sHtml+="<td>Soutenances (Mt)</td>";
         iTotalRow = 0;
         _m = 0;
         iTotal = 0;
         aNbInMonth = [];
         aAmInMonth = [];
-        var t7 = performance.now();console.log("%cCreate Columns of first line of stat in " + (t7 - t6) + " milliseconds.", sCStylPerf);
+        
         while(_m <= _iMaxIndex){
             let _l = 1;
             aNbInMonth[_m] = 0;
             while( _l < 5){
-                for (let _i in [...Array(7).keys()]){ // NOTESTT: ~ pythonic range ... could use _range too
+                let _z = [...Array(8).keys()]; // NOTESTT: ~ pythonic range ... could use _range too
+                for (let _i=0; _i < _z.length; _i+=1 ){
                     iTotal+= aData[_m][_l].defenses.number[_i] * aData[_m][_l].defenses.pu[_i];
                     aNbInMonth[_m] += aData[_m][_l].defenses.number[_i];
                 }
@@ -2175,26 +1753,171 @@
         sHtml+=`<td>${iTotalRow}</td><td>${(iTotalRow/(_iMaxIndex+1)).toFixed(2)}</td>`;
         sHtml+="</tr>";
         sHtml+="<tr>";
-        sHtml+="<td>Sessions Nb</td>";
+        sHtml+="<td>Soutenances (Nb)</td>";
         iTotalRow = 0;
          _m = 0;
          iTotal = 0;
         while(_m <= _iMaxIndex){
-            sHtml+=`<td>${aNbInMonth[_m]}</td>`;
+            sHtml+=`<td>${aNbInMonth[_m]-aCanceledNbDInMonth[_m]}(${aNbInMonth[_m]})</td>`;
             iTotalRow+=aNbInMonth[_m]
             _m+=1
         }
         sHtml+=`<td>${iTotalRow}</td><td>${(iTotalRow/(_iMaxIndex+1)).toFixed(2)}</td>`;
         sHtml+="</tr>";
         sHtml+="<tr>";
-        sHtml+="<td>PU Moyen</td>";
+        sHtml+="<td>Soutenances (PU)</td>";
         iTotalRow = 0;
          _m = 0;
          iTotal = 0;
         // help to show what are params aData[0][1].sessions.number.reduce((ac,v,k)=>console.log(ac,v,k))
 
         while(_m <= _iMaxIndex){
-            sHtml+=`<td>${(aAmInMonth[_m]/aNbInMonth[_m]).toFixed(2)}</td>`;
+            sHtml+=`<td>${((aAmInMonth[_m]-aCanceledNbDInMonth[_m])/aNbInMonth[_m]).toFixed(2)}</td>`;
+            iTotalRow+=iTotal
+            iTotal = 0;
+            _m+=1
+        }
+        sHtml+=`<td>${iTotalRow.toFixed(2)}</td><td>n/a</td>`;
+        sHtml+="</tr>";
+
+        // -- Bonus AF
+        sHtml+=`<td colspan=${_iMaxIndex} style="text-align:left;">Bonus</td></tr>`;
+        sHtml+="<tr>";
+        sHtml+="<td>Bonus AF</td>";
+        _m = 0;
+        iTotal = 0
+        let aAmBoInMonth = [];
+        while(_m <= _iMaxIndex){
+            let _z = aData[_m][0].bonus;
+            aAmBoInMonth[_m] = 0
+            for (let _i=0; _i < _z.length; _i+=1 ){
+            //for(var t in aData[_m][0].bonus){
+                //sHtml+=`<tr><td>${oBonus[t].who_name}</td><td>${oBonus[t].sessions}/4</td><td>30</td><td>${(oBonus[t].session*1)*30/4} €</td></tr>`; //NOTE STT last column evaluated to NaN ... why ?
+                iTotal+= _z[_i].sessions > 4 ? _z[_i].sessions*30/5 : _z[_i].sessions*30/4;
+            }
+            sHtml+=`<td>${iTotal}</td>`;
+            aAmBoInMonth[_m]=iTotal
+            iTotal = 0;
+            _m+=1
+        }
+        sHtml+= "</tr>";
+        // -- TJM
+        sHtml+="<tr>";
+        sHtml+=`<td colspan=${_iMaxIndex} style="text-align:left;">TJM</td></tr>`;
+        sHtml+="<tr>";
+        sHtml+="<td>THM (théorique)</td>";
+        _m = 0;
+        var _iTot = [];
+        iTotalRow = 0
+        dtCurFrom = dtFrom;
+        aAmInMonth = [];
+        while(_m <= _iMaxIndex){
+            iTotal = 0;
+            let _l = 1;
+            aAmInMonth[_m] = 0
+             _iTot[_m] = 0;
+            while( _l < 5){
+                let _z = [...Array(8).keys()]; // NOTESTT: ~ pythonic range ... could use _range too
+                for (let _i=0; _i < _z.length; _i+=1 ){
+                    aAmInMonth[_m] += aData[_m][_l].sessions.number[_i] * aData[_m][_l].sessions.pu[_i];
+
+                    if(isInOldMode(dtCurFrom)){
+                        iTotal+= (aData[_m][_l].sessions.number[_i] - aData[_m][_l].defenses.number[_i]) * (45/60);
+                    } else {
+                        if ([4,5,6,7].includes(_i)) {
+                            // AF 30 min
+                            iTotal+= (aData[_m][_l].sessions.number[_i] - aData[_m][_l].defenses.number[_i]) * (30/60);
+                        }
+                        if ([0,1,2,3].includes(_i)) {
+                            //
+                            iTotal+= (aData[_m][_l].sessions.number[_i] - aData[_m][_l].defenses.number[_i]) * (45/60);
+                        }
+                    }
+                    iTotal+= aData[_m][_l].defenses.number[_i] * (45/60);
+                    //console.log(`cumul :${_m},${_l},${_i} soit ${iTotal} h`);
+                }
+                _l+=1
+            }
+            console.log(`montant mensuel : ${aAmInMonth[_m]} + bonus ${aAmBoInMonth[_m]}/ Nb heures ${iTotal} = $((aAmInMonth[_m]+aAmBoInMonth[_m])/iTotal).toFixed(2)`);
+            sHtml+=`<td>${((aAmInMonth[_m]+aAmBoInMonth[_m])/iTotal).toFixed(2)} €</td>`;
+            iTotalRow+=iTotal
+            _iTot[_m] = iTotal
+            iTotal = 0;
+            _m+=1
+            dtCurFrom = dtCurFrom.add(1, 'month');
+        }
+        sHtml+="</tr>";
+        sHtml+="<tr>";
+        sHtml+="<td>Nb heures</td>";
+        iTotalRow = 0;
+         _m = 0;
+         iTotal = 0;
+        // help to show what are params aData[0][1].sessions.number.reduce((ac,v,k)=>console.log(ac,v,k))
+
+        while(_m <= _iMaxIndex){
+            sHtml+=`<td>${( _iTot[_m]).toFixed(2)} h</td>`;
+            iTotalRow+=iTotal
+            iTotal = 0;
+            _m+=1
+        }
+        sHtml+=`<td>${iTotalRow.toFixed(2)}</td><td>n/a</td>`;
+        sHtml+="</tr>";
+
+
+
+        sHtml+="<tr>";
+        sHtml+="<td>THM (person.)</td>";
+        _m = 0;
+        _iTot = [];
+        iTotalRow = 0
+        dtCurFrom = dtFrom;
+        aAmInMonth = [];
+        while(_m <= _iMaxIndex){
+            iTotal = 0;
+            let _l = 1;
+            aAmInMonth[_m] = 0
+             _iTot[_m] = 0;
+            while( _l < 5){
+                let _z = [...Array(8).keys()]; // NOTESTT: ~ pythonic range ... could use _range too
+                for (let _i=0; _i < _z.length; _i+=1 ){
+                    aAmInMonth[_m] += aData[_m][_l].sessions.number[_i] * aData[_m][_l].sessions.pu[_i];
+
+                    if(isInOldMode(dtCurFrom)){
+                        iTotal+= (aData[_m][_l].sessions.number[_i] - aData[_m][_l].defenses.number[_i]) * (GM_config.get("nbHrsfM")/60);
+
+                    } else {
+                        if ([4,5,6,7].includes(_i)) {
+                            // AF 30 min
+                            iTotal+= (aData[_m][_l].sessions.number[_i] - aData[_m][_l].defenses.number[_i]) * (GM_config.get("nbHrsAfM")/60);
+                        }
+                        if ([0,1,2,3].includes(_i)) {
+                            //
+                            iTotal+= (aData[_m][_l].sessions.number[_i] - aData[_m][_l].defenses.number[_i]) * (GM_config.get("nbHrsfM")/60);
+                        }
+                    }
+                    iTotal+= aData[_m][_l].defenses.number[_i] * (GM_config.get("nbHrsD")/60);
+                    //console.log(`cumul :${_m},${_l},${_i} soit ${iTotal} h`);
+                }
+                _l+=1
+            }
+            console.log(`montant mensuel : ${aAmInMonth[_m]} + bonus ${aAmBoInMonth[_m]}/ Nb heures ${iTotal} = $((aAmInMonth[_m]+aAmBoInMonth[_m])/iTotal).toFixed(2)`);
+            sHtml+=`<td>${((aAmInMonth[_m]+aAmBoInMonth[_m])/iTotal).toFixed(2)} €</td>`;
+            iTotalRow+=iTotal
+            _iTot[_m] = iTotal
+            iTotal = 0;
+            _m+=1
+            dtCurFrom = dtCurFrom.add(1, 'month');
+        }
+        sHtml+="</tr>";
+        sHtml+="<tr>";
+        sHtml+="<td>Nb heures</td>";
+        iTotalRow = 0;
+         _m = 0;
+         iTotal = 0;
+        // help to show what are params aData[0][1].sessions.number.reduce((ac,v,k)=>console.log(ac,v,k))
+
+        while(_m <= _iMaxIndex){
+            sHtml+=`<td>${( _iTot[_m]).toFixed(2)} h</td>`;
             iTotalRow+=iTotal
             iTotal = 0;
             _m+=1
@@ -2203,8 +1926,12 @@
         sHtml+="</tr>";
 
         sHtml+="</tbody>";
+        sHtml+="<tfoot>";
+        sHtml+"<p>Attention le nombre entre parenthèse représente les sessions y compris les sessions annulées</p>";
+        sHtml+="</tfoot>";
         sHtml+="</table>";
         //console.log("%cTemps total in " + (t2 - t0) + " milliseconds.", sCStylPerf);
+        var t2 = performance.now();console.log("%cTime to show table :" + (t2 - t1) + " milliseconds.", sCStylPerf);
         Swal.fire({
             title: `<strong>Statistiques du ${dtFrom.format("DD/MM/YYYY")} au ${dtTo.format("DD/MM/YYYY")}</strong>`,
             icon: 'info',
@@ -2294,12 +2021,29 @@
         });
 
     }
-    var about = function(){
+    var about = async function(){
         var sHtml ="";
 
-        sHtml+="dans l'idéal parse le read.me de github";
+        //sHtml+="dans l'idéal parse le read.me de github";
 
+        const response = await GMC.XHR({
+            method: 'GET',
+            url: 'https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/README.md',
+            responseType: 'text/html',
+            //binary: true,
+            headers: {
+                "User-Agent": "Mozilla/5.0",    // If not specified, navigator.userAgent will be used.
+            },
+        });
 
+        console.log(response);
+
+        var md = response.responseText;
+
+        var converter = new showdown.Converter();
+        var html = converter.makeHtml(md);
+
+        sHtml+=html;
 
         Swal.fire({
             title: `<strong>A propos de ${appName}</strong>`,
@@ -2355,8 +2099,8 @@
         addButton('billInDetails', billInDetails, {},div);
         addButton('RAZ', razDbase, {},div);
         addButton('SList', showStudentsList, {}, div);
-        addButton('DbgMode', debugMode, {}, div);
-        //addButton('statistics', statistics1, {}, div);
+        //addButton('DbgMode', debugMode, {}, div);
+        addButton('statistics', statistics1, {}, div);
         addButton('about', about, {},div);
     }
 
@@ -2416,34 +2160,34 @@
             footer: 'Choisissez la période pour la sélection des temps facturés',
             showLoaderOnConfirm: true,
             preConfirm: () => {
-                console.log("%cPreconfirm popup", "color:coral")
+                //console.log("%cPreconfirm popup", "color:coral")
                 return [
                     document.getElementById('dtFrom').value,
                     document.getElementById('dtTo').value
                 ]
             },
             onRender: (e) => {
-                console.log("%conRender popup", "color:coral")
+                //console.log("%conRender popup", "color:coral")
             },
             onOpen: (el) => {
                 if (bMonthAdjustment===true)
                     el.querySelector('#dtFrom').addEventListener('change', function(){document.getElementById('dtTo').value = dayjs(document.getElementById('dtFrom').value).endOf('month').format("YYYY-MM-DD");})
-                console.log("%conOpen popup", "color:coral")
+                //console.log("%conOpen popup", "color:coral")
             },
             onClose: (el) => {
                 if (bMonthAdjustment===true)
                     el.querySelector('#dtFrom').removeEventListener("change");
-                 console.log("%conClose popup", "color:coral")
+                 //console.log("%conClose popup", "color:coral")
             },
             onAfterClose: (el) => {
-                 console.log("%conAfterClose popup", "color:coral")
+                 //console.log("%conAfterClose popup", "color:coral")
             },
             onDestroy: (el) => {
-                 console.log("%conDestroy popup", "color:coral")
+                 //console.log("%conDestroy popup", "color:coral")
             },
 
         });
-        console.log("%cI HAVE THE VALUES", "color:coral");
+        //console.log("%cI HAVE THE VALUES", "color:coral");
 
 
 
@@ -2532,22 +2276,24 @@
             return false;
         }
         return true;
-
+        if(_.trueTypeOf(fetchInject) !== 'function'){
+           console.log("%cWe Will have a problem because fetchInject isn't loaded","background-color:red;color:white");
+        }
         if(_.trueTypeOf(document.arrive) !== 'function'){
+            console.warn("%cWe have a problem document.arrive is not loaded, let's try another strategy for loading it","background-color:coral;color:white");
            fetchInject([
             'https://raw.githubusercontent.com/StephaneTy-Pro/userscripts/master/arrive.min.js'
            ]).then(() => {
             console.log(`external arrive.min.js loaded`);
             document.arrive(".MuiAvatar-img", _warmup);
-        })
+           })
         }
+        // all is right
+        return true;
 
 
     }
-    // https://github.com/cferdinandi/reef/blob/master/src/components/reef.js
-
-
-
+   
     var _warmup = function(){
 
         // 'this' refers to the newly created element
@@ -2569,7 +2315,8 @@
         main();
     }
 
-    checkSupport(); //TODO better use it
+    const bSupport = checkSupport(); //TODO better use it
+    console.log('%cAre all functions supported ?','background-color:green;color:white', bSupport);
     // when avatar if loaded start application
     document.arrive(".MuiAvatar-img", _warmup);
 
@@ -2587,6 +2334,7 @@
        dayjs.extend(dayjs_plugin_isSameOrBefore);
        dayjs.extend(dayjs_plugin_isBetween);
        dayjs.extend(dayjs_plugin_localeData);
+       dayjs.extend(dayjs_plugin_localeData);
        dayjs.extend(dayjs_plugin_customParseFormat);
        //dayjs.extend(dayjs_locale_fr);
        // https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.28/plugin/localeData.min.js
@@ -2594,24 +2342,14 @@
             initUI();
         }
        if(GM_config.get("alwaysaddcbox") === true){addCbox();} // add checkbox to element in history
+       dayjs.locale('fr')
    }
 
-    // Your code here...
-    // memoize
-    // isSerialized allow function to use object cf doc : isSerialized -> should the parameters be serialized instead of directly referenced
-    const memoized = moize.default(_calculateBill,{maxAge:500000,  isSerialized: true, onCacheAdd: function(c,o,m){console.log("cache add");console.dir(c.keys);/*console.dir(o);console.dir(m)*/;}, onCacheHit: function(){console.log("cache hit");}});
+    // CFG
     // ----------------------------------------------------------- Tampermonkey Menu
     const windowcss = '#OCAddonsCfg {background-color: lightblue;} #OCAddonsCfg .reset_holder {float: left; position: relative; bottom: -1em;} #OCAddonsCfg .saveclose_buttons {margin: .7em;}';
     const iframecss = 'height: 16.7em; width: 30em; border: 1px solid; border-radius: 3px; position: fixed; z-index: 999;';
     const dbgcss    = 'position: absolute;top: 5px; left: 5px; right: 5px; bottom: 5px;padding: 10px;overflow-y: auto;display: none;background: rgba(250, 250, 250, 0.3);border: 3px solid #888;font: 14px Consolas,Monaco,Monospace;color: #ddd;z-index: 500';
-
-
-
-    function opencfg()
-    {
-        GM_config.open();
-        OCAddonsCfg.style = iframecss;
-    }
 
     GM_config.init(
         {
@@ -2619,12 +2357,38 @@
             title: 'Configuration du module',
             fields:
             {
+                nbHrsAfM:{
+                    section: ['Statistiques', 'paramètres'],
+                    label: "Nombre de minutes pour une session AF",
+                    labelPos: 'left',
+                    type: 'input',
+                    default: 30,
+                },
+                nbHrsfM:{
+                    label: "Nombre de minutes pour une session financée",
+                    labelPos: 'left',
+                    type: 'input',
+                    default: 45,
+                },
+                nbHrsD:{
+                    label: "Nombre de minutes pour une session de soutenance",
+                    labelPos: 'left',
+                    type: 'input',
+                    default: 45,
+                },
                 maxfetchpg:{
                     section: ['Application', 'optimisation'],
                     label: "Maximum de page recherchées dans l'historique",
                     labelPos: 'left',
                     type: 'input',
                     default: 1000,
+                },
+
+                datacachelifetime: {
+                    label: "Temps de conservation des données dans le cache (en ms)",
+                    labelPos: 'left',
+                    type: 'input',
+                    default: 120000,
                 },
                 sizeofcontentlist:{
                     section: ['Interface', 'thème'],
@@ -2669,6 +2433,17 @@
                 }
             },
         });
+    // memoize
+    // isSerialized allow function to use object cf doc : isSerialized -> should the parameters be serialized instead of directly referenced
+    const memoized = moize.default(_calculateBill,{maxAge:GM_config.get("datacachelifetime"),  isSerialized: true, onCacheAdd: function(c,o,m){console.log("cache add");console.dir(c.keys);/*console.dir(o);console.dir(m)*/;}, onCacheHit: function(){console.log("cache hit");}});
+
+
+    function opencfg()
+    {
+        GM_config.open();
+        OCAddonsCfg.style = iframecss;
+    }
+
 })();
 
 
