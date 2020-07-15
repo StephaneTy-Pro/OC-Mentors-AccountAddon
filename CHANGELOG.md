@@ -2,6 +2,10 @@
 
 C : Corrections(Fixes) / B : Corrections de Bug (BugFixes) / F : Ajout de fonctionnalité (Features) / D : Divers (Misc)
 
+ ## 1.00.0001 (15/07/2020)
+
+  - B: Erreur en facture détail suite à changement de version 
+  
  ## 1.00 (15/07/2020)
  
   - F:Ajout de la fonctionnalité de signet (cache sur l'historique)
