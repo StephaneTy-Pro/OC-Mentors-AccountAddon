@@ -2,6 +2,12 @@
 
 C : Corrections(Fixes) / B : Corrections de Bug (BugFixes) / F : Ajout de fonctionnalité (Features) / D : Divers (Misc)
 
+  ## 1.00.0002 (16/07/2020)
+
+  - B: Erreur RAZ la base n'était pas correctement effacée
+  - F: import de base de donnée (json)
+  - F: export de base de données (json)
+ 
  ## 1.00.0001 (15/07/2020)
 
   - B: Erreur en facture détail suite à changement de version 
