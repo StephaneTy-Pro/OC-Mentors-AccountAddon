@@ -31,7 +31,10 @@ Cette barre de menu peut être déplacée en positionnant votre curseur sur le r
 - PDF : Afficher la liste des prestations à facturer pour uné période
 - SLIST : Affichage de la liste des étudiants
 - STATISTICS : Statistiques sur les sessions
-- RAZ : Suppression d'élements en bdd
+- DATABASE : Actions sur la base de données
+  - RAZ : Mise à zero de toutes ou parties des tables (choix de la date de RAZ possible) /!\ action irréversible
+  - Export : Exporter la base de donnée au format json
+  - Import : Importer la base de donnée au format json ... /!\ action irréversible
 - ABOUT : En savoir plus
 
 ## Configuration
