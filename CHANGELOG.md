@@ -2,6 +2,11 @@
 
 C : Corrections(Fixes) / B : Corrections de Bug (BugFixes) / F : Ajout de fonctionnalité (Features) / D : Divers (Misc)
 
+  ## 1.00.0003 (17/07/2020)
+
+  - B: Erreur en création des index d'historique qui a provoqué des erreurs en chaine
+  - B: Correction du format de l'index des historique qui passe d'une chaine à un entier
+
   ## 1.00.0002 (16/07/2020)
 
   - B: Erreur RAZ la base n'était pas correctement effacée
