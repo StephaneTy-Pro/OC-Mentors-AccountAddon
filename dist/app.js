@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Facturier (alpha)
 // @namespace    http://tampermonkey.net/
-// @version      1.00.0002
+// @version      1.00.0003
 // @description  Un addon pour vous aidez dans votre facturation
 // @author       Stéphane TORCHY
 // @updateURL    https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/dist/app.min.js
@@ -13,6 +13,7 @@
 // @grant        GM_registerMenuCommand
 // @grant        GM_xmlhttpRequest
 // @grant        GM.xmlHttpRequest
+// @grant        GM_notification
 
 // @require      https://cdn.jsdelivr.net/npm/lodash@4.17.19/lodash.min.js
 // @require      https://unpkg.com/lowdb@0.17/dist/low.min.js
@@ -109,7 +110,7 @@
     __export(exports, {
       APP_AUTHOR: () => APP_AUTHOR,
       APP_DEBUG_STYLE: () => APP_DEBUG_STYLE,
-      APP_ERROR_STYLE: () => APP_ERROR_STYLE,
+      APP_ERROR_STYLE: () => APP_ERROR_STYLE2,
       APP_INFO_STYLE: () => APP_INFO_STYLE,
       APP_LOG_STYLE: () => APP_LOG_STYLE,
       APP_NAME: () => APP_NAME,
@@ -268,7 +269,7 @@
   const APP_LOG_STYLE = "background-color:black;color:white";
   const APP_WARN_STYLE = "background-color:coral;color:white";
   const APP_INFO_STYLE = "background-color:cyan;color:white";
-  const APP_ERROR_STYLE = "background-color:red;color:white";
+  const APP_ERROR_STYLE2 = "background-color:red;color:white";
   const APP_PERF_STYLE = "background-color:blue;color:white";
   const OC_AUTOFUNDED = "auto-financé";
   const OC_FUNDED = "financé par un tiers";
@@ -303,7 +304,17 @@
       responseType: "text/html",
       headers: {
         "User-Agent": "Mozilla/5.0"
+      },
+      onprogress: function(e) {
+        console.log(`%cOn progress function:`, APP_DEBUG_STYLE);
+        console.log(`%cgm_xhr onprogress lengthComputable: ${e.lengthComputable}`, APP_DEBUG_STYLE);
+        console.log(`%cgm_xhr onprogress loaded: ${e.loaded}`, APP_DEBUG_STYLE);
+        console.log(`%cgm_xhr onprogress total: ${e.total}`, APP_DEBUG_STYLE);
+        console.log(`%cgm_xhr onprogress total: ${e.position}`, APP_DEBUG_STYLE);
+        console.log(`%cgm_xhr onprogress total: ${e.done}`, APP_DEBUG_STYLE);
       }
+    }).catch((error) => {
+      console.error(`%cError ${error}`, APP_ERROR_STYLE);
     });
     let domparser = new DOMParser();
     let doc = domparser.parseFromString(response.responseText.replace(/\n/mg, ""), "text/html");
@@ -955,17 +966,47 @@
       if (dtTo.get("day") < dtTo.daysInMonth()) {
         dtTo = dtTo.endOf("month");
       }
+      console.log(`%cSearch in history session cache data for id: ${dtTo.format("DD/MM/YYYY")}`, APP_DEBUG_STYLE);
       let db = index4.default.Cfg.dbase;
       if (!db.has(History.tbl_name).value()) {
         throw Error(`DB ${History.db_name} NOT FOUND`);
         return -1;
       }
-      let _r = db.get(History.tbl_name).find({id: dtTo.format("YYYYMMDD")}).value();
+      let _r = db.get(History.tbl_name).find({id: +dtTo.format("YYYYMMDD")}).value();
       if (_r === void 0) {
         return -1;
       } else {
         return _r;
       }
+    };
+    static getNearestSessionPage = function(dtTo) {
+      if (dtTo.get("day") < dtTo.daysInMonth()) {
+        dtTo = dtTo.endOf("month");
+      }
+      console.log(`%cSearch in history session cache NEAREST cached data for id: ${dtTo.format("DD/MM/YYYY")}`, APP_DEBUG_STYLE);
+      let db = index4.default.Cfg.dbase;
+      if (!db.has(History.tbl_name).value()) {
+        throw Error(`DB ${History.db_name} NOT FOUND`);
+        return -1;
+      }
+      let _iBaseDay = +dtTo.format("YYYYMMDD");
+      let _r = db.get(History.tbl_name).value().map((i) => +i.id - _iBaseDay);
+      const min = (arr) => Math.min(...arr);
+      let _needle = min(_r) + _iBaseDay;
+      console.log(`%cNearest data in history session cache is data with id: ${dtTo.format("DD/MM/YYYY")}`, APP_DEBUG_STYLE);
+      _r = db.get(History.tbl_name).find({id: _needle}).value();
+      if (_r === void 0) {
+        return -1;
+      } else {
+        return _r;
+      }
+    };
+    static getSameOrNearestSessionPage = function(dtTo) {
+      let _r = History.getSessionPage(dtTo);
+      if (_r === -1) {
+        _r = History.getNearestSessionPage(dtTo);
+      }
+      return _r;
     };
     static delete = function(dtFrom = null, dtTo = null) {
       let db = index4.default.Cfg.dbase;
@@ -1010,11 +1051,11 @@
         throw Error("session page not found in history");
         return -1;
       }
-      db.get(History.tbl_name).find({id: dtTo.format("YYYYMMDD")}).assign({page}).write();
+      db.get(History.tbl_name).find({id: +dtTo.format("YYYYMMDD")}).assign({page}).write();
     };
     static addSessionPage = function(page = 1, dtTo = dayjs("1970-10-06")) {
       let db = index4.default.Cfg.dbase;
-      db.get(History.tbl_name).push(JSON.parse(JSON.stringify({id: dtTo.format("YYYYMMDD"), page}))).write();
+      db.get(History.tbl_name).push(JSON.parse(JSON.stringify({id: +dtTo.format("YYYYMMDD"), page}))).write();
     };
   }
   var history_default = History;
@@ -1293,7 +1334,7 @@
     var res = {};
     let data = [];
     let pg = 1;
-    let _r = history_default.getSessionPage(dtTo);
+    let _r = history_default.getSameOrNearestSessionPage(dtTo);
     if (_r !== void 0 && _r.page > pg) {
       pg = _r.page;
     }
@@ -1305,12 +1346,6 @@
       res = await _historyFetch(dtFrom, dtTo, pg, data);
       if (res.length > 0 && dayjs(res[res.length - 1].when).isSameOrBefore(dtFrom) === true) {
         bBrowse = false;
-      }
-      let _from = dayjs(res[res.length - 1].when);
-      let _to = dayjs(res[20 * iRecurse].when);
-      if (_from.get("month") != _to.get("month")) {
-        let _z = _from.endOf("month");
-        history_default.addOrUpdateSessionPage(pg, _z);
       }
       pg += 1;
       iRecurse += 1;
@@ -1350,8 +1385,14 @@
     if (oDom === null) {
       throw new Error("Something went wrong .... try to navigate forward and backward or click some buttons to change url");
     }
-    if (convertRowToDate(oDom, -1).isAfter(dtTo, "day") === true) {
-      console.log(`optimisation ne charge pas ce n'est pas encore arrivé`);
+    let _from = convertRowToDate(oDom);
+    let _to = convertRowToDate(oDom, -1);
+    if (_from.get("month") != _to.get("month")) {
+      let _z = _to.endOf("month");
+      history_default.addOrUpdateSessionPage(pg, _z);
+    }
+    if (_to.isAfter(dtTo, "day") === true) {
+      console.log(`%cOptimization: oldest (last) data from page are at :${_to.format("DD/MM/YYYY")}, don't analyze what was before end date of extraction ${dtTo.format("DD/MM/YYYY")}`, APP_DEBUG_STYLE);
       return data;
     }
     for (var i = 0; i < oDom.children.length; i += 1) {
@@ -2689,3 +2730,4 @@
   require_src();
 })();
 //# sourceMappingURL=billing.js.map
+
