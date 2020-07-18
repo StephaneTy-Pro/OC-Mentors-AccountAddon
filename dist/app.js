@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         Facturier (alpha)
 // @namespace    http://tampermonkey.net/
-// @version      1.00.0003
+// @version      1.00.0004
 // @description  Un addon pour vous aidez dans votre facturation
 // @author       Stéphane TORCHY
 // @updateURL    https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/dist/app.min.js
 // @downloadURL  https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/dist/app.min.js
 // @match        https://openclassrooms.com/fr/mentorship/dashboard/mentorship-sessions-history*
+// @run-at          document-end
 // @grant        unsafeWindow
 // @grant        GM_addStyle
 // @grant        GM_getResourceText
@@ -337,7 +338,7 @@
   var extractDate = function(sWhen) {
     var _t = sWhen.trim().split(" ");
     try {
-      id = dayjs_locale_fr.months.findIndex((m) => m === _t[1]) + 1;
+      var id = dayjs_locale_fr.months.findIndex((m) => m === _t[1]) + 1;
     } catch (e) {
       throw Error("Erreur qui ne devrait jamais arriver en conversion de date :" + e.stack || e);
     }
@@ -551,8 +552,8 @@
     static isAutoFunded = function(iStudentId) {
       return Student.getFunded(iStudentId).toLowerCase() === OC_AUTOFUNDED;
     };
-    static getFinancialMode = async function(id2) {
-      const oDom = await _fetch(`https://openclassrooms.com/fr/mentorship/students/${id2}/dashboard`, ".mentorshipStudent__details > p");
+    static getFinancialMode = async function(id) {
+      const oDom = await _fetch(`https://openclassrooms.com/fr/mentorship/students/${id}/dashboard`, ".mentorshipStudent__details > p");
       return oDom.innerText;
     };
     static delete = function(dtFrom = null, dtTo = null) {
@@ -1235,13 +1236,13 @@
     var bChecked = false;
     if (sessions4.querySelector("[type=checkbox]") === null) {
       for (const el2 of sessions4.children) {
-        var id2 = getKey(el2.children[0]);
+        var id = getKey(el2.children[0]);
         var inputElem = document.createElement("input");
         inputElem.type = "checkbox";
         inputElem.name = "name";
-        inputElem.value = id2;
+        inputElem.value = id;
         inputElem.id = "id";
-        bChecked = sessions_default.exists(id2);
+        bChecked = sessions_default.exists(id);
         if (bChecked === true)
           inputElem.checked = true;
         var td = document.createElement("td");
@@ -2589,8 +2590,8 @@
     };
   }
   class FpsTracker {
-    static start = function(id2) {
-      const element = document.getElementById(id2);
+    static start = function(id) {
+      const element = document.getElementById(id);
       const moveTo = (xCoord2) => element.style.transform = `translateX(${xCoord2}px)`;
       let xCoord = 0;
       const delta = 7;
@@ -2729,5 +2730,5 @@
   };
   require_src();
 })();
-//# sourceMappingURL=billing.js.map
+//# sourceMappingURL=app-facturier.js.map
 
