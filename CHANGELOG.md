@@ -2,6 +2,11 @@
 
 C : Corrections(Fixes) / B : Corrections de Bug (BugFixes) / F : Ajout de fonctionnalité (Features) / D : Divers (Misc)
 
+
+  ## 1.00.0004 (18/07/2020)
+
+  - B: Erreur sous chrome : var dans extractDate non définie -> crash malgré le try/catch
+  
   ## 1.00.0003 (17/07/2020)
 
   - B: Erreur en création des index d'historique qui a provoqué des erreurs en chaine
