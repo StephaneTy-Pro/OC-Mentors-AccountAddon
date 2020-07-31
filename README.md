@@ -67,6 +67,10 @@ C'est un taux horaire personnalisé, vous pouvez déterminer dans la configurati
 
 Depuis juin 2020 les auto financés sont traités différement des financés, il faut donc que l'application puisse connaitre cet état. Puisque vous n'utilisez pas tous l'application depuis le début, si un étudiant n'est plus dans les effectifs l'application n'est pas capable de savoir si l'étudiant est auto financé ou pas (la zone parcours est là pour information et est facultative).
 
+> Pourquoi ma collecte dans l'historique s'arrête inopinément ?
+
+Parce qu'Openclassrooms (via leur CDN) finit par blacklister des ip quand on fait trop de requête (captcha à compléter) généralement ça refonctionne quelques dix minutes plus tard. Pour contourner le probleme vous pouvez toujours essayer d'afficher l'historique il est alors possible que vous ayez à compléter le captcha.
+
 ## Configuration
 
 Si vous faites un click gauche sur l'icone présent dans la barre de votre navigateur vous devriez voir apparaitre un menu avec une option "OC- facturier- configure", vous pourrez notamment définir les temps passé par type de session pour calculer votre THM
