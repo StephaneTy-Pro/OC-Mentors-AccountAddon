@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name         Facturier (alpha)
 // @namespace    http://tampermonkey.net/
-// @version      1.00.0004
+// @version      1.00.0005
 // @description  Un addon pour vous aidez dans votre facturation
 // @author       Stéphane TORCHY
-// @updateURL    https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/dist/app.min.js
-// @downloadURL  https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/dist/app.min.js
+// @updateURL    https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/dist/app.js
+// @downloadURL  https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/dist/app.js
 // @match        https://openclassrooms.com/fr/mentorship/dashboard/mentorship-sessions-history*
 // @run-at          document-end
 // @grant        unsafeWindow
@@ -111,7 +111,7 @@
     __export(exports, {
       APP_AUTHOR: () => APP_AUTHOR,
       APP_DEBUG_STYLE: () => APP_DEBUG_STYLE,
-      APP_ERROR_STYLE: () => APP_ERROR_STYLE2,
+      APP_ERROR_STYLE: () => APP_ERROR_STYLE,
       APP_INFO_STYLE: () => APP_INFO_STYLE,
       APP_LOG_STYLE: () => APP_LOG_STYLE,
       APP_NAME: () => APP_NAME,
@@ -137,6 +137,7 @@
       Cfg: {
         dbase: null
       },
+      raf: null,
       start: async function() {
         await domReady();
         const bSupport = Facturier.checkSupport();
@@ -162,7 +163,6 @@
         if (GM_config.get("hackheaderzindex") === true) {
           document.getElementById("header").style.zIndex = 0;
         }
-        GM_addStyle(".swal2-content{font-size:" + GM_config.get("sizeofcontentlist") + "}");
         GM_addStyle(".swal2-title{font-size:1.275em)");
         Facturier._main();
       },
@@ -170,6 +170,8 @@
       },
       _main: function() {
         console.log("​​​%cMainLoaded​​​", APP_DEBUG_STYLE);
+        gm_perf_default.paintTiming();
+        gm_perf_default.longTaskTiming();
         let adapter = new LocalStorage("db");
         var db = low(adapter);
         db.defaults({students: [], sessions: [], f_archives: [], history_session_cache: []}).write();
@@ -201,16 +203,20 @@
             }
           }
         }
-        if (GM.info.script.downloadURL === "https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/billing.js") {
+        if (GM.info.script.downloadURL === "http://localhost:8000/dist/app-facturier.iife.js") {
           console.log("%cALERTE .... version locale !!!!!! ", "background-color:coral;color:white");
           unsafeWindow.Facturier = {libs: [], cfg: {dbase: null}};
           unsafeWindow.Facturier.cfg.dbase = Facturier.Cfg.dbase;
           unsafeWindow.Facturier.libs.push({id: "fetchInject", ptr: fetchInject});
           unsafeWindow.Facturier.libs.push({id: "dayjs", ptr: dayjs});
           console.log("%cImportants values are exported in unsafeWindow.Facturier", APP_DEBUG_STYLE);
+          console.log("%c test readfile", APP_DEBUG_STYLE);
+          readFile("file:////media/pwyll/USB120Go/DevStt/UserScripts/SttAddon/src/update_data_base.js", function(_res) {
+            console.log(_res);
+          });
           Facturier.loadDependencies();
         } else {
-          console.log(`GM.info.script.downloadURL url : ${GM.info.script.downloadURL}`);
+          console.log(`%c GM.info.script.downloadURL url : ${GM.info.script.downloadURL}`, APP_DEBUG_STYLE);
         }
       },
       loadDependencies: function() {
@@ -220,6 +226,29 @@
         fetchInject(rDependencies).then(() => {
           console.log(`dependencies ${rDependencies} loaded`);
         });
+      },
+      overrideDebug: function() {
+        var open = window.XMLHttpRequest.prototype.open, send = window.XMLHttpRequest.prototype.send;
+        function openReplacement(method, url, async, user, password) {
+          this._url = url;
+          return open.apply(this, arguments);
+        }
+        function sendReplacement(data) {
+          if (this.onreadystatechange) {
+            this._onreadystatechange = this.onreadystatechange;
+          }
+          console.log(`%c Request sent : ${data}`, APP_DEBUG_STYLE);
+          this.onreadystatechange = onReadyStateChangeReplacement;
+          return send.apply(this, arguments);
+        }
+        function onReadyStateChangeReplacement() {
+          console.log(`%c Ready state changed to: ${this.readyState}`, APP_DEBUG_STYLE);
+          if (this._onreadystatechange) {
+            return this._onreadystatechange.apply(this, arguments);
+          }
+        }
+        window.XMLHttpRequest.prototype.open = openReplacement;
+        window.XMLHttpRequest.prototype.send = sendReplacement;
       }
     };
     if (window.Facturier !== void 0) {
@@ -270,7 +299,7 @@
   const APP_LOG_STYLE = "background-color:black;color:white";
   const APP_WARN_STYLE = "background-color:coral;color:white";
   const APP_INFO_STYLE = "background-color:cyan;color:white";
-  const APP_ERROR_STYLE2 = "background-color:red;color:white";
+  const APP_ERROR_STYLE = "background-color:red;color:white";
   const APP_PERF_STYLE = "background-color:blue;color:white";
   const OC_AUTOFUNDED = "auto-financé";
   const OC_FUNDED = "financé par un tiers";
@@ -319,6 +348,11 @@
     });
     let domparser = new DOMParser();
     let doc = domparser.parseFromString(response.responseText.replace(/\n/mg, ""), "text/html");
+    let sCaptcha = doc.querySelector("meta[id=captcha-bypass]");
+    if (sCaptcha !== null) {
+      console.error(`%cError CloudFlare CAPTCHA : ${doc.querySelector("title").innerText}`, APP_DEBUG_STYLE);
+      throw new Error("Must Respond to Cloudflare Captcha or waiting....");
+    }
     var oDom = {};
     if (bAll === true) {
       oDom = doc.querySelectorAll(sPath);
@@ -332,7 +366,7 @@
       var _t1 = (el.children[0].href || "/").split("/");
       return _t1[_t1.length + idx];
     } catch (e) {
-      throw Error("Erreur qui ne devrait jamais arriver en getkey :" + e.stack || e);
+      console.error(`%cError in getkey${e.stack || e}`, APP_ERROR_STYLE);
     }
   };
   var extractDate = function(sWhen) {
@@ -340,7 +374,7 @@
     try {
       var id = dayjs_locale_fr.months.findIndex((m) => m === _t[1]) + 1;
     } catch (e) {
-      throw Error("Erreur qui ne devrait jamais arriver en conversion de date :" + e.stack || e);
+      console.error(`%cError in extractDate${e.stack || e}`, APP_ERROR_STYLE);
     }
     return `${_t[2]}-${id}-${_t[0]}T${_t[4]}`;
   };
@@ -353,8 +387,20 @@
     var dtRowDate = dayjs(f_sRowDate);
     return dtRowDate;
   };
-  function sleep(ms) {
+  var sleep = function(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  };
+  function readFile(_path, _cb) {
+    console.info("Reading:", _path);
+    return fetch(_path, {mode: "same-origin"}).then(function(_res) {
+      return _res.blob();
+    }).then(function(_blob) {
+      var reader = new FileReader();
+      reader.addEventListener("loadend", function() {
+        _cb(this.result);
+      });
+      reader.readAsText(_blob);
+    });
   }
 
   // src/polyfills.js
@@ -814,7 +860,7 @@
 
   // src/accounting.js
   const index = __toModule(require_src());
-  class Accounting2 {
+  class Accounting {
     static calculateBill = function(dtFrom, dtTo) {
       let sArchiveId = dtTo.format("YYYYMM");
       if (archives_default.exists(sArchiveId) === true) {
@@ -828,7 +874,7 @@
       if (typeof dtTo === "string") {
         dtTo = dtTo.format("YYYY-MM-DD");
       }
-      return Accounting2.memoized(dtFrom, dtTo);
+      return Accounting.memoized(dtFrom, dtTo);
     };
     static _calculateBill = function(dtFrom, dtTo) {
       if (typeof dtFrom === "string") {
@@ -945,7 +991,7 @@
       }
       return myArray;
     };
-    static memoized = moize.default(Accounting2._calculateBill, {
+    static memoized = moize.default(Accounting._calculateBill, {
       maxAge: 12e4,
       isSerialized: true,
       onCacheAdd: function(c, o, m) {
@@ -957,7 +1003,7 @@
       }
     });
   }
-  var accounting_default = Accounting2;
+  var accounting_default = Accounting;
 
   // src/history.js
   const index4 = __toModule(require_src());
@@ -1061,6 +1107,20 @@
   }
   var history_default = History;
 
+  // src/date.lib.js
+  var workday_count = function(start, end) {
+    let lookup = [
+      [0, 1, 2, 3, 4, 5, 5],
+      [5, 1, 2, 3, 4, 5, 5],
+      [4, 5, 1, 2, 3, 4, 4],
+      [3, 4, 5, 1, 2, 3, 3],
+      [2, 3, 4, 5, 1, 2, 2],
+      [1, 2, 3, 4, 5, 1, 1],
+      [0, 1, 2, 3, 4, 5, 0]
+    ];
+    return Math.trunc(end.diff(start, "days") / 7) * 5 + lookup[start.day()][end.day()];
+  };
+
   // src/lists.js
   const index5 = __toModule(require_src());
   class List {
@@ -1107,35 +1167,85 @@
       return _r;
     };
     static getListStatistic = function(dtFrom, dtTo) {
-      let dtCurFrom = dtFrom;
+      let dtCurFrom = dtFrom.clone();
+      let dtCurTo = dtCurFrom.endOf("month");
       let aData = [];
       let aStat = [];
+      let _iMaxIndex = dtTo.get("month") - dtFrom.get("month");
       var t0 = performance.now();
       while (dtCurFrom.isSameOrBefore(dtTo, "day")) {
-        let dtCurTo = dtCurFrom.endOf("month");
-        aData.push(Accounting.calculateBill(dtCurFrom, dtCurTo));
+        aData.push(accounting_default.calculateBill(dtCurFrom, dtCurTo));
         dtCurFrom = dtCurFrom.add(1, "month");
+        dtCurTo = dtCurFrom.endOf("month");
       }
       var t1 = performance.now();
       console.log("%cComputed data between the two dates in" + (t1 - t0) + " milliseconds.", APP_PERF_STYLE);
-      aStat[1][1] = 666;
+      let _m = 0;
+      dtCurFrom = dtFrom.clone();
+      dtCurTo = dtCurFrom.endOf("month");
+      while (_m <= _iMaxIndex) {
+        let iCurrentMaxLevel = aData[_m][0].max_level;
+        aStat[_m] = {header: {dtFrom: null, dtTo: null, created_at: null}, sessions: {total: 0, nb: 0, pu: 0, nbc: 0}, defenses: {total: 0, nb: 0, pu: 0, nbc: 0}, coaches: {total: 0, nb: 0, pu: 0, nbc: 0}, bonus: 0, kpi: {jrs: 0, hrs: 0, hrsp: 0}};
+        let _l = 1;
+        while (_l < iCurrentMaxLevel) {
+          let _z = [...Array(8).keys()];
+          for (let _i = 0; _i < _z.length; _i += 1) {
+            aStat[_m].sessions.total += aData[_m][_l].sessions.number[_i] * aData[_m][_l].sessions.pu[_i];
+            aStat[_m].sessions.nb += aData[_m][_l].sessions.number[_i];
+            aStat[_m].defenses.total += aData[_m][_l].defenses.number[_i] * aData[_m][_l].defenses.pu[_i];
+            aStat[_m].defenses.nb += aData[_m][_l].defenses.number[_i];
+            if (core_default.isInOldMode(dtCurFrom)) {
+              if ([1, 5].includes(_i)) {
+                aStat[_m].sessions.nbc += aData[_m][_l].sessions.number[_i];
+                aStat[_m].defenses.nbc += aData[_m][_l].defenses.number[_i];
+              }
+            } else {
+              if ([1, 2, 5, 6].includes(_i)) {
+                aStat[_m].sessions.nbc += aData[_m][_l].sessions.number[_i];
+                aStat[_m].defenses.nbc += aData[_m][_l].defenses.number[_i];
+              }
+            }
+            if (core_default.isInOldMode(dtCurFrom)) {
+              aStat[_m].kpi.hrs += (aData[_m][_l].sessions.number[_i] - aData[_m][_l].defenses.number[_i]) * (45 / 60);
+              aStat[_m].kpi.hrsp += (aData[_m][_l].sessions.number[_i] - aData[_m][_l].defenses.number[_i]) * (GM_config.get("nbHrsfM") / 60);
+            } else {
+              if ([4, 5, 6, 7].includes(_i)) {
+                aStat[_m].kpi.hrs += (aData[_m][_l].sessions.number[_i] - aData[_m][_l].defenses.number[_i]) * (30 / 60);
+                aStat[_m].kpi.hrsp += (aData[_m][_l].sessions.number[_i] - aData[_m][_l].defenses.number[_i]) * (GM_config.get("nbHrsAfM") / 60);
+              }
+              if ([0, 1, 2, 3].includes(_i)) {
+                aStat[_m].kpi.hrs += (aData[_m][_l].sessions.number[_i] - aData[_m][_l].defenses.number[_i]) * (45 / 60);
+                aStat[_m].kpi.hrsp += (aData[_m][_l].sessions.number[_i] - aData[_m][_l].defenses.number[_i]) * (GM_config.get("nbHrsfM") / 60);
+              }
+            }
+            aStat[_m].kpi.hrs += aData[_m][_l].defenses.number[_i] * (45 / 60);
+            aStat[_m].kpi.hrsp += aData[_m][_l].defenses.number[_i] * (GM_config.get("nbHrsD") / 60);
+          }
+          _l += 1;
+        }
+        aStat[_m].sessions.pu = aStat[_m].sessions.total / (aStat[_m].sessions.nb - aStat[_m].sessions.nbc);
+        aStat[_m].defenses.pu = aStat[_m].defenses.total / (aStat[_m].defenses.nb - aStat[_m].defenses.nbc);
+        aStat[_m].coaches.total = aStat[_m].sessions.total - aStat[_m].defenses.total;
+        aStat[_m].coaches.nb = aStat[_m].sessions.nb - aStat[_m].defenses.nb;
+        aStat[_m].coaches.nbc = aStat[_m].sessions.nbc - aStat[_m].defenses.nbc;
+        aStat[_m].coaches.pu = aStat[_m].coaches.total / (aStat[_m].coaches.nb - aStat[_m].coaches.nbc);
+        for (let _i = 0; _i < aData[_m][0].bonus.length; _i += 1) {
+          aStat[_m].bonus += aData[_m][0].bonus[_i].sessions > 0 ? 30 : 0;
+        }
+        if (dtCurTo.isAfter(dtTo, "day"))
+          dtCurTo = dtTo.clone();
+        aStat[_m].kpi.jrs = workday_count(dtCurFrom, dtCurTo);
+        aStat[_m].header.dtFrom = dtCurFrom.format("YYYY-MM-DD");
+        aStat[_m].header.dtTo = dtCurTo.format("YYYY-MM-DD");
+        aStat[_m].header.created_at = dayjs().format("YYYY-MM-DD HH:mm:ss");
+        dtCurFrom = dtCurFrom.add(1, "month");
+        dtCurTo = dtCurFrom.endOf("month");
+        _m += 1;
+      }
+      return aStat;
     };
   }
   var lists_default = List;
-
-  // src/date.lib.js
-  var workday_count = function(start, end) {
-    let lookup = [
-      [0, 1, 2, 3, 4, 5, 5],
-      [5, 1, 2, 3, 4, 5, 5],
-      [4, 5, 1, 2, 3, 4, 4],
-      [3, 4, 5, 1, 2, 3, 3],
-      [2, 3, 4, 5, 1, 2, 2],
-      [1, 2, 3, 4, 5, 1, 1],
-      [0, 1, 2, 3, 4, 5, 0]
-    ];
-    return Math.trunc(end.diff(start, "days") / 7) * 5 + lookup[start.day()][end.day()];
-  };
 
   // src/pdf.js
   class PDF {
@@ -1317,17 +1427,7 @@
       }
     });
   };
-  var collectChecked = async function() {
-    var sPath = "table.crud-list tbody input:checked";
-    var cb = document.querySelectorAll(sPath);
-    for (var i = 0; i < cb.length; i += 1) {
-      var oEl = cb[i].parentElement.parentElement;
-      var me = sessions_default.parseTable(oEl);
-      await sessions_default.add(me);
-    }
-    toastOk("Collecte des sessions cochées\nterminée");
-  };
-  var historyFetch = async function() {
+  var collectAuto = async function() {
     var [dtFrom, dtTo] = await popupDateSelector(dayjs().startOf("month"), dayjs().endOf("month"));
     let iRecurse = 0;
     let iMaxRecurse = GM_config.get("maxfetchpg");
@@ -1344,7 +1444,12 @@
         console.warn("%cEMERGENCY EXIT LOOP", APP_WARN_STYLE);
         break;
       }
-      res = await _historyFetch(dtFrom, dtTo, pg, data);
+      try {
+        res = await _historyFetch(dtFrom, dtTo, pg, data);
+      } catch (e) {
+        console.error(`%c IRRECOVERABLE ERROR ... ${e}, will exit !!!! `, APP_ERROR_STYLE);
+        throw new Error();
+      }
       if (res.length > 0 && dayjs(res[res.length - 1].when).isSameOrBefore(dtFrom) === true) {
         bBrowse = false;
       }
@@ -1373,6 +1478,16 @@
     addCbox();
     toastOk("Collecte automatique terminée");
   };
+  var collectChecked = async function() {
+    var sPath = "table.crud-list tbody input:checked";
+    var cb = document.querySelectorAll(sPath);
+    for (var i = 0; i < cb.length; i += 1) {
+      var oEl = cb[i].parentElement.parentElement;
+      var me = sessions_default.parseTable(oEl);
+      await sessions_default.add(me);
+    }
+    toastOk("Collecte des sessions cochées\nterminée");
+  };
   var _historyFetch = async function(dtFrom, dtTo, pg = 1, data = []) {
     Swal.fire({
       position: "top-end",
@@ -1382,9 +1497,14 @@
       showConfirmButton: false,
       timer: 3e3
     });
-    let oDom = await _fetch(`https://openclassrooms.com/fr/mentorship/dashboard/mentorship-sessions-history?page=${pg}`, "table.crud-list tbody");
+    let oDom = null;
+    try {
+      oDom = await _fetch(`https://openclassrooms.com/fr/mentorship/dashboard/mentorship-sessions-history?page=${pg}`, "table.crud-list tbody");
+    } catch (e) {
+      console.error(`%c _historyFetch : ${e}`, APP_ERROR_STYLE);
+    }
     if (oDom === null) {
-      throw new Error("Something went wrong .... try to navigate forward and backward or click some buttons to change url");
+      throw new Error(`Something went wrong could'nt collect anything from ${dtFrom.format("DD/MM/YYYY")} to ${dtTo.format("DD/MM/YYYY")} working on history page:${pg}.... try to navigate forward and backward or click some buttons to change url`);
     }
     let _from = convertRowToDate(oDom);
     let _to = convertRowToDate(oDom, -1);
@@ -2144,386 +2264,144 @@
   };
   var statistics = async function() {
     var [dtFrom, dtTo] = await popupDateSelector(dayjs().startOf("month"), dayjs().endOf("month"), false);
-    let dtCurFrom = dtFrom;
-    let aData = [];
-    var t0 = performance.now();
-    while (dtCurFrom.isSameOrBefore(dtTo, "day")) {
-      let dtCurTo2 = dtCurFrom.endOf("month");
-      aData.push(accounting_default.calculateBill(dtCurFrom, dtCurTo2));
+    if (dtFrom === null || dtTo === null) {
+      console.log("%cError need date from, date to", APP_ERROR_STYLE);
+      throw new Error();
+    }
+    const aData = lists_default.getListStatistic(dtFrom, dtTo);
+    let sHtml = "";
+    let aHtml = new Array(22);
+    let aTot = Array.apply(null, Array(22)).map(Number.prototype.valueOf, 0);
+    let dtCurFrom = dtFrom.clone();
+    let dtCurTo = dtCurFrom.endOf("month");
+    let sSuffix = "";
+    aHtml[0] = `<thead><tr><th>Sessions</th>`;
+    aHtml[1] = `<tbody><tr><td>Sessions</td>`;
+    aHtml[2] = `<tr class="header"><td>Montant</td>`;
+    aHtml[3] = `<tr><td>Nb.`;
+    aHtml[4] = `<tr><td>Pu`;
+    aHtml[5] = `<tr class="header"><td>Mentorat</td>`;
+    aHtml[6] = `<tr><td>Montant</td>`;
+    aHtml[7] = `<tr><td>Nb.`;
+    aHtml[8] = `<tr><td>Pu`;
+    aHtml[9] = `<tr class="header"><td>Soutenances</td>`;
+    aHtml[10] = `<tr><td>Montant</td>`;
+    aHtml[11] = `<tr><td>Nb.`;
+    aHtml[12] = `<tr><td>Pu`;
+    aHtml[13] = `<tr class="header"><td>Bonus</td>`;
+    aHtml[14] = `<tr><td>Bonus AF</td>`;
+    aHtml[15] = `<tr class="header"><td>KPI</td>`;
+    aHtml[16] = `<tr><td>NbJrs</td>`;
+    aHtml[17] = `<tr><td>TJM</td>`;
+    aHtml[18] = `<tr><td>Nb hrs</td>`;
+    aHtml[19] = `<tr><td>THM</td>`;
+    aHtml[20] = `<tr><td>Nb hrs (p.)</td>`;
+    aHtml[21] = `<tr><td>THM (p)</td>`;
+    for (var _m = 0; _m < aData.length; _m += 1) {
+      aTot[2] += aData[_m].sessions.total;
+      aTot[3] += aData[_m].sessions.nb - aData[_m].sessions.nbc;
+      aTot[4] += aData[_m].sessions.pu;
+      aTot[6] += aData[_m].coaches.total;
+      aTot[7] += aData[_m].coaches.nb - aData[_m].coaches.nbc;
+      aTot[8] += aData[_m].coaches.pu;
+      aTot[10] += aData[_m].defenses.total;
+      aTot[11] += aData[_m].defenses.nb - aData[_m].defenses.nbc;
+      aTot[12] += aData[_m].defenses.pu;
+      aTot[14] += aData[_m].bonus;
+      aTot[16] += aData[_m].kpi.jrs;
+      aTot[18] += aData[_m].kpi.hrs;
+      aTot[20] += aData[_m].kpi.hrsp;
+      if (aData.length == 1)
+        sSuffix = "</tr>";
+      if (_m === aData.length - 1 && aData.length > 1) {
+        if (dtCurTo.isAfter(dtTo, "day")) {
+          aTot[2] -= aData[_m].sessions.total;
+          aTot[3] -= aData[_m].sessions.nb - aData[_m].sessions.nbc;
+          aTot[4] -= aData[_m].sessions.pu;
+          aTot[6] -= aData[_m].coaches.total;
+          aTot[7] -= aData[_m].coaches.nb - aData[_m].coaches.nbc;
+          aTot[8] -= aData[_m].coaches.pu;
+          aTot[10] -= aData[_m].defenses.total;
+          aTot[11] -= aData[_m].defenses.nb - aData[_m].defenses.nbc;
+          aTot[12] -= aData[_m].defenses.pu;
+          aTot[14] -= aData[_m].bonus;
+          aTot[16] -= aData[_m].kpi.jrs;
+          aTot[18] -= aData[_m].kpi.hrs;
+          aTot[20] -= aData[_m].kpi.hrsp;
+          aHtml[0] += `<td>Total(moy)</td><td>${dayjs(aData[_m].header.dtTo).format("MMMM")}</td></thead></tr>`;
+          aHtml[1] += `<td>&nbsp;</td><td>&nbsp;</td></tr>`;
+          aHtml[2] += `<td>${aTot[2]} (${(aTot[2] / (aData.length - 1)).toFixed(2)})</td><td>${aData[_m].sessions.total}</td></tr>`;
+          aHtml[3] += `<td>${aTot[3]} (${(aTot[3] / (aData.length - 1)).toFixed(2)})</td><td>${aData[_m].sessions.nb} (${aData[_m].sessions.nbc})</td></tr>`;
+          aHtml[4] += `<td> n/a (${(aTot[4] / (aData.length - 1)).toFixed(2)})</td><td>${aData[_m].sessions.pu.toFixed(2)}</td></tr>`;
+          aHtml[5] += `<td>&nbsp;</td><td>&nbsp;</td></tr>`;
+          aHtml[6] += `<td>${aTot[6]} (${(aTot[6] / (aData.length - 1)).toFixed(2)})</td><td>${aData[_m].coaches.total}</td></tr>`;
+          aHtml[7] += `<td>${aTot[7]} (${(aTot[7] / (aData.length - 1)).toFixed(2)})</td><td>${aData[_m].coaches.nb} (${aData[_m].coaches.nbc})</td></tr>`;
+          aHtml[8] += `<td> n/a (${(aTot[8] / (aData.length - 1)).toFixed(2)})</td><td>${aData[_m].coaches.pu.toFixed(2)}</td></tr>`;
+          aHtml[9] += `<td>&nbsp;</td>${sSuffix}`;
+          aHtml[10] += `<td>${aTot[10]} (${(aTot[10] / (aData.length - 1)).toFixed(2)})</td><td>${aData[_m].defenses.total}</td></tr>`;
+          aHtml[11] += `<td>${aTot[11]} (${(aTot[11] / (aData.length - 1)).toFixed(2)})</td><td>${aData[_m].defenses.nb} (${aData[_m].defenses.nbc})</td></tr>`;
+          aHtml[12] += `<td> n/a (${(aTot[12] / (aData.length - 1)).toFixed(2)})</td><td>${aData[_m].defenses.pu.toFixed(2)}</td></tr>`;
+          aHtml[13] += `<td>&nbsp;</td></tr>`;
+          aHtml[14] += `<td>${aTot[14]} (${(aTot[14] / (aData.length - 1)).toFixed(2)})</td><td>${aData[_m].bonus}</td></tr>`;
+          aHtml[15] += `<td>&nbsp;</td></tr>`;
+          aHtml[16] += `<td>${aTot[16]} (${(aTot[16] / (aData.length - 1)).toFixed(2)})</td><td>${aData[_m].kpi.jrs}</td></tr>`;
+          aHtml[17] += `<td> n/a (${(aTot[2] / aTot[16]).toFixed(2)})</td><td>${(aData[_m].sessions.total / aData[_m].kpi.jrs).toFixed(2)}</td></tr>`;
+          aHtml[18] += `<td>${aTot[18]} (${(aTot[18] / (aData.length - 1)).toFixed(2)})</td><td>${aData[_m].kpi.hrs}</td></tr>`;
+          aHtml[19] += `<td> n/a  (${(aTot[2] / aTot[18]).toFixed(2)})</td><td>${(aData[_m].sessions.total / aData[_m].kpi.hrs).toFixed(2)}</td></tr>`;
+          aHtml[20] += `<td>${aTot[20]} (${(aTot[20] / (aData.length - 1)).toFixed(2)})</td><td>${aData[_m].kpi.hrsp}</td></tr>`;
+          aHtml[21] += `<td> n/a  (${(aTot[2] / aTot[20]).toFixed(2)})</td><td>${(aData[_m].sessions.total / aData[_m].kpi.hrsp).toFixed(2)}</td></tr>`;
+        } else {
+          aHtml[0] += `<td>${dayjs(aData[_m].header.dtTo).format("MMMM")}</td><td>Tot.</td></thead></tr>`;
+          aHtml[1] += `<td>&nbsp;</td><td>&nbsp;</td></tr>`;
+          aHtml[2] += `<td>${aData[_m].sessions.total}</td><td>${aTot[2]} (${(aTot[2] / aData.length).toFixed(2)})</td></tr>`;
+          aHtml[3] += `<td>${aData[_m].sessions.nb} (${aData[_m].sessions.nbc})</td><td>${aTot[3]} (${(aTot[3] / aData.length).toFixed(2)})</td></tr>`;
+          aHtml[4] += `<td>${aData[_m].sessions.pu.toFixed(2)}</td><td> n/a (${(aTot[4] / aData.length).toFixed(2)})</td></tr>`;
+          aHtml[5] += `<td>&nbsp;</td><td>&nbsp;</td></tr>`;
+          aHtml[6] += `<td>${aData[_m].coaches.total}</td><td>${aTot[6]} (${(aTot[6] / aData.length).toFixed(2)})</td></tr>`;
+          aHtml[7] += `<td>${aData[_m].coaches.nb} (${aData[_m].coaches.nbc})</td><td>${aTot[7]} (${(aTot[7] / aData.length).toFixed(2)})</td></tr>`;
+          aHtml[8] += `<td>${aData[_m].coaches.pu.toFixed(2)}</td><td> n/a (${(aTot[8] / aData.length).toFixed(2)})</td></tr>`;
+          aHtml[9] += `<td>&nbsp;</td>${sSuffix}`;
+          aHtml[10] += `<td>${aData[_m].defenses.total}</td><td>${aTot[10]} (${(aTot[10] / aData.length).toFixed(2)})</td></tr>`;
+          aHtml[11] += `<td>${aData[_m].defenses.nb} (${aData[_m].defenses.nbc})</td><td>${aTot[11]} (${(aTot[11] / aData.length).toFixed(2)})</td></tr>`;
+          aHtml[12] += `<td>${aData[_m].defenses.pu.toFixed(2)}</td><td> n/a (${(aTot[12] / aData.length).toFixed(2)})</td></tr>`;
+          aHtml[13] += `<td>&nbsp;</td></tr>`;
+          aHtml[14] += `<td>${aData[_m].bonus}</td><td>${aTot[14]} (${(aTot[14] / aData.length).toFixed(2)})</td></tr>`;
+          aHtml[15] += `<td>&nbsp;</td></tr>`;
+          aHtml[16] += `<td>${aData[_m].kpi.jrs}</td><td>${aTot[16]} (${(aTot[16] / aData.length).toFixed(2)})</td></tr>`;
+          aHtml[17] += `<td>${(aData[_m].sessions.total / aData[_m].kpi.jrs).toFixed(2)}</td><td> n/a (${(aTot[2] / aTot[16]).toFixed(2)})</td></tr>`;
+          aHtml[18] += `<td>${aData[_m].kpi.hrs}</td><td>${aTot[18]} (${(aTot[18] / aData.length).toFixed(2)})</td></tr>`;
+          aHtml[19] += `<td>${(aData[_m].sessions.total / aData[_m].kpi.hrs).toFixed(2)}</td><td> n/a  (${(aTot[2] / aTot[18]).toFixed(2)})</td></tr>`;
+          aHtml[20] += `<td>${aData[_m].kpi.hrsp}</td><td>${aTot[20]} (${(aTot[20] / aData.length).toFixed(2)})</td></tr>`;
+          aHtml[21] += `<td>${(aData[_m].sessions.total / aData[_m].kpi.hrsp).toFixed(2)}</td><td> n/a  (${(aTot[2] / aTot[20]).toFixed(2)})</td></tr>`;
+        }
+      } else {
+        aHtml[0] += `<td>${dayjs(aData[_m].header.dtTo).format("MMMM")}</td>${sSuffix}`;
+        aHtml[1] += `<td>&nbsp;</td>${sSuffix}`;
+        aHtml[2] += `<td>${aData[_m].sessions.total}</td>${sSuffix}`;
+        aHtml[3] += `<td>${aData[_m].sessions.nb} (${aData[_m].sessions.nbc})</td>${sSuffix}`;
+        aHtml[4] += `<td>${aData[_m].sessions.pu.toFixed(2)}</td>${sSuffix}`;
+        aHtml[5] += `<td>&nbsp;</td>${sSuffix}`;
+        aHtml[6] += `<td>${aData[_m].coaches.total}</td>${sSuffix}`;
+        aHtml[7] += `<td>${aData[_m].coaches.nb} (${aData[_m].sessions.nbc})</td>${sSuffix}`;
+        aHtml[8] += `<td>${aData[_m].coaches.pu.toFixed(2)}</td>${sSuffix}`;
+        aHtml[9] += `<td>&nbsp;</td>${sSuffix}`;
+        aHtml[10] += `<td>${aData[_m].defenses.total}</td>${sSuffix}`;
+        aHtml[11] += `<td>${aData[_m].defenses.nb} (${aData[_m].defenses.nbc})</td>${sSuffix}`;
+        aHtml[12] += `<td>${aData[_m].defenses.pu.toFixed(2)}</td>${sSuffix}`;
+        aHtml[13] += `<td>&nbsp;</td>${sSuffix}`;
+        aHtml[14] += `<td>${aData[_m].bonus}</td>${sSuffix}`;
+        aHtml[15] += `<td>&nbsp;</td>${sSuffix}`;
+        aHtml[16] += `<td>${aData[_m].kpi.jrs}</td>${sSuffix}`;
+        aHtml[17] += `<td>${(aData[_m].sessions.total / aData[_m].kpi.jrs).toFixed(2)}</td>${sSuffix}`;
+        aHtml[18] += `<td>${aData[_m].kpi.hrs}</td>${sSuffix}`;
+        aHtml[19] += `<td>${(aData[_m].sessions.total / aData[_m].kpi.hrs).toFixed(2)}</td>${sSuffix}`;
+        aHtml[20] += `<td>${aData[_m].kpi.hrsp}</td>${sSuffix}`;
+        aHtml[21] += `<td>${(aData[_m].sessions.total / aData[_m].kpi.hrsp).toFixed(2)}</td>${sSuffix}`;
+      }
       dtCurFrom = dtCurFrom.add(1, "month");
+      dtCurTo = dtCurFrom.endOf("month");
     }
-    var t1 = performance.now();
-    console.log("%cComputed data between the two dates in" + (t1 - t0) + " milliseconds.", APP_PERF_STYLE);
-    var sHtml = "";
-    var _iMaxIndex = dtTo.get("month") - dtFrom.get("month");
-    sHtml += "<table>";
-    sHtml += "<thead>";
-    sHtml += "<tr><th>Origine</th>";
-    var _m1 = 0;
-    while (_m1 <= _iMaxIndex) {
-      let _dt = dtFrom.add(_m1, "month");
-      sHtml += `<th>${_dt.format("MMMM")}</th>`;
-      _m1 += 1;
-    }
-    sHtml += "<th>Total</th><th>Moyenne</th></tr>";
-    sHtml += "</thdead>";
-    sHtml += "<tbody>";
-    sHtml += "<tr>";
-    sHtml += `<td colspan=${_iMaxIndex} style="text-align:left;">Sessions</td></tr>`;
-    sHtml += "<tr>";
-    sHtml += "<td>Sessions (Mt)</td>";
-    let iTotalRow = 0;
-    let _m = 0;
-    let iTotal = 0;
-    let aNbInMonth = [];
-    let aNbDInMonth = [];
-    let aNbMInMonth = [];
-    let aAmInMonth = [];
-    let aCanceledNbInMonth = [];
-    let aCanceledNbDInMonth = [];
-    let aCanceledNbMInMonth = [];
-    dtCurFrom = dtFrom;
-    while (_m <= _iMaxIndex) {
-      let _l = 1;
-      aNbInMonth[_m] = 0;
-      aNbDInMonth[_m] = 0;
-      aNbMInMonth[_m] = 0;
-      aCanceledNbInMonth[_m] = 0;
-      aCanceledNbDInMonth[_m] = 0;
-      aCanceledNbMInMonth[_m] = 0;
-      let iCurrentMaxLevel = aData[_m][0].max_level;
-      while (_l < iCurrentMaxLevel) {
-        let _z = [...Array(8).keys()];
-        for (let _i = 0; _i < _z.length; _i += 1) {
-          iTotal += aData[_m][_l].sessions.number[_i] * aData[_m][_l].sessions.pu[_i];
-          aNbInMonth[_m] += aData[_m][_l].sessions.number[_i];
-          aNbDInMonth[_m] += aData[_m][_l].defenses.number[_i];
-          aNbMInMonth[_m] += aData[_m][_l].sessions.number[_i] - aData[_m][_l].defenses.number[_i];
-          if (core_default.isInOldMode(dtCurFrom)) {
-            if ([1, 5].includes(_i)) {
-              aCanceledNbInMonth[_m] += aData[_m][_l].sessions.number[_i];
-              aCanceledNbDInMonth[_m] += aData[_m][_l].defenses.number[_i];
-              aCanceledNbMInMonth[_m] += aData[_m][_l].sessions.number[_i] - aData[_m][_l].defenses.number[_i];
-            }
-          } else {
-            if ([1, 2, 5, 6].includes(_i)) {
-              aCanceledNbInMonth[_m] += aData[_m][_l].sessions.number[_i];
-              aCanceledNbDInMonth[_m] += aData[_m][_l].defenses.number[_i];
-              aCanceledNbMInMonth[_m] += aData[_m][_l].sessions.number[_i] - aData[_m][_l].defenses.number[_i];
-            }
-          }
-        }
-        _l += 1;
-      }
-      sHtml += `<td>${iTotal}</td>`;
-      aAmInMonth[_m] = iTotal;
-      iTotalRow += iTotal;
-      iTotal = 0;
-      _m += 1;
-      dtCurFrom = dtCurFrom.add(1, "month");
-    }
-    sHtml += `<td>${iTotalRow}</td><td>${(iTotalRow / (_iMaxIndex + 1)).toFixed(2)}</td>`;
-    sHtml += "</tr>";
-    sHtml += "<tr>";
-    sHtml += "<td>Sessions (Nb)</td>";
-    iTotalRow = 0;
-    _m = 0;
-    iTotal = 0;
-    while (_m <= _iMaxIndex) {
-      sHtml += `<td>${aNbInMonth[_m] - aCanceledNbInMonth[_m]}(${aNbInMonth[_m]})</td>`;
-      iTotalRow += aNbInMonth[_m];
-      _m += 1;
-    }
-    sHtml += `<td>${iTotalRow}</td><td>${(iTotalRow / (_iMaxIndex + 1)).toFixed(2)}</td>`;
-    sHtml += "</tr>";
-    sHtml += "<tr>";
-    sHtml += "<td>Sessions (PU)</td>";
-    iTotalRow = 0;
-    _m = 0;
-    iTotal = 0;
-    while (_m <= _iMaxIndex) {
-      sHtml += `<td>${(aAmInMonth[_m] / (aNbInMonth[_m] - aCanceledNbInMonth[_m])).toFixed(2)}</td>`;
-      iTotalRow += iTotal;
-      iTotal = 0;
-      _m += 1;
-    }
-    sHtml += `<td>${iTotalRow.toFixed(2)}</td><td>n/a</td>`;
-    sHtml += "</tr>";
-    sHtml += "<tr>";
-    sHtml += `<td colspan=${_iMaxIndex} style="text-align:left;">Mentorat</td></tr>`;
-    sHtml += "<tr>";
-    sHtml += "<td>Mentorat (Mt)</td>";
-    _m = 0;
-    iTotal = 0;
-    aAmInMonth = [];
-    while (_m <= _iMaxIndex) {
-      let _l = 1;
-      let iCurrentMaxLevel = aData[_m][0].max_level;
-      while (_l < iCurrentMaxLevel) {
-        let _z = [...Array(8).keys()];
-        for (let _i = 0; _i < _z.length; _i += 1) {
-          iTotal += aData[_m][_l].sessions.number[_i] * aData[_m][_l].sessions.pu[_i] - aData[_m][_l].defenses.number[_i] * aData[_m][_l].defenses.pu[_i];
-          aAmInMonth[_m] = iTotal;
-        }
-        _l += 1;
-      }
-      sHtml += `<td>${iTotal}</td>`;
-      _m += 1;
-      iTotal = 0;
-    }
-    sHtml += "<tr>";
-    sHtml += "<tr>";
-    sHtml += "<td>Mentorat (Nb)</td>";
-    iTotalRow = 0;
-    _m = 0;
-    iTotal = 0;
-    aNbInMonth = [];
-    while (_m <= _iMaxIndex) {
-      sHtml += `<td>${aNbMInMonth[_m] - aCanceledNbMInMonth[_m]}(${aNbMInMonth[_m]})</td>`;
-      iTotalRow += iTotal;
-      iTotal = 0;
-      _m += 1;
-    }
-    sHtml += `<td>${iTotalRow}</td><td>${(iTotalRow / (_iMaxIndex + 1)).toFixed(2)}</td>`;
-    sHtml += "</tr>";
-    sHtml += "<td>Mentorat (PU)</td>";
-    _m = 0;
-    while (_m <= _iMaxIndex) {
-      sHtml += `<td>${(aAmInMonth[_m] / (aNbMInMonth[_m] - aCanceledNbMInMonth[_m])).toFixed(2)}</td>`;
-      aAmInMonth[_m] = iTotal;
-      iTotalRow += iTotal;
-      iTotal = 0;
-      _m += 1;
-    }
-    sHtml += `<td>${iTotalRow}</td><td>${(iTotalRow / (_iMaxIndex + 1)).toFixed(2)}</td>`;
-    sHtml += "</tr>";
-    sHtml += "<tr>";
-    sHtml += `<td colspan=${_iMaxIndex} style="text-align:left;">Soutenances</td></tr>`;
-    sHtml += "<tr>";
-    sHtml += "<td>Soutenances (Mt)</td>";
-    iTotalRow = 0;
-    _m = 0;
-    iTotal = 0;
-    aNbInMonth = [];
-    aAmInMonth = [];
-    while (_m <= _iMaxIndex) {
-      let _l = 1;
-      aNbInMonth[_m] = 0;
-      let iCurrentMaxLevel = aData[_m][0].max_level;
-      while (_l < iCurrentMaxLevel) {
-        let _z = [...Array(8).keys()];
-        for (let _i = 0; _i < _z.length; _i += 1) {
-          iTotal += aData[_m][_l].defenses.number[_i] * aData[_m][_l].defenses.pu[_i];
-          aNbInMonth[_m] += aData[_m][_l].defenses.number[_i];
-        }
-        _l += 1;
-      }
-      sHtml += `<td>${iTotal}</td>`;
-      aAmInMonth[_m] = iTotal;
-      iTotalRow += iTotal;
-      iTotal = 0;
-      _m += 1;
-    }
-    sHtml += `<td>${iTotalRow}</td><td>${(iTotalRow / (_iMaxIndex + 1)).toFixed(2)}</td>`;
-    sHtml += "</tr>";
-    sHtml += "<tr>";
-    sHtml += "<td>Soutenances (Nb)</td>";
-    iTotalRow = 0;
-    _m = 0;
-    iTotal = 0;
-    while (_m <= _iMaxIndex) {
-      sHtml += `<td>${aNbInMonth[_m] - aCanceledNbDInMonth[_m]}(${aNbInMonth[_m]})</td>`;
-      iTotalRow += aNbInMonth[_m];
-      _m += 1;
-    }
-    sHtml += `<td>${iTotalRow}</td><td>${(iTotalRow / (_iMaxIndex + 1)).toFixed(2)}</td>`;
-    sHtml += "</tr>";
-    sHtml += "<tr>";
-    sHtml += "<td>Soutenances (PU)</td>";
-    iTotalRow = 0;
-    _m = 0;
-    iTotal = 0;
-    while (_m <= _iMaxIndex) {
-      sHtml += `<td>${(aAmInMonth[_m] / (aNbInMonth[_m] - aCanceledNbDInMonth[_m])).toFixed(2)}</td>`;
-      iTotalRow += iTotal;
-      iTotal = 0;
-      _m += 1;
-    }
-    sHtml += `<td>${iTotalRow.toFixed(2)}</td><td>n/a</td>`;
-    sHtml += "</tr>";
-    sHtml += `<td colspan=${_iMaxIndex} style="text-align:left;">Bonus</td></tr>`;
-    sHtml += "<tr>";
-    sHtml += "<td>Bonus AF</td>";
-    _m = 0;
-    iTotal = 0;
-    let aAmBoInMonth = [];
-    while (_m <= _iMaxIndex) {
-      let _z = aData[_m][0].bonus;
-      aAmBoInMonth[_m] = 0;
-      for (let _i = 0; _i < _z.length; _i += 1) {
-        iTotal += _z[_i].sessions > 0 ? 30 : 0;
-      }
-      sHtml += `<td>${iTotal}</td>`;
-      aAmBoInMonth[_m] = iTotal;
-      iTotal = 0;
-      _m += 1;
-    }
-    sHtml += "</tr>";
-    sHtml += "<tr>";
-    sHtml += `<td colspan=${_iMaxIndex} style="text-align:left;">TJM</td></tr>`;
-    sHtml += "<tr>";
-    sHtml += "<td>Nb Jrs</td>";
-    _m = 0;
-    var _iTot = [];
-    iTotalRow = 0;
-    dtCurFrom = dtFrom;
-    aAmInMonth = [];
-    dtCurFrom = dtFrom.clone();
-    let dtCurTo = dtCurFrom.clone().endOf("month");
-    let aWorkDays = [];
-    while (_m <= _iMaxIndex) {
-      if (dtCurTo.isAfter(dtTo, "day"))
-        dtCurTo = dtTo.clone();
-      sHtml += `<td>${workday_count(dtCurFrom, dtCurTo)} jrs</td>`;
-      aWorkDays[_m] = workday_count(dtCurFrom, dtCurTo);
-      dtCurFrom = dtCurFrom.add(1, "month");
-      dtCurTo = dtCurTo.add(1, "month");
-      _m += 1;
-    }
-    sHtml += "</tr>";
-    sHtml += "<tr>";
-    sHtml += "<td>TJM</td>";
-    _m = 0;
-    while (_m <= _iMaxIndex) {
-      iTotal = 0;
-      let _l = 1;
-      aAmInMonth[_m] = 0;
-      _iTot[_m] = 0;
-      let iCurrentMaxLevel = aData[_m][0].max_level;
-      while (_l < iCurrentMaxLevel) {
-        let _z = [...Array(8).keys()];
-        for (let _i = 0; _i < _z.length; _i += 1) {
-          aAmInMonth[_m] += aData[_m][_l].sessions.number[_i] * aData[_m][_l].sessions.pu[_i];
-        }
-        _l += 1;
-      }
-      sHtml += `<td>${(aAmInMonth[_m] / aWorkDays[_m]).toFixed(2)} €</td>`;
-      _m += 1;
-    }
-    sHtml += "</tr>";
-    sHtml += "<tr>";
-    sHtml += "<td>THM (théorique)</td>";
-    _m = 0;
-    _iTot = [];
-    iTotalRow = 0;
-    dtCurFrom = dtFrom;
-    aAmInMonth = [];
-    while (_m <= _iMaxIndex) {
-      iTotal = 0;
-      let _l = 1;
-      aAmInMonth[_m] = 0;
-      _iTot[_m] = 0;
-      let iCurrentMaxLevel = aData[_m][0].max_level;
-      while (_l < iCurrentMaxLevel) {
-        let _z = [...Array(8).keys()];
-        for (let _i = 0; _i < _z.length; _i += 1) {
-          aAmInMonth[_m] += aData[_m][_l].sessions.number[_i] * aData[_m][_l].sessions.pu[_i];
-          if (core_default.isInOldMode(dtCurFrom)) {
-            iTotal += (aData[_m][_l].sessions.number[_i] - aData[_m][_l].defenses.number[_i]) * (45 / 60);
-          } else {
-            if ([4, 5, 6, 7].includes(_i)) {
-              iTotal += (aData[_m][_l].sessions.number[_i] - aData[_m][_l].defenses.number[_i]) * (30 / 60);
-            }
-            if ([0, 1, 2, 3].includes(_i)) {
-              iTotal += (aData[_m][_l].sessions.number[_i] - aData[_m][_l].defenses.number[_i]) * (45 / 60);
-            }
-          }
-          iTotal += aData[_m][_l].defenses.number[_i] * (45 / 60);
-        }
-        _l += 1;
-      }
-      console.log(`%cMontant mensuel : ${aAmInMonth[_m]} + bonus ${aAmBoInMonth[_m]}/ Nb heures ${iTotal} = $((aAmInMonth[_m]+aAmBoInMonth[_m])/iTotal).toFixed(2)`, APP_DEBUG_STYLE);
-      sHtml += `<td>${((aAmInMonth[_m] + aAmBoInMonth[_m]) / iTotal).toFixed(2)} €</td>`;
-      iTotalRow += iTotal;
-      _iTot[_m] = iTotal;
-      iTotal = 0;
-      _m += 1;
-      dtCurFrom = dtCurFrom.add(1, "month");
-    }
-    sHtml += "</tr>";
-    sHtml += "<tr>";
-    sHtml += "<td>Nb heures</td>";
-    iTotalRow = 0;
-    _m = 0;
-    iTotal = 0;
-    while (_m <= _iMaxIndex) {
-      sHtml += `<td>${_iTot[_m].toFixed(2)} h</td>`;
-      iTotalRow += iTotal;
-      iTotal = 0;
-      _m += 1;
-    }
-    sHtml += `<td>${iTotalRow.toFixed(2)}</td><td>n/a</td>`;
-    sHtml += "</tr>";
-    sHtml += "<tr>";
-    sHtml += "<td>THM (person.)</td>";
-    _m = 0;
-    _iTot = [];
-    iTotalRow = 0;
-    dtCurFrom = dtFrom;
-    aAmInMonth = [];
-    while (_m <= _iMaxIndex) {
-      iTotal = 0;
-      let _l = 1;
-      aAmInMonth[_m] = 0;
-      _iTot[_m] = 0;
-      let iCurrentMaxLevel = aData[_m][0].max_level;
-      while (_l < iCurrentMaxLevel) {
-        let _z = [...Array(8).keys()];
-        for (let _i = 0; _i < _z.length; _i += 1) {
-          aAmInMonth[_m] += aData[_m][_l].sessions.number[_i] * aData[_m][_l].sessions.pu[_i];
-          if (core_default.isInOldMode(dtCurFrom)) {
-            iTotal += (aData[_m][_l].sessions.number[_i] - aData[_m][_l].defenses.number[_i]) * (GM_config.get("nbHrsfM") / 60);
-          } else {
-            if ([4, 5, 6, 7].includes(_i)) {
-              iTotal += (aData[_m][_l].sessions.number[_i] - aData[_m][_l].defenses.number[_i]) * (GM_config.get("nbHrsAfM") / 60);
-            }
-            if ([0, 1, 2, 3].includes(_i)) {
-              iTotal += (aData[_m][_l].sessions.number[_i] - aData[_m][_l].defenses.number[_i]) * (GM_config.get("nbHrsfM") / 60);
-            }
-          }
-          iTotal += aData[_m][_l].defenses.number[_i] * (GM_config.get("nbHrsD") / 60);
-        }
-        _l += 1;
-      }
-      console.log(`montant mensuel : ${aAmInMonth[_m]} + bonus ${aAmBoInMonth[_m]}/ Nb heures ${iTotal} = $((aAmInMonth[_m]+aAmBoInMonth[_m])/iTotal).toFixed(2)`);
-      sHtml += `<td>${((aAmInMonth[_m] + aAmBoInMonth[_m]) / iTotal).toFixed(2)} €</td>`;
-      iTotalRow += iTotal;
-      _iTot[_m] = iTotal;
-      iTotal = 0;
-      _m += 1;
-      dtCurFrom = dtCurFrom.add(1, "month");
-    }
-    sHtml += "</tr>";
-    sHtml += "<tr>";
-    sHtml += "<td>Nb heures</td>";
-    iTotalRow = 0;
-    _m = 0;
-    iTotal = 0;
-    while (_m <= _iMaxIndex) {
-      sHtml += `<td>${_iTot[_m].toFixed(2)} h</td>`;
-      iTotalRow += iTotal;
-      iTotal = 0;
-      _m += 1;
-    }
-    sHtml += `<td>${iTotalRow.toFixed(2)}</td><td>n/a</td>`;
-    sHtml += "</tr>";
-    sHtml += "</tbody>";
-    sHtml += "<tfoot>";
-    sHtml + "<p>Attention le nombre entre parenthèse représente les sessions y compris les sessions annulées</p>";
-    sHtml += "</tfoot>";
-    sHtml += "</table>";
-    var t2 = performance.now();
-    console.log("%cTime to show table :" + (t2 - t1) + " milliseconds.", APP_PERF_STYLE);
+    sHtml = "<table>" + aHtml.join(" ") + `</tbody><tfoot><tr><td colspan=${aData.length + 1}>la valeur entre parenthèse fait reference aux annulés</td></tr></tfoot></table>`;
     Swal.fire({
       title: `<strong>Statistiques du ${dtFrom.format("DD/MM/YYYY")} au ${dtTo.format("DD/MM/YYYY")}</strong>`,
       icon: "info",
@@ -2543,7 +2421,9 @@
       console.log("%cin initUI", APP_DEBUG_STYLE);
       UI.build();
       var draggie = new Draggabilly(".draggable", {handle: ".handle"});
-      FpsTracker.start("animation-target");
+      if (GM_config.get("hackheaderzindex") === true) {
+        FpsTracker.start("animation-target");
+      }
     };
     static build = function() {
       console.log("%c in buildUI", "background-color:green;color:white");
@@ -2565,7 +2445,7 @@
       div.classList.add("panel", "menuBar", "flex", "draggable");
       document.body.appendFirst(div);
       UI.addButton("collectChecked", collectChecked, {}, div);
-      UI.addButton("CollectAuto", historyFetch, {}, div);
+      UI.addButton("CollectAuto", collectAuto, {}, div);
       UI.addButton("showBill", showBill, {}, div);
       UI.addButton("billInDetails", billInDetails, {}, div);
       UI.addButton("PDF", pdf2, {}, div);
@@ -2573,9 +2453,11 @@
       UI.addButton("statistics", statistics, {}, div);
       UI.addButton("Database", mgtDbase, {}, div);
       UI.addButton("about", about, {}, div);
-      var fpstracker = document.createElement("div");
-      fpstracker.id = "animation-target";
-      div.appendChild(fpstracker);
+      if (GM_config.get("hackheaderzindex") === true) {
+        var fpstracker = document.createElement("div");
+        fpstracker.id = "animation-target";
+        div.appendChild(fpstracker);
+      }
     };
     static addButton = function(text, onclick, cssObj, el) {
       el = el || document.body;
@@ -2613,7 +2495,10 @@
           requestAnimationFrame(slideLeft);
         }
       };
-      requestAnimationFrame(slideRight);
+      return requestAnimationFrame(slideRight);
+    };
+    static stop = function(animationId) {
+      window.cancelAnimationFrame(animationId);
     };
   }
   var ui_default = UI;
@@ -2691,14 +2576,23 @@
         default: ""
       },
       alwaysaddcbox: {
-        section: ["Interface", "gadget"],
+        section: ["Interface", "Gadget"],
         label: "Toujours ajouter les checkbox sur l'interface",
         labelPos: "left",
         type: "checkbox",
         default: true
       },
+      show_throttle: {
+        label: "Afficher le temoin d'utilisation du CPU",
+        title: "Affiche le point rouge qui circule dans la barre de menu. Quand il s'arrête le CPU est utilisé",
+        labelPos: "left",
+        type: "checkbox",
+        default: true
+      },
       hackheaderzindex: {
-        label: "changer le zindex du bandeau haut",
+        section: ["", "Hack"],
+        label: "Changer le zindex du bandeau haut",
+        title: "le bandeau haut à un z-index  (1000) qui le place au dessus de tout ce qui est présent à l'écran, ce qui gêne la barre de menu ; activer cette option réduit ce chiffre à 0",
         labelPos: "left",
         type: "checkbox",
         default: true
@@ -2728,7 +2622,56 @@
     GM_config.open();
     OCAddonsCfg.style = iframecss;
   };
+
+  // src/gm_perf.js
+  class Performance {
+    static longTaskTiming = function() {
+      if (window.self !== window.top) {
+        return;
+      }
+      console.log("LongTasks: Initializing");
+      var observer = new window.PerformanceObserver(function(list) {
+        var perfEntries = list.getEntries();
+        for (var i = 0; i < perfEntries.length; i++) {
+          console.log("LongTasks: ", perfEntries[i].name, perfEntries[i].duration, perfEntries[i].attribution.length, perfEntries[i].attribution.length > 0 ? perfEntries[i].attribution[0].containerType : null, perfEntries[i].attribution.length > 0 ? perfEntries[i].attribution[0].containerName : null, perfEntries[i].attribution.length > 0 ? perfEntries[i].attribution[0].containerSrc : null, perfEntries[i].attribution.length > 0 ? perfEntries[i].attribution[0].containerId : null, perfEntries[i]);
+        }
+      });
+      if (typeof window.PerformanceLongTaskTiming !== "undefined") {
+        console.log("LongTasks: Appears to be supported");
+      } else {
+        console.log("LongTasks: Not supported");
+      }
+      try {
+        observer.observe({entryTypes: ["longtask"]});
+      } catch (e) {
+        console.log("LongTasks: Not supported");
+      }
+    };
+    static paintTiming = function() {
+      if (window.self !== window.top) {
+        return;
+      }
+      console.log("PaintTiming: Initializing");
+      var observer = new window.PerformanceObserver(function(list) {
+        var perfEntries = list.getEntries();
+        for (var i = 0; i < perfEntries.length; i++) {
+          console.log("PaintTiming: ", perfEntries[i].name, perfEntries[i].startTime);
+        }
+      });
+      if (typeof window.PerformancePaintTiming !== "undefined") {
+        console.log("PaintTiming: Appears to be supported");
+      } else {
+        console.log("PaintTiming: Not supported");
+        return;
+      }
+      try {
+        observer.observe({entryTypes: ["paint"], buffered: true});
+      } catch (e) {
+        console.log("PaintTiming: Not supported");
+      }
+    };
+  }
+  var gm_perf_default = Performance;
   require_src();
 })();
 //# sourceMappingURL=app-facturier.js.map
-
