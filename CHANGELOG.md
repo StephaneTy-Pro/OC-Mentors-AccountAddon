@@ -2,7 +2,13 @@
 
 C : Corrections(Fixes) / B : Corrections de Bug (BugFixes) / F : Ajout de fonctionnalité (Features) / D : Divers (Misc)
 
+  ## 1.00.0005 (30/07/2020)
 
+  - F: Mise à jour du mode de calcul des stat, outre les performances, les stat du mois en cours ne sont plus ajoutées au stat totales, tant que nous ne sommes pas le dernier jour du mois (pour ne pas fausser les stat)
+  - F: Travail sur la partie interface début de paramétrage d'un style personnalisé (non finalisé donc non pleinement fonctionnel)
+  - F: Début de travail pour sortir un plugin autonome (3 versions user scripts/extension/standalone)
+  - B: Corrections diverses
+  
   ## 1.00.0004 (18/07/2020)
 
   - B: Erreur sous chrome : var dans extractDate non définie -> crash malgré le try/catch
