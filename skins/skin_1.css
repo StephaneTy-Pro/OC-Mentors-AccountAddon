@@ -1,0 +1,38 @@
+/* 
+ * skin 1 
+ *
+ */
+ 
+ .wrapper table {
+ 
+ }
+ 
+ /* Table Formatting Styles */
+.wrapper table{
+   width: 100%;
+	border-collapse: collapse;
+}
+.wrapper tbody tr {
+	height: 100px;
+}
+.wrapper table th, table td {
+	padding: 0em;
+	width: auto;
+}
+.wrapper table th{
+   background: #f6f6f6;
+   padding: 2.5em 1em;
+   
+   font-family: 'Oswald', sans-serif;
+   font-size: 22px;
+   font-weight: 400;
+   line-height: 1.5;
+   color: #262628;
+   text-transform: uppercase;
+}
+.wrapper table td{
+   background: #fbfbfc;
+}
+.wrapper table tbody td{
+   border: 1px solid rgba(151, 151, 151, 0.2);
+}
