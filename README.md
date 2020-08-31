@@ -14,7 +14,8 @@ Commencer par installer tampermonkey (greasmonkey ou violetmonkey devraient fonc
 
 ### Installation du script
 
-Aller dans le menu Tampermonkey et selectionner ajouter un nouveau script, ajouter le lien sur ce script
+Aller dans le menu Tampermonkey et selectionner ajouter un nouveau script,
+Prendre l'onglet Utilitaires dernière ligne "Install from URL" , coller l'url du script ( /!\ bien penser à prendre le format RAW du lien github ce qui donne https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/dist/app.min.js et non pas https://github.com/StephaneTy-Pro/OC-Mentors-AccountAddon/blob/master/dist/app.min.js)
 
 
 ### Utilisation
