@@ -2,6 +2,19 @@
 
 C : Corrections(Fixes) / B : Corrections de Bug (BugFixes) / F : Ajout de fonctionnalité (Features) / D : Divers (Misc)
 
+  ## 1.10.0000 (18/09/2020)
+    
+    - F: prise en compte du mode autre dans les modes de financement 
+    - F: possiblité de définir une feuille de style personnalisée
+    - F: Mode debug qui permet d'intéragir avec l'application dans la console
+    - F: versionning de base de donnée, avec outil de migration
+    - B: Le calcul des statistiques a été revu pour intégrer les sessions étudiant absent pour 5 min et pas une session complète
+    
+    - D: réecriture complete de beaucoup de fonctionnalités les temps de calcul sont notamment divisés par 10
+    - D: Début de documentation
+    
+    
+
   ## 1.00.0005 (30/07/2020)
 
   - F: Mise à jour du mode de calcul des stat, outre les performances, les stat du mois en cours ne sont plus ajoutées au stat totales, tant que nous ne sommes pas le dernier jour du mois (pour ne pas fausser les stat)
