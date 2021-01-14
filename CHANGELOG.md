@@ -2,7 +2,11 @@
 
 C : Corrections(Fixes) / B : Corrections de Bug (BugFixes) / F : Ajout de fonctionnalité (Features) / D : Divers (Misc)
 
-  ## 1.10.0000 (18/09/2020)
+  ## 1.10.0001 (14/01/2021)
+  
+  	- C: Correction d'un bug dans la partie management de base de donnée RAZ
+
+  ## 1.10.0000 (14/01/2021)
     
     - F: prise en compte du mode autre dans les modes de financement 
     - F: possiblité de définir une feuille de style personnalisée
