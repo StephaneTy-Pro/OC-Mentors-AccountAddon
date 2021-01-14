@@ -32,7 +32,7 @@ Cette barre de menu peut être déplacée en positionnant votre curseur sur le r
 - BILLINDETAILS : Afficher la facture en détail (plus exactement pour le moment affiche la liste des prestations à facturer pour uné période)
 - PDF : Afficher la liste des prestations à facturer pour uné période
 - SLIST : Affichage de la liste des étudiants
-- DBGMODE : Permet d'accéder au mode debug (pour pouvoir exécuter des actions sur le coeur de l'application. Ce mode permet entre autres d'accéder au moteur de base de données et aux tables de l'application (je vous renvoie à la documentation pour plus d'informations).
+- DBGMODE : Permet d'accéder au mode debug (pour pouvoir exécuter des actions sur le coeur de l'application. Ce mode permet entre autres d'accéder au moteur de base de données et aux tables de l'application (je vous renvoie à la [documentation](https://stephanety-pro.github.io/OC-Mentors-AccountAddon/#/actionbar?id=dbgmode) pour plus d'informations).
 - STATISTICS : Statistiques sur les sessions
 - DATABASE : Actions sur la base de données
   - RAZ : Mise à zero de toutes ou parties des tables (choix de la date de RAZ possible) /!\ action irréversible
