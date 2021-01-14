@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Facturier (alpha)
 // @namespace    http://tampermonkey.net/
-// @version      1.10.0000
+// @version      1.10.0001
 // @description  Un addon pour vous aider dans votre facturation
 // @author       Stéphane TORCHY
 // @updateURL    https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/dist/app.min.js
@@ -3031,7 +3031,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
         ];
       },
       onOpen: (el) => {
-        el.querySelector(".formgrid").addEventListener("click", function(e) {
+        el.querySelector(".formgrid").addEventListener("click", _handler = function(e) {
           const raz_action = function(evt) {
             if (evt.target.matches('button[data-action="raz"]')) {
               Swal.close();
@@ -3060,7 +3060,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
         console.log("%conOpen popup", "color:coral");
       },
       onClose: (el) => {
-        el.querySelector(".formgrid").removeEventListener("click");
+        el.querySelector(".formgrid").removeEventListener("click", _handler);
         console.log("%conClose popup", "color:coral");
       }
     });
