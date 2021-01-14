@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+ <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1.0, shrink-to-fit=no, viewport-fit=cover">
+  <meta charset="UTF-8">
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify-themeable@0/dist/css/theme-simple.css" title="Simple">
+
+
+  <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:500|Source+Sans+Pro:400,400i,600" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/styles.css">
+
+</head>
+<body>
+  	<div id="app"></div>
+	<script>
+	window.$docsify = {
+		// GENERAL
+		// -----------------------------------------------------------------
+		name			: "Découvrir", // nom du menu
+		repo			: 'https://github.com/StephaneTy-Pro/OC-Mentors-AccountAddon',
+		coverpage		: '_coverpage.md', // old is true,
+		formatUpdated	: '{DD}/{MM}/{YYYY} {HH}:{mm}',
+		loadNavbar		: false,
+		loadSidebar		: true, //'_sidebar.md', //old true,
+
+		// NAVIGATION
+		// -----------------------------------------------------------------
+		alias: {
+		   	//'.*?/changelog': 'https://cdn.jsdelivr.net/npm/docsify-themeable@0/CHANGELOG.md',
+		},
+	 	auto2top   : true,
+		maxLevel   : 3,
+		subMaxLevel: 3,
+
+
+
+		/* permet d'avoir un bouton éditer ce fichier
+		plugins:[function(t,e){t.beforeEach(function(t){return'<div class="meta-container">'+('<a class="edit-button" href="'+("https://github.com/Kikobeats/js-mythbusters/edit/master/docs"+e.router.getFile())+'" target="_blank">edit this file</a>\n')+"</div>\n"+t})}]
+		*/
+
+		// PLUGINS
+		// -----------------------------------------------------------------
+		//executeScript: true,
+		//ga    : 'UA-100100910-3',
+		search: {
+			depth      : 3,
+		    noData     : 'Pas de résultat!',
+		    placeholder: 'Rechercher...'
+		},
+		// https://github.com/JerryC8080/docsify-remote-markdown !
+		// sample : insert in .md  [remoteMarkdownUrl](https://raw.githubusercontent.com/docsifyjs/docsify/develop/README.md)
+		remoteMarkdown: {
+			tag: 'remoteMarkdownUrl',
+	  	},
+		// https://github.com/imyelo/docsify-pagination
+		pagination: {
+			previousText: 'précédent',  // The text of previous label.
+			nextText: 'suivant',        // The text of next label.
+			crossChapter: true,         //  Allow navigation to previous/next chapter.
+			crossChapterText: true,     // Display chapter name.
+		},
+		// plantuml https://github.com/imyelo/docsify-plantuml
+		plantuml: {
+    		skin: 'default',
+  		},
+	}
+	// verifier la version de Docsify
+	// console.log(window.Docsify.version)
+	// chargement du service worker
+	navigator.serviceWorker&&navigator.serviceWorker.register("sw.js");
+	</script>
+	<script src="assets/js/main.js"></script>
+	<script src="assets/js/docsify.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docsify-themeable@0"></script>
+	<!--plugins -->
+	<script src="https://unpkg.com/docsify/lib/plugins/search.js"></script>
+	<script src="//unpkg.com/docsify-remote-markdown/dist/docsify-remote-markdown.min.js"></script>
+	<script src="//unpkg.com/docsify-pagination/dist/docsify-pagination.min.js"></script>
+	<!--<script src="//unpkg.com/docsify-glossary/dist/docsify-glossary.min.js"></script>--><!--plugin intéressant mais fonctionne mal si virgule après le mot-->
+	<script src="assets/js/h5bt-integ.js"></script>
+	<script src="//unpkg.com/docsify-plantuml/dist/docsify-plantuml.min.js"></script>
+</body>
+</html>
+
