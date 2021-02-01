@@ -525,28 +525,32 @@ path: "81-expert-en-strategie-marketing-et-communication"
             grow: 'row',
             footer: `votre étudiant(e) ${sStudentName} n'a pas été trouvé`,
             preConfirm: () => {
-                return [
-                    document.getElementById('student_id').value,
-                    document.getElementById('student_name').value,
-                    document.getElementById('student_path').value,
-                    document.getElementById('funding').checked, // true mean autofunded
-                    document.getElementById('session_date').value,
-                ]
+                return {
+					student_id: document.getElementById('student_id').value,
+                    student_name: document.getElementById('student_name').value,
+                    student_path:document.getElementById('student_path').value,
+                    student_funding: document.getElementById('funding').checked, // true mean autofunded
+                    session_date: document.getElementById('session_date').value,
+                };
             }
         });
 
-
-        if(formValues){
-            var sFundedBy = "";
-            if(formValues[3] === true){
+        if(formValues && formValues.hasOwnProperty('student_id')){
+            var sFunding = "";
+            if(formValues.student_funding === true){
                 sFunding = OC_AUTOFUNDED;
             } else {
-                sFunding = OC_FUNDED;
-            }
-            Student.add(formValues[0],formValues[1],formValues[2],sFunding,formValues[4])
+				sFunding = OC_FUNDED;
+			}
+            Student.add(
+				formValues.student_id,
+				formValues.student_name,
+				formValues.student_path,
+				sFunding,
+				formValues.session_date
+			)
         }
     }     	
-	
 }
 
 export default Student;

@@ -90,6 +90,14 @@ class UI {
 		UI.addButton('Database', mgtDbase, {}, div);
 		if(STT_VERSION) {UI.addButton('Sandbox', popup_students, {}, div);} // STT_VERSION is modified by build script in FALSE or TRUE
 		UI.addButton('about', about, {},div);
+		/* just a little anchor for all pop*/
+		let el = document.createElement('div'), elStyle = el.style;
+		el.id = "sttPlaceHolder";
+		let cssObj = {position: 'absolute', bottom: '7%', left:'4%', 'z-index': 999, 'display' :'hidden'};
+		//div.appendChild(el);
+		// ajoute cet élément avant la fin
+		document.body.insertAdjacentElement('beforeend', el)
+		Object.keys(cssObj).forEach(key => elStyle[key] = cssObj[key]);
 		/* FPS Tracker */
 		if(GM_config.get('hackheaderzindex') === true){
 		var fpstracker = document.createElement('div');
@@ -98,17 +106,17 @@ class UI {
 		}
     };
 
-    static addButton = function (text, onclick, cssObj,el) {
+    static addButton = function (text, onclick, cssObj, el) {
 		el = el || document.body;
-		cssObj = cssObj || {position: 'absolute', bottom: '7%', left:'4%', 'z-index': 3}
+		cssObj = cssObj || {position: 'absolute', bottom: '7%', left:'4%', 'z-index': 3};
 		let button = document.createElement('button'), btnStyle = button.style
 		button.classList.add('button--primary', 'button');
-		el.appendChild(button)
-		button.innerHTML = text
-		button.onclick = onclick
-		//btnStyle.position = 'absolute'
+		el.appendChild(button);
+		button.innerHTML = text;
+		button.onclick = onclick;
+		//btnStyle.position = 'absolute';
 		Object.keys(cssObj).forEach(key => btnStyle[key] = cssObj[key]);
-		return button
+		return button;
     };
 	
 }

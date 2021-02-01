@@ -13,7 +13,7 @@
 
 
 import { domReady, readFile } from './utils.js'
-import {APP_DEBUG_STYLE} from './constants.js';
+import { APP_DEBUG_STYLE, APP_WARN_STYLE, APP_ERROR_STYLE } from './constants.js';
 import UI from './ui.js';
 import { 
 	appmenu,
@@ -26,9 +26,11 @@ import{
 
 import{
 	semverCompare,
+	getFileExtension,
 } from './utils.js';
 
 import Performance from './gm_perf.js';
+import Meta from './meta.js';
 import Dbase from './dbase.js';
 
 // vendor
@@ -42,6 +44,7 @@ import Session from './sessions.js';
 import Archive from './archives.js';
 import History from './history.js';
 import StudentHistory from './students_history.js';
+import View from './views.js';
 
 
 const Facturier = {
@@ -96,12 +99,12 @@ const Facturier = {
 		console.log("%c in _warmup",APP_DEBUG_STYLE);
 		document.unbindArrive(Facturier._warmup);
 		if(GM === undefined){
-			console.log("%cI am not in a tamper env");
+			console.log("%cI am not in a tamper env", APP_DEBUG_STYLE);
 			Facturier._userscriptless();
 		} else {
 			console.log(`%cTamper environment detected the version is ${GM.info.version}`,APP_DEBUG_STYLE);
 		}
-		// chargement des CSS de jspanel
+		// chargement des CSS additionnels
 		GM_addStyle( GM_getResourceText("jspanelcss") );
 		GM_addStyle( GM_getResourceText("toastifycss") );
 		GM_addStyle( GM_getResourceText("simpledatatablecss") );
@@ -128,7 +131,7 @@ const Facturier = {
 	 */
 		
 	_userscriptless(){
-		console.log(`%cIm'not in a Tamper environment so i need to load js scripts`,APP_DEBUG_STYLE);
+		console.log(`%cIm'not in a Tamper environment so i need to load js scripts`, APP_DEBUG_STYLE);
 	},
 	
 	_main : function(){
@@ -160,28 +163,166 @@ const Facturier = {
 			console.log("%cDb dont' contain meta table create it", APP_DEBUG_STYLE);
 			db.assign({meta:[]}).write();
 		}
-		// verification
-		//console.log("CHECK", db.get('meta.dbVersion').value());
-		//console.log("2", db.get('meta').find({'key':'dbVersion'}).value().value);
-		let sDbVersion = db.get('meta').find({'key':'dbVersion'}).value().value;
-		if(sDbVersion === undefined){
-			console.log(db.get("meta").value());
-			console.log("%cDb dont' contain dbVersion field in meta table create it", APP_DEBUG_STYLE);
-			//db.get('meta').push({dbVersion:'1.0.1'}).write();
-			//db.set('meta.dbVersion','1.0.0').write(); // set Dbase using Lodash shorthand syntax => fonctionne pas, ne semble pas sauvegardé en base cf stpckage local du navigateur
+		// DB Management
+		console.log("%cCheck DB version to find anyupdate to do", APP_DEBUG_STYLE);
+		//let oDbVersion = db.get('meta').find({'key':'dbVersion'}).value(); // coudl be undefined if not set
+		let sDbVersion = Meta.getDbVersion();
+		//if(oDbVersion === undefined){
+		if(sDbVersion === -1){
+			//console.log(db.get("meta").value());
+			console.log("%cDb dont' contain dbVersion field in meta table create it with value 1.0.0", APP_DEBUG_STYLE);
 			db.get('meta').push({'key':'dbVersion','value':'1.0.0'}).write();
-			sDbVersion = db.get('meta').find({'key':'dbVersion'}).value().value;
-		 }
+			sDbVersion = Meta.getDbVersion();
+			//if(oDbVersion === undefined){
+			if(sDbVersion === -1){
+				console.log("%cERROR:Could'nt set version on DB", APP_ERROR_STYLE);
+				throw new Error("!!!! IRRECOVERABLE ERROR"); 
+			}
+		} 
+
 		//// check Database version (need corresponding app version)
 		if (semverCompare(GM.info.script.version, sDbVersion) == 1 ){ // version of script is superior of version of db
-			console.log(`%cDB is in version: ${db.get("meta").value().dbVersion} need to go to version ${GM.info.script.version}`, APP_DEBUG_STYLE);
+			console.log(`%cDB is in version: ${Meta.getDbVersion()} need to go to version ${GM.info.script.version}`, APP_DEBUG_STYLE);
 			//// dbUpdate();
 			Dbase.update(GM.info.script.version);
 		}
-		
-		fetchInject(['https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js']).then( async function (e) {console.log('apline js fetched',e)} );
+		// will serve in next version
+		fetchInject(
+			['https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js']
+		).then( async function (e) {
+			console.log('%cALPINE js fetched', APP_DEBUG_STYLE)
+			}
+		);
 
+		// inject
+		fetchInject(
+			['https://unpkg.com/htmx.org@1.1.0',
+			'https://unpkg.com/htmx.org@1.1.0/dist/ext/debug.js'
+			]
+		).then( async function (e) {
+			console.log('%cHTMX fetched', APP_DEBUG_STYLE);
+			
+			//htmx.logAll();
+			
+			htmx.defineExtension('get-dirty', {
+				onEvent: function (name, evt) {
+				if (name === "htmx:configRequest") {
+					console.log("%cPatched htmx htmx:configRequest", APP_DEBUG_STYLE);
+					//evt.detail.headers['Content-Type'] = "application/json";
+					}
+				
+				if (name === "htmx:loadstart") {
+					console.log("%cPatched htmx htmx:loadstart", APP_DEBUG_STYLE);
+					xhr.addEventListener("abort", function(){console.log("Patched Abort", APP_WARN_STYLE)});
+					xhr.abort();
+					}
+				},
+				
+			});
+			
+			htmx.defineExtension('stt-get', {
+				onEvent: function (name, evt) {
+					if (name === "htmx:afterProcessNode") {
+						console.log("%cExtension 'stt-get' htmx htmx:afterProcessNode", APP_WARN_STYLE);
+						//evt.detail.headers['Content-Type'] = "application/json";
+					
+					}
+				
+					if (name === "htmx:beforeRequest") { 
+						console.log("%cExtension 'stt-get' htmx htmx:beforeRequest", APP_WARN_STYLE);
+						htmx.ajax('GET', 'http://127.0.0.1/views/dummy.html', '#myDiv');
+					}
+				}
+			});
+			
+			
+			// htmx broker
+			htmx.on("htmx:configRequest", function(evt){
+				console.log("%cBroker htmx:configRequest event received", APP_DEBUG_STYLE);
+			});
+			htmx.on("htmx:beforeRequest", function(evt){
+				console.log("%cBroker htmx:beforeRequest event received", APP_DEBUG_STYLE);
+				/*
+				 * i first try to use xhr.abort() but it won't works 
+				 * think it was already started
+				 */
+				if (evt.detail.pathInfo.finalPath 
+					&& getFileExtension(evt.detail.pathInfo.finalPath) 
+					!== "html"){
+					console.log("%cIntercept path without .html need to route it to function", APP_DEBUG_STYLE);
+					console.log(`%cWanna load ${evt.detail.pathInfo.finalPath}`, APP_DEBUG_STYLE);
+					evt.detail.xhr.addEventListener("abort", function(){console.log("%cGLOBAL Patched Abort Function used()", APP_WARN_STYLE)}); // trace
+					evt.detail.xhr.onloadstart = function(e){
+							this.abort();
+							console.log("%cGLOBAL Patched onloadstart is set", APP_DEBUG_STYLE);
+							} // patch on load start to autocancel
+					let sHtml = View.load(evt.detail.pathInfo.finalPath);
+					let oTarget = evt.detail.target
+					
+					// if target a node
+					
+					console.log(evt.detail);
+					console.log(evt.detail.elt.getAttribute('hx-select'));
+					
+					var sTargetSelect = evt.detail.elt.getAttribute('hx-select');
+					
+					if(sTargetSelect){
+						let oDom = new DOMParser().parseFromString(sHtml, "text/html"); 
+						oNode = oDom.querySelector(sTargetSelect);
+						if(oNode){
+							console.log(`%cfound not ${sTargetSelect} in data received from calling ${evt.detail.pathInfo.finalPath}`, APP_DEBUG_STYLE);
+							sHtml = oNode.outerHTML;
+						} else
+						{
+							console.log(`%cWanna select target ${sTargetSelect} in data received from calling ${evt.detail.pathInfo.finalPath} but this node could'nt be found so return the whole string`, APP_ERROR_STYLE);
+						}
+					}
+					
+					console.log(sHtml);
+
+					/*
+					 * appendFromHtmlStr
+					 *  sHtml {string}  HTML to add
+					 *  oDom  {object}  Node to add HTML to
+					 *  return {object} Last inserted child
+					 */
+					 var appendFromHtmlStr = function(sHtml, oDom){
+							var  range = document.createRange();
+							var  fragment = range.createContextualFragment(sHtml);
+							console.log(fragment);
+							for (var  i = fragment.childNodes.length - 1; i >= 0; i--) {
+								var child = fragment.childNodes[i];
+								oDom.appendChild(child);
+								console.log("appending to dom");
+								htmx.process(child);
+							}
+							return oDom.lastChild;
+						}
+					appendFromHtmlStr(sHtml, evt.detail.target);
+
+					/*
+					 * el.insertAdjacentHTML('beforebegin', string_of_html);
+						el.insertAdjacentHTML('afterbegin', string_of_html);
+						el.insertAdjacentHTML('beforeend', string_of_html);
+						el.insertAdjacentHTML('afterend', string_of_html);
+						*/
+				}
+			});
+			
+			htmx.on('htmx:xhr:loadstart' , function(evt){
+				console.log("%cBroker htmx:xhr:loadstart event received", APP_DEBUG_STYLE);
+				// ne contient aucune reference sur xhr
+			});
+
+		}); // end of htmx injection
 		
+		// inject
+		fetchInject(
+			['https://cdn.jsdelivr.net/npm/sweetalert2@10']
+		).then( async function (e) {
+			console.log('%cSweetAlert fetched', APP_DEBUG_STYLE)
+			}
+		);
 		
 		
 		if (GM_config.get("use_custom_css") === true) {
@@ -201,13 +342,13 @@ const Facturier = {
 			*/
 			
 			//console.log(sDependencies, typeof(sDependencies));
-			let rDependencies = sDependencies.split(','); // always return one element even if separator not found
+			let aDependencies = sDependencies.split(','); // always return one element even if separator not found
 			//console.log(rDependencies, typeof(rDependencies));
 			
-			if (rDependencies.length !== 0){
-				console.log(`%cWanna inject Custom CSS from URL:${rDependencies}`, APP_DEBUG_STYLE);
-				fetchInject([rDependencies]).then(() => {
-					console.log(`%cCustom CSS from URL:${rDependencies} loaded`, APP_DEBUG_STYLE);
+			if (aDependencies.length !== 0){
+				console.log(`%cWanna inject Custom CSS from URL:${aDependencies}`, APP_DEBUG_STYLE);
+				fetchInject(aDependencies).then(() => {
+					console.log(`%cCustom CSS from URL:${aDependencies} loaded`, APP_DEBUG_STYLE);
 				})
 				.catch(err => console.log(`%cError detected when loading dependencies ${err}`, APP_ERROR_STYLE));
 			} else {
@@ -224,28 +365,34 @@ const Facturier = {
 				}
 			}
 		}   
-	   //ici toute l'idée est de verifier que le fichier d'install contient src ou dist ... s'il contient source alors, on doit utiliser en sus les ressources locales
-	   //sinon on est sur la version livrée et donc on a tout déjà dans le script de base qui a été build
-	   //probleme avec CORS
-	   // visiblement en tout cas sur chrome l'url n'est pas bien prise en compte par le paramètre du script @update et @download semblent sans incidences sur ce que l'on trouve dans l'onglet paramètres
+
+		/* exportation des fonctions requises pour dbgmode*/
+		unsafeWindow.Facturier = {libs:[],cfg:{dbase:null},klass:[]}
+		unsafeWindow.Facturier.cfg.dbase = Facturier.Cfg.dbase; // const dbase = unsafeWindow.Facturier.cfg.dbase
+		unsafeWindow.Facturier.libs.push({id:'fetchInject',ptr:fetchInject});
+		unsafeWindow.Facturier.libs.push({id:'dayjs',ptr:dayjs});  // unsafeWindow.Facturier.libs.find(o => o.id == 'dayjs').ptr pour le retrouver
+		unsafeWindow.Facturier.klass.push({id:'Student',ptr:Student}); // const Student = unsafeWindow.Facturier.klass.find(o => o.id == 'Student').ptr student is not imported so couln't use it without import
+		unsafeWindow.Facturier.klass.push({id:'Session',ptr:Session});
+		unsafeWindow.Facturier.klass.push({id:'Archive',ptr:Archive});
+		unsafeWindow.Facturier.klass.push({id:'History',ptr:History});
+		unsafeWindow.Facturier.klass.push({id:'StudentHistory',ptr:StudentHistory});
+		// -- not mentionned but needed for some functions in views
+		unsafeWindow.Facturier.klass.push({id:'Dbase',ptr:Dbase});
+		console.log("%cImportants values are exported in unsafeWindow.Facturier", APP_DEBUG_STYLE);   
+		 
+		// ici toute l'idée est de verifier que le fichier d'install contient src ou dist ... s'il contient source alors, on doit utiliser en sus les ressources locales
+		// sinon on est sur la version livrée et donc on a tout déjà dans le script de base qui a été build
+		// probleme avec CORS
+		// visiblement en tout cas sur chrome l'url n'est pas bien prise en compte par le paramètre du script
+		// @update et @download semblent sans incidences sur ce que l'on trouve dans l'onglet paramètres
+		// dit autrement le positionner à la main dans l'éditeur de script permet de déclencher ce mode local sans toutefois 
+		// changer le paramètre dans le header ce qui est bien preatique
+		
 		if (GM.info.script.downloadURL === "http://localhost:8000/dist/app-facturier.iife.js") {
 			 console.log("%cALERTE .... version locale !!!!!! ", "background-color:coral;color:white");
-			/* exportation des fonctions requises */
-			unsafeWindow.Facturier = {libs:[],cfg:{dbase:null},klass:[]}
-			unsafeWindow.Facturier.cfg.dbase = Facturier.Cfg.dbase; // const dbase = unsafeWindow.Facturier.cfg.dbase
-			unsafeWindow.Facturier.libs.push({id:'fetchInject',ptr:fetchInject});
-			unsafeWindow.Facturier.libs.push({id:'dayjs',ptr:dayjs});  // unsafeWindow.Facturier.libs.find(o => o.id == 'dayjs').ptr pour le retrouver
-			unsafeWindow.Facturier.klass.push({id:'Student',ptr:Student}); // const Student = unsafeWindow.Facturier.klass.find(o => o.id == 'Student').ptr student is not imported so couln't use it without import
-			unsafeWindow.Facturier.klass.push({id:'Session',ptr:Session});
-			unsafeWindow.Facturier.klass.push({id:'Archive',ptr:Archive});
-			unsafeWindow.Facturier.klass.push({id:'History',ptr:History});
-			unsafeWindow.Facturier.klass.push({id:'StudentHistory',ptr:StudentHistory});
-			console.log("%cImportants values are exported in unsafeWindow.Facturier", APP_DEBUG_STYLE);    
-			
 			//Facturier.overrideDebug();
 			console.log("%c test readfile", APP_DEBUG_STYLE);
 			readFile('file:////media/pwyll/USB120Go/DevStt/UserScripts/SttAddon/src/update_data_base.js', function(_res){console.log(_res);}); 
-			  
 			Facturier.loadDependencies();
 		} else {
 			console.log(`%c GM.info.script.downloadURL url : ${GM.info.script.downloadURL}`, APP_DEBUG_STYLE);

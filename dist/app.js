@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Facturier (alpha)
 // @namespace    http://tampermonkey.net/
-// @version      1.10.0001
+// @version      1.10.0003
 // @description  Un addon pour vous aider dans votre facturation
 // @author       Stéphane TORCHY
 // @updateURL    https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/dist/app.min.js
@@ -36,7 +36,8 @@
 // @require      https://raw.githubusercontent.com/sizzlemctwizzle/GM_config/master/gm_config.js
 
 // sweetalert 2
-// @require      https://cdn.jsdelivr.net/npm/sweetalert2@9/dist/sweetalert2.all.min.js
+// require      https://cdn.jsdelivr.net/npm/sweetalert2@9/dist/sweetalert2.all.min.js
+// @require      https://cdn.jsdelivr.net/npm/sweetalert2@10
 
 // draggabilly
 // @require      https://cdnjs.cloudflare.com/ajax/libs/draggabilly/2.2.0/draggabilly.pkgd.min.js
@@ -55,8 +56,8 @@
 // require https://raw.githubusercontent.com/anywhichway/nano-memoize/master/dist/nano-memoize.min.js
 // @require https://cdn.jsdelivr.net/npm/moize@5.4.7/dist/moize.min.js
 
-// require https://raw.githubusercontent.com/StephaneTy-Pro/userscripts/master/fetch-inject.umd.min.js
-// j'utilisais celui là mais désormais je le livre dans l'application directement require https://cdn.jsdelivr.net/npm/fetch-inject
+// FETCH INJECT --> included manually
+// require https://cdn.jsdelivr.net/npm/fetch-inject
 
 // PARSER MKDOWN
 // @require 	 https://cdn.jsdelivr.net/npm/showdown@1.9.1/dist/showdown.min.js
@@ -65,6 +66,11 @@
 // @require      https://unpkg.com/pdf-lib@1.9.0/dist/pdf-lib.min.js
 // @require      https://unpkg.com/downloadjs@1.4.7/download.js
 
+// HTMX https://htmx.org
+// @require https://unpkg.com/htmx.org@1.1.0/dist/htmx.min.js
+
+// ALPINE JS
+// @require https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.js
 
 
 // ProgressBar 
@@ -140,12 +146,585 @@
     return __exportStar(__defineProperty({}, "default", {value: module, enumerable: true}), module);
   };
 
+  // src/vendor/papaparse/papaparse.min.js
+  var require_papaparse_min = __commonJS((exports, module) => {
+    /* @license
+    Papa Parse
+    v5.3.0
+    https://github.com/mholt/PapaParse
+    License: MIT
+    */
+    !function(e, t) {
+      typeof define == "function" && define.amd ? define([], t) : typeof module == "object" && typeof exports != "undefined" ? module.exports = t() : e.Papa = t();
+    }(exports, function s() {
+      "use strict";
+      var f = typeof self != "undefined" ? self : typeof window != "undefined" ? window : f !== void 0 ? f : {};
+      var n = !f.document && !!f.postMessage, o = n && /blob:/i.test((f.location || {}).protocol), a = {}, h = 0, b = {parse: function(e, t) {
+        var i2 = (t = t || {}).dynamicTyping || false;
+        U(i2) && (t.dynamicTypingFunction = i2, i2 = {});
+        if (t.dynamicTyping = i2, t.transform = !!U(t.transform) && t.transform, t.worker && b.WORKERS_SUPPORTED) {
+          var r2 = function() {
+            if (!b.WORKERS_SUPPORTED)
+              return false;
+            var e2 = (i3 = f.URL || f.webkitURL || null, r3 = s.toString(), b.BLOB_URL || (b.BLOB_URL = i3.createObjectURL(new Blob(["(", r3, ")();"], {type: "text/javascript"})))), t2 = new f.Worker(e2);
+            var i3, r3;
+            return t2.onmessage = m, t2.id = h++, a[t2.id] = t2;
+          }();
+          return r2.userStep = t.step, r2.userChunk = t.chunk, r2.userComplete = t.complete, r2.userError = t.error, t.step = U(t.step), t.chunk = U(t.chunk), t.complete = U(t.complete), t.error = U(t.error), delete t.worker, void r2.postMessage({input: e, config: t, workerId: r2.id});
+        }
+        var n2 = null;
+        b.NODE_STREAM_INPUT, typeof e == "string" ? n2 = t.download ? new l(t) : new p(t) : e.readable === true && U(e.read) && U(e.on) ? n2 = new g(t) : (f.File && e instanceof File || e instanceof Object) && (n2 = new c(t));
+        return n2.stream(e);
+      }, unparse: function(e, t) {
+        var n2 = false, m2 = true, _3 = ",", v2 = "\r\n", s2 = '"', a2 = s2 + s2, i2 = false, r2 = null, o2 = false;
+        !function() {
+          if (typeof t != "object")
+            return;
+          typeof t.delimiter != "string" || b.BAD_DELIMITERS.filter(function(e2) {
+            return t.delimiter.indexOf(e2) !== -1;
+          }).length || (_3 = t.delimiter);
+          (typeof t.quotes == "boolean" || typeof t.quotes == "function" || Array.isArray(t.quotes)) && (n2 = t.quotes);
+          typeof t.skipEmptyLines != "boolean" && typeof t.skipEmptyLines != "string" || (i2 = t.skipEmptyLines);
+          typeof t.newline == "string" && (v2 = t.newline);
+          typeof t.quoteChar == "string" && (s2 = t.quoteChar);
+          typeof t.header == "boolean" && (m2 = t.header);
+          if (Array.isArray(t.columns)) {
+            if (t.columns.length === 0)
+              throw new Error("Option columns is empty");
+            r2 = t.columns;
+          }
+          t.escapeChar !== void 0 && (a2 = t.escapeChar + s2);
+          typeof t.escapeFormulae == "boolean" && (o2 = t.escapeFormulae);
+        }();
+        var h2 = new RegExp(q(s2), "g");
+        typeof e == "string" && (e = JSON.parse(e));
+        if (Array.isArray(e)) {
+          if (!e.length || Array.isArray(e[0]))
+            return f2(null, e, i2);
+          if (typeof e[0] == "object")
+            return f2(r2 || u2(e[0]), e, i2);
+        } else if (typeof e == "object")
+          return typeof e.data == "string" && (e.data = JSON.parse(e.data)), Array.isArray(e.data) && (e.fields || (e.fields = e.meta && e.meta.fields), e.fields || (e.fields = Array.isArray(e.data[0]) ? e.fields : u2(e.data[0])), Array.isArray(e.data[0]) || typeof e.data[0] == "object" || (e.data = [e.data])), f2(e.fields || [], e.data || [], i2);
+        throw new Error("Unable to serialize unrecognized input");
+        function u2(e2) {
+          if (typeof e2 != "object")
+            return [];
+          var t2 = [];
+          for (var i3 in e2)
+            t2.push(i3);
+          return t2;
+        }
+        function f2(e2, t2, i3) {
+          var r3 = "";
+          typeof e2 == "string" && (e2 = JSON.parse(e2)), typeof t2 == "string" && (t2 = JSON.parse(t2));
+          var n3 = Array.isArray(e2) && 0 < e2.length, s3 = !Array.isArray(t2[0]);
+          if (n3 && m2) {
+            for (var a3 = 0; a3 < e2.length; a3++)
+              0 < a3 && (r3 += _3), r3 += y2(e2[a3], a3);
+            0 < t2.length && (r3 += v2);
+          }
+          for (var o3 = 0; o3 < t2.length; o3++) {
+            var h3 = n3 ? e2.length : t2[o3].length, u3 = false, f3 = n3 ? Object.keys(t2[o3]).length === 0 : t2[o3].length === 0;
+            if (i3 && !n3 && (u3 = i3 === "greedy" ? t2[o3].join("").trim() === "" : t2[o3].length === 1 && t2[o3][0].length === 0), i3 === "greedy" && n3) {
+              for (var d2 = [], l2 = 0; l2 < h3; l2++) {
+                var c2 = s3 ? e2[l2] : l2;
+                d2.push(t2[o3][c2]);
+              }
+              u3 = d2.join("").trim() === "";
+            }
+            if (!u3) {
+              for (var p2 = 0; p2 < h3; p2++) {
+                0 < p2 && !f3 && (r3 += _3);
+                var g2 = n3 && s3 ? e2[p2] : p2;
+                r3 += y2(t2[o3][g2], p2);
+              }
+              o3 < t2.length - 1 && (!i3 || 0 < h3 && !f3) && (r3 += v2);
+            }
+          }
+          return r3;
+        }
+        function y2(e2, t2) {
+          if (e2 == null)
+            return "";
+          if (e2.constructor === Date)
+            return JSON.stringify(e2).slice(1, 25);
+          o2 === true && typeof e2 == "string" && e2.match(/^[=+\-@].*$/) !== null && (e2 = "'" + e2);
+          var i3 = e2.toString().replace(h2, a2), r3 = typeof n2 == "boolean" && n2 || typeof n2 == "function" && n2(e2, t2) || Array.isArray(n2) && n2[t2] || function(e3, t3) {
+            for (var i4 = 0; i4 < t3.length; i4++)
+              if (-1 < e3.indexOf(t3[i4]))
+                return true;
+            return false;
+          }(i3, b.BAD_DELIMITERS) || -1 < i3.indexOf(_3) || i3.charAt(0) === " " || i3.charAt(i3.length - 1) === " ";
+          return r3 ? s2 + i3 + s2 : i3;
+        }
+      }};
+      if (b.RECORD_SEP = String.fromCharCode(30), b.UNIT_SEP = String.fromCharCode(31), b.BYTE_ORDER_MARK = "﻿", b.BAD_DELIMITERS = ["\r", "\n", '"', b.BYTE_ORDER_MARK], b.WORKERS_SUPPORTED = !n && !!f.Worker, b.NODE_STREAM_INPUT = 1, b.LocalChunkSize = 10485760, b.RemoteChunkSize = 5242880, b.DefaultDelimiter = ",", b.Parser = w, b.ParserHandle = i, b.NetworkStreamer = l, b.FileStreamer = c, b.StringStreamer = p, b.ReadableStreamStreamer = g, f.jQuery) {
+        var d = f.jQuery;
+        d.fn.parse = function(o2) {
+          var i2 = o2.config || {}, h2 = [];
+          return this.each(function(e2) {
+            if (!(d(this).prop("tagName").toUpperCase() === "INPUT" && d(this).attr("type").toLowerCase() === "file" && f.FileReader) || !this.files || this.files.length === 0)
+              return true;
+            for (var t = 0; t < this.files.length; t++)
+              h2.push({file: this.files[t], inputElem: this, instanceConfig: d.extend({}, i2)});
+          }), e(), this;
+          function e() {
+            if (h2.length !== 0) {
+              var e2, t, i3, r2, n2 = h2[0];
+              if (U(o2.before)) {
+                var s2 = o2.before(n2.file, n2.inputElem);
+                if (typeof s2 == "object") {
+                  if (s2.action === "abort")
+                    return e2 = "AbortError", t = n2.file, i3 = n2.inputElem, r2 = s2.reason, void (U(o2.error) && o2.error({name: e2}, t, i3, r2));
+                  if (s2.action === "skip")
+                    return void u2();
+                  typeof s2.config == "object" && (n2.instanceConfig = d.extend(n2.instanceConfig, s2.config));
+                } else if (s2 === "skip")
+                  return void u2();
+              }
+              var a2 = n2.instanceConfig.complete;
+              n2.instanceConfig.complete = function(e3) {
+                U(a2) && a2(e3, n2.file, n2.inputElem), u2();
+              }, b.parse(n2.file, n2.instanceConfig);
+            } else
+              U(o2.complete) && o2.complete();
+          }
+          function u2() {
+            h2.splice(0, 1), e();
+          }
+        };
+      }
+      function u(e) {
+        this._handle = null, this._finished = false, this._completed = false, this._halted = false, this._input = null, this._baseIndex = 0, this._partialLine = "", this._rowCount = 0, this._start = 0, this._nextChunk = null, this.isFirstChunk = true, this._completeResults = {data: [], errors: [], meta: {}}, function(e2) {
+          var t = E(e2);
+          t.chunkSize = parseInt(t.chunkSize), e2.step || e2.chunk || (t.chunkSize = null);
+          this._handle = new i(t), (this._handle.streamer = this)._config = t;
+        }.call(this, e), this.parseChunk = function(e2, t) {
+          if (this.isFirstChunk && U(this._config.beforeFirstChunk)) {
+            var i2 = this._config.beforeFirstChunk(e2);
+            i2 !== void 0 && (e2 = i2);
+          }
+          this.isFirstChunk = false, this._halted = false;
+          var r2 = this._partialLine + e2;
+          this._partialLine = "";
+          var n2 = this._handle.parse(r2, this._baseIndex, !this._finished);
+          if (!this._handle.paused() && !this._handle.aborted()) {
+            var s2 = n2.meta.cursor;
+            this._finished || (this._partialLine = r2.substring(s2 - this._baseIndex), this._baseIndex = s2), n2 && n2.data && (this._rowCount += n2.data.length);
+            var a2 = this._finished || this._config.preview && this._rowCount >= this._config.preview;
+            if (o)
+              f.postMessage({results: n2, workerId: b.WORKER_ID, finished: a2});
+            else if (U(this._config.chunk) && !t) {
+              if (this._config.chunk(n2, this._handle), this._handle.paused() || this._handle.aborted())
+                return void (this._halted = true);
+              n2 = void 0, this._completeResults = void 0;
+            }
+            return this._config.step || this._config.chunk || (this._completeResults.data = this._completeResults.data.concat(n2.data), this._completeResults.errors = this._completeResults.errors.concat(n2.errors), this._completeResults.meta = n2.meta), this._completed || !a2 || !U(this._config.complete) || n2 && n2.meta.aborted || (this._config.complete(this._completeResults, this._input), this._completed = true), a2 || n2 && n2.meta.paused || this._nextChunk(), n2;
+          }
+          this._halted = true;
+        }, this._sendError = function(e2) {
+          U(this._config.error) ? this._config.error(e2) : o && this._config.error && f.postMessage({workerId: b.WORKER_ID, error: e2, finished: false});
+        };
+      }
+      function l(e) {
+        var r2;
+        (e = e || {}).chunkSize || (e.chunkSize = b.RemoteChunkSize), u.call(this, e), this._nextChunk = n ? function() {
+          this._readChunk(), this._chunkLoaded();
+        } : function() {
+          this._readChunk();
+        }, this.stream = function(e2) {
+          this._input = e2, this._nextChunk();
+        }, this._readChunk = function() {
+          if (this._finished)
+            this._chunkLoaded();
+          else {
+            if (r2 = new XMLHttpRequest(), this._config.withCredentials && (r2.withCredentials = this._config.withCredentials), n || (r2.onload = y(this._chunkLoaded, this), r2.onerror = y(this._chunkError, this)), r2.open(this._config.downloadRequestBody ? "POST" : "GET", this._input, !n), this._config.downloadRequestHeaders) {
+              var e2 = this._config.downloadRequestHeaders;
+              for (var t in e2)
+                r2.setRequestHeader(t, e2[t]);
+            }
+            if (this._config.chunkSize) {
+              var i2 = this._start + this._config.chunkSize - 1;
+              r2.setRequestHeader("Range", "bytes=" + this._start + "-" + i2);
+            }
+            try {
+              r2.send(this._config.downloadRequestBody);
+            } catch (e3) {
+              this._chunkError(e3.message);
+            }
+            n && r2.status === 0 && this._chunkError();
+          }
+        }, this._chunkLoaded = function() {
+          r2.readyState === 4 && (r2.status < 200 || 400 <= r2.status ? this._chunkError() : (this._start += this._config.chunkSize ? this._config.chunkSize : r2.responseText.length, this._finished = !this._config.chunkSize || this._start >= function(e2) {
+            var t = e2.getResponseHeader("Content-Range");
+            if (t === null)
+              return -1;
+            return parseInt(t.substring(t.lastIndexOf("/") + 1));
+          }(r2), this.parseChunk(r2.responseText)));
+        }, this._chunkError = function(e2) {
+          var t = r2.statusText || e2;
+          this._sendError(new Error(t));
+        };
+      }
+      function c(e) {
+        var r2, n2;
+        (e = e || {}).chunkSize || (e.chunkSize = b.LocalChunkSize), u.call(this, e);
+        var s2 = typeof FileReader != "undefined";
+        this.stream = function(e2) {
+          this._input = e2, n2 = e2.slice || e2.webkitSlice || e2.mozSlice, s2 ? ((r2 = new FileReader()).onload = y(this._chunkLoaded, this), r2.onerror = y(this._chunkError, this)) : r2 = new FileReaderSync(), this._nextChunk();
+        }, this._nextChunk = function() {
+          this._finished || this._config.preview && !(this._rowCount < this._config.preview) || this._readChunk();
+        }, this._readChunk = function() {
+          var e2 = this._input;
+          if (this._config.chunkSize) {
+            var t = Math.min(this._start + this._config.chunkSize, this._input.size);
+            e2 = n2.call(e2, this._start, t);
+          }
+          var i2 = r2.readAsText(e2, this._config.encoding);
+          s2 || this._chunkLoaded({target: {result: i2}});
+        }, this._chunkLoaded = function(e2) {
+          this._start += this._config.chunkSize, this._finished = !this._config.chunkSize || this._start >= this._input.size, this.parseChunk(e2.target.result);
+        }, this._chunkError = function() {
+          this._sendError(r2.error);
+        };
+      }
+      function p(e) {
+        var i2;
+        u.call(this, e = e || {}), this.stream = function(e2) {
+          return i2 = e2, this._nextChunk();
+        }, this._nextChunk = function() {
+          if (!this._finished) {
+            var e2, t = this._config.chunkSize;
+            return t ? (e2 = i2.substring(0, t), i2 = i2.substring(t)) : (e2 = i2, i2 = ""), this._finished = !i2, this.parseChunk(e2);
+          }
+        };
+      }
+      function g(e) {
+        u.call(this, e = e || {});
+        var t = [], i2 = true, r2 = false;
+        this.pause = function() {
+          u.prototype.pause.apply(this, arguments), this._input.pause();
+        }, this.resume = function() {
+          u.prototype.resume.apply(this, arguments), this._input.resume();
+        }, this.stream = function(e2) {
+          this._input = e2, this._input.on("data", this._streamData), this._input.on("end", this._streamEnd), this._input.on("error", this._streamError);
+        }, this._checkIsFinished = function() {
+          r2 && t.length === 1 && (this._finished = true);
+        }, this._nextChunk = function() {
+          this._checkIsFinished(), t.length ? this.parseChunk(t.shift()) : i2 = true;
+        }, this._streamData = y(function(e2) {
+          try {
+            t.push(typeof e2 == "string" ? e2 : e2.toString(this._config.encoding)), i2 && (i2 = false, this._checkIsFinished(), this.parseChunk(t.shift()));
+          } catch (e3) {
+            this._streamError(e3);
+          }
+        }, this), this._streamError = y(function(e2) {
+          this._streamCleanUp(), this._sendError(e2);
+        }, this), this._streamEnd = y(function() {
+          this._streamCleanUp(), r2 = true, this._streamData("");
+        }, this), this._streamCleanUp = y(function() {
+          this._input.removeListener("data", this._streamData), this._input.removeListener("end", this._streamEnd), this._input.removeListener("error", this._streamError);
+        }, this);
+      }
+      function i(_3) {
+        var a2, o2, h2, r2 = Math.pow(2, 53), n2 = -r2, s2 = /^\s*-?(\d+\.?|\.\d+|\d+\.\d+)(e[-+]?\d+)?\s*$/, u2 = /(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))/, t = this, i2 = 0, f2 = 0, d2 = false, e = false, l2 = [], c2 = {data: [], errors: [], meta: {}};
+        if (U(_3.step)) {
+          var p2 = _3.step;
+          _3.step = function(e2) {
+            if (c2 = e2, m2())
+              g2();
+            else {
+              if (g2(), c2.data.length === 0)
+                return;
+              i2 += e2.data.length, _3.preview && i2 > _3.preview ? o2.abort() : (c2.data = c2.data[0], p2(c2, t));
+            }
+          };
+        }
+        function v2(e2) {
+          return _3.skipEmptyLines === "greedy" ? e2.join("").trim() === "" : e2.length === 1 && e2[0].length === 0;
+        }
+        function g2() {
+          if (c2 && h2 && (k("Delimiter", "UndetectableDelimiter", "Unable to auto-detect delimiting character; defaulted to '" + b.DefaultDelimiter + "'"), h2 = false), _3.skipEmptyLines)
+            for (var e2 = 0; e2 < c2.data.length; e2++)
+              v2(c2.data[e2]) && c2.data.splice(e2--, 1);
+          return m2() && function() {
+            if (!c2)
+              return;
+            function e3(e4, t3) {
+              U(_3.transformHeader) && (e4 = _3.transformHeader(e4, t3)), l2.push(e4);
+            }
+            if (Array.isArray(c2.data[0])) {
+              for (var t2 = 0; m2() && t2 < c2.data.length; t2++)
+                c2.data[t2].forEach(e3);
+              c2.data.splice(0, 1);
+            } else
+              c2.data.forEach(e3);
+          }(), function() {
+            if (!c2 || !_3.header && !_3.dynamicTyping && !_3.transform)
+              return c2;
+            function e3(e4, t3) {
+              var i3, r3 = _3.header ? {} : [];
+              for (i3 = 0; i3 < e4.length; i3++) {
+                var n3 = i3, s3 = e4[i3];
+                _3.header && (n3 = i3 >= l2.length ? "__parsed_extra" : l2[i3]), _3.transform && (s3 = _3.transform(s3, n3)), s3 = y2(n3, s3), n3 === "__parsed_extra" ? (r3[n3] = r3[n3] || [], r3[n3].push(s3)) : r3[n3] = s3;
+              }
+              return _3.header && (i3 > l2.length ? k("FieldMismatch", "TooManyFields", "Too many fields: expected " + l2.length + " fields but parsed " + i3, f2 + t3) : i3 < l2.length && k("FieldMismatch", "TooFewFields", "Too few fields: expected " + l2.length + " fields but parsed " + i3, f2 + t3)), r3;
+            }
+            var t2 = 1;
+            !c2.data.length || Array.isArray(c2.data[0]) ? (c2.data = c2.data.map(e3), t2 = c2.data.length) : c2.data = e3(c2.data, 0);
+            _3.header && c2.meta && (c2.meta.fields = l2);
+            return f2 += t2, c2;
+          }();
+        }
+        function m2() {
+          return _3.header && l2.length === 0;
+        }
+        function y2(e2, t2) {
+          return i3 = e2, _3.dynamicTypingFunction && _3.dynamicTyping[i3] === void 0 && (_3.dynamicTyping[i3] = _3.dynamicTypingFunction(i3)), (_3.dynamicTyping[i3] || _3.dynamicTyping) === true ? t2 === "true" || t2 === "TRUE" || t2 !== "false" && t2 !== "FALSE" && (function(e3) {
+            if (s2.test(e3)) {
+              var t3 = parseFloat(e3);
+              if (n2 < t3 && t3 < r2)
+                return true;
+            }
+            return false;
+          }(t2) ? parseFloat(t2) : u2.test(t2) ? new Date(t2) : t2 === "" ? null : t2) : t2;
+          var i3;
+        }
+        function k(e2, t2, i3, r3) {
+          var n3 = {type: e2, code: t2, message: i3};
+          r3 !== void 0 && (n3.row = r3), c2.errors.push(n3);
+        }
+        this.parse = function(e2, t2, i3) {
+          var r3 = _3.quoteChar || '"';
+          if (_3.newline || (_3.newline = function(e3, t3) {
+            e3 = e3.substring(0, 1048576);
+            var i4 = new RegExp(q(t3) + "([^]*?)" + q(t3), "gm"), r4 = (e3 = e3.replace(i4, "")).split("\r"), n4 = e3.split("\n"), s4 = 1 < n4.length && n4[0].length < r4[0].length;
+            if (r4.length === 1 || s4)
+              return "\n";
+            for (var a3 = 0, o3 = 0; o3 < r4.length; o3++)
+              r4[o3][0] === "\n" && a3++;
+            return a3 >= r4.length / 2 ? "\r\n" : "\r";
+          }(e2, r3)), h2 = false, _3.delimiter)
+            U(_3.delimiter) && (_3.delimiter = _3.delimiter(e2), c2.meta.delimiter = _3.delimiter);
+          else {
+            var n3 = function(e3, t3, i4, r4, n4) {
+              var s4, a3, o3, h3;
+              n4 = n4 || [",", "	", "|", ";", b.RECORD_SEP, b.UNIT_SEP];
+              for (var u3 = 0; u3 < n4.length; u3++) {
+                var f3 = n4[u3], d3 = 0, l3 = 0, c3 = 0;
+                o3 = void 0;
+                for (var p3 = new w({comments: r4, delimiter: f3, newline: t3, preview: 10}).parse(e3), g3 = 0; g3 < p3.data.length; g3++)
+                  if (i4 && v2(p3.data[g3]))
+                    c3++;
+                  else {
+                    var m3 = p3.data[g3].length;
+                    l3 += m3, o3 !== void 0 ? 0 < m3 && (d3 += Math.abs(m3 - o3), o3 = m3) : o3 = m3;
+                  }
+                0 < p3.data.length && (l3 /= p3.data.length - c3), (a3 === void 0 || d3 <= a3) && (h3 === void 0 || h3 < l3) && 1.99 < l3 && (a3 = d3, s4 = f3, h3 = l3);
+              }
+              return {successful: !!(_3.delimiter = s4), bestDelimiter: s4};
+            }(e2, _3.newline, _3.skipEmptyLines, _3.comments, _3.delimitersToGuess);
+            n3.successful ? _3.delimiter = n3.bestDelimiter : (h2 = true, _3.delimiter = b.DefaultDelimiter), c2.meta.delimiter = _3.delimiter;
+          }
+          var s3 = E(_3);
+          return _3.preview && _3.header && s3.preview++, a2 = e2, o2 = new w(s3), c2 = o2.parse(a2, t2, i3), g2(), d2 ? {meta: {paused: true}} : c2 || {meta: {paused: false}};
+        }, this.paused = function() {
+          return d2;
+        }, this.pause = function() {
+          d2 = true, o2.abort(), a2 = U(_3.chunk) ? "" : a2.substring(o2.getCharIndex());
+        }, this.resume = function() {
+          t.streamer._halted ? (d2 = false, t.streamer.parseChunk(a2, true)) : setTimeout(t.resume, 3);
+        }, this.aborted = function() {
+          return e;
+        }, this.abort = function() {
+          e = true, o2.abort(), c2.meta.aborted = true, U(_3.complete) && _3.complete(c2), a2 = "";
+        };
+      }
+      function q(e) {
+        return e.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      }
+      function w(e) {
+        var O, D = (e = e || {}).delimiter, I = e.newline, T = e.comments, A = e.step, L = e.preview, F = e.fastMode, z = O = e.quoteChar === void 0 ? '"' : e.quoteChar;
+        if (e.escapeChar !== void 0 && (z = e.escapeChar), (typeof D != "string" || -1 < b.BAD_DELIMITERS.indexOf(D)) && (D = ","), T === D)
+          throw new Error("Comment character same as delimiter");
+        T === true ? T = "#" : (typeof T != "string" || -1 < b.BAD_DELIMITERS.indexOf(T)) && (T = false), I !== "\n" && I !== "\r" && I !== "\r\n" && (I = "\n");
+        var M = 0, j = false;
+        this.parse = function(a2, t, i2) {
+          if (typeof a2 != "string")
+            throw new Error("Input must be a string");
+          var r2 = a2.length, e2 = D.length, n2 = I.length, s2 = T.length, o2 = U(A), h2 = [], u2 = [], f2 = [], d2 = M = 0;
+          if (!a2)
+            return R();
+          if (F || F !== false && a2.indexOf(O) === -1) {
+            for (var l2 = a2.split(I), c2 = 0; c2 < l2.length; c2++) {
+              if (f2 = l2[c2], M += f2.length, c2 !== l2.length - 1)
+                M += I.length;
+              else if (i2)
+                return R();
+              if (!T || f2.substring(0, s2) !== T) {
+                if (o2) {
+                  if (h2 = [], b2(f2.split(D)), S(), j)
+                    return R();
+                } else
+                  b2(f2.split(D));
+                if (L && L <= c2)
+                  return h2 = h2.slice(0, L), R(true);
+              }
+            }
+            return R();
+          }
+          for (var p2 = a2.indexOf(D, M), g2 = a2.indexOf(I, M), m2 = new RegExp(q(z) + q(O), "g"), _3 = a2.indexOf(O, M); ; )
+            if (a2[M] !== O)
+              if (T && f2.length === 0 && a2.substring(M, M + s2) === T) {
+                if (g2 === -1)
+                  return R();
+                M = g2 + n2, g2 = a2.indexOf(I, M), p2 = a2.indexOf(D, M);
+              } else {
+                if (p2 !== -1 && (p2 < g2 || g2 === -1)) {
+                  if (!(p2 < _3)) {
+                    f2.push(a2.substring(M, p2)), M = p2 + e2, p2 = a2.indexOf(D, M);
+                    continue;
+                  }
+                  var v2 = x(p2, _3, g2);
+                  if (v2 && v2.nextDelim !== void 0) {
+                    p2 = v2.nextDelim, _3 = v2.quoteSearch, f2.push(a2.substring(M, p2)), M = p2 + e2, p2 = a2.indexOf(D, M);
+                    continue;
+                  }
+                }
+                if (g2 === -1)
+                  break;
+                if (f2.push(a2.substring(M, g2)), C(g2 + n2), o2 && (S(), j))
+                  return R();
+                if (L && h2.length >= L)
+                  return R(true);
+              }
+            else
+              for (_3 = M, M++; ; ) {
+                if ((_3 = a2.indexOf(O, _3 + 1)) === -1)
+                  return i2 || u2.push({type: "Quotes", code: "MissingQuotes", message: "Quoted field unterminated", row: h2.length, index: M}), E2();
+                if (_3 === r2 - 1)
+                  return E2(a2.substring(M, _3).replace(m2, O));
+                if (O !== z || a2[_3 + 1] !== z) {
+                  if (O === z || _3 === 0 || a2[_3 - 1] !== z) {
+                    p2 !== -1 && p2 < _3 + 1 && (p2 = a2.indexOf(D, _3 + 1)), g2 !== -1 && g2 < _3 + 1 && (g2 = a2.indexOf(I, _3 + 1));
+                    var y2 = w2(g2 === -1 ? p2 : Math.min(p2, g2));
+                    if (a2[_3 + 1 + y2] === D) {
+                      f2.push(a2.substring(M, _3).replace(m2, O)), a2[M = _3 + 1 + y2 + e2] !== O && (_3 = a2.indexOf(O, M)), p2 = a2.indexOf(D, M), g2 = a2.indexOf(I, M);
+                      break;
+                    }
+                    var k = w2(g2);
+                    if (a2.substring(_3 + 1 + k, _3 + 1 + k + n2) === I) {
+                      if (f2.push(a2.substring(M, _3).replace(m2, O)), C(_3 + 1 + k + n2), p2 = a2.indexOf(D, M), _3 = a2.indexOf(O, M), o2 && (S(), j))
+                        return R();
+                      if (L && h2.length >= L)
+                        return R(true);
+                      break;
+                    }
+                    u2.push({type: "Quotes", code: "InvalidQuotes", message: "Trailing quote on quoted field is malformed", row: h2.length, index: M}), _3++;
+                  }
+                } else
+                  _3++;
+              }
+          return E2();
+          function b2(e3) {
+            h2.push(e3), d2 = M;
+          }
+          function w2(e3) {
+            var t2 = 0;
+            if (e3 !== -1) {
+              var i3 = a2.substring(_3 + 1, e3);
+              i3 && i3.trim() === "" && (t2 = i3.length);
+            }
+            return t2;
+          }
+          function E2(e3) {
+            return i2 || (e3 === void 0 && (e3 = a2.substring(M)), f2.push(e3), M = r2, b2(f2), o2 && S()), R();
+          }
+          function C(e3) {
+            M = e3, b2(f2), f2 = [], g2 = a2.indexOf(I, M);
+          }
+          function R(e3) {
+            return {data: h2, errors: u2, meta: {delimiter: D, linebreak: I, aborted: j, truncated: !!e3, cursor: d2 + (t || 0)}};
+          }
+          function S() {
+            A(R()), h2 = [], u2 = [];
+          }
+          function x(e3, t2, i3) {
+            var r3 = {nextDelim: void 0, quoteSearch: void 0}, n3 = a2.indexOf(O, t2 + 1);
+            if (t2 < e3 && e3 < n3 && (n3 < i3 || i3 === -1)) {
+              var s3 = a2.indexOf(D, n3);
+              if (s3 === -1)
+                return r3;
+              n3 < s3 && (n3 = a2.indexOf(O, n3 + 1)), r3 = x(s3, n3, i3);
+            } else
+              r3 = {nextDelim: e3, quoteSearch: t2};
+            return r3;
+          }
+        }, this.abort = function() {
+          j = true;
+        }, this.getCharIndex = function() {
+          return M;
+        };
+      }
+      function m(e) {
+        var t = e.data, i2 = a[t.workerId], r2 = false;
+        if (t.error)
+          i2.userError(t.error, t.file);
+        else if (t.results && t.results.data) {
+          var n2 = {abort: function() {
+            r2 = true, _2(t.workerId, {data: [], errors: [], meta: {aborted: true}});
+          }, pause: v, resume: v};
+          if (U(i2.userStep)) {
+            for (var s2 = 0; s2 < t.results.data.length && (i2.userStep({data: t.results.data[s2], errors: t.results.errors, meta: t.results.meta}, n2), !r2); s2++)
+              ;
+            delete t.results;
+          } else
+            U(i2.userChunk) && (i2.userChunk(t.results, n2, t.file), delete t.results);
+        }
+        t.finished && !r2 && _2(t.workerId, t.results);
+      }
+      function _2(e, t) {
+        var i2 = a[e];
+        U(i2.userComplete) && i2.userComplete(t), i2.terminate(), delete a[e];
+      }
+      function v() {
+        throw new Error("Not implemented.");
+      }
+      function E(e) {
+        if (typeof e != "object" || e === null)
+          return e;
+        var t = Array.isArray(e) ? [] : {};
+        for (var i2 in e)
+          t[i2] = E(e[i2]);
+        return t;
+      }
+      function y(e, t) {
+        return function() {
+          e.apply(t, arguments);
+        };
+      }
+      function U(e) {
+        return typeof e == "function";
+      }
+      return o && (f.onmessage = function(e) {
+        var t = e.data;
+        b.WORKER_ID === void 0 && t && (b.WORKER_ID = t.workerId);
+        if (typeof t.input == "string")
+          f.postMessage({workerId: b.WORKER_ID, results: b.parse(t.input, t.config), finished: true});
+        else if (f.File && t.input instanceof File || t.input instanceof Object) {
+          var i2 = b.parse(t.input, t.config);
+          i2 && f.postMessage({workerId: b.WORKER_ID, results: i2, finished: true});
+        }
+      }), (l.prototype = Object.create(u.prototype)).constructor = l, (c.prototype = Object.create(u.prototype)).constructor = c, (p.prototype = Object.create(p.prototype)).constructor = p, (g.prototype = Object.create(u.prototype)).constructor = g, b;
+    });
+  });
+
   // src/index.js
   var require_src = __commonJS((exports) => {
     __export(exports, {
       APP_AUTHOR: () => APP_AUTHOR,
       APP_DEBUG_STYLE: () => APP_DEBUG_STYLE,
-      APP_ERROR_STYLE: () => APP_ERROR_STYLE2,
+      APP_ERROR_STYLE: () => APP_ERROR_STYLE,
       APP_INFO_STYLE: () => APP_INFO_STYLE,
       APP_LOG_STYLE: () => APP_LOG_STYLE,
       APP_NAME: () => APP_NAME,
@@ -203,7 +782,7 @@
         console.log("%c in _warmup", APP_DEBUG_STYLE);
         document.unbindArrive(Facturier._warmup);
         if (GM === void 0) {
-          console.log("%cI am not in a tamper env");
+          console.log("%cI am not in a tamper env", APP_DEBUG_STYLE);
           Facturier._userscriptless();
         } else {
           console.log(`%cTamper environment detected the version is ${GM.info.version}`, APP_DEBUG_STYLE);
@@ -248,27 +827,114 @@
           console.log("%cDb dont' contain meta table create it", APP_DEBUG_STYLE);
           db.assign({meta: []}).write();
         }
-        let sDbVersion = db.get("meta").find({key: "dbVersion"}).value().value;
-        if (sDbVersion === void 0) {
-          console.log(db.get("meta").value());
-          console.log("%cDb dont' contain dbVersion field in meta table create it", APP_DEBUG_STYLE);
+        console.log("%cCheck DB version to find anyupdate to do", APP_DEBUG_STYLE);
+        let sDbVersion = meta_default.getDbVersion();
+        if (sDbVersion === -1) {
+          console.log("%cDb dont' contain dbVersion field in meta table create it with value 1.0.0", APP_DEBUG_STYLE);
           db.get("meta").push({key: "dbVersion", value: "1.0.0"}).write();
-          sDbVersion = db.get("meta").find({key: "dbVersion"}).value().value;
+          sDbVersion = meta_default.getDbVersion();
+          if (sDbVersion === -1) {
+            console.log("%cERROR:Could'nt set version on DB", APP_ERROR_STYLE);
+            throw new Error("!!!! IRRECOVERABLE ERROR");
+          }
         }
         if (semverCompare(GM.info.script.version, sDbVersion) == 1) {
-          console.log(`%cDB is in version: ${db.get("meta").value().dbVersion} need to go to version ${GM.info.script.version}`, APP_DEBUG_STYLE);
+          console.log(`%cDB is in version: ${meta_default.getDbVersion()} need to go to version ${GM.info.script.version}`, APP_DEBUG_STYLE);
           dbase_default.update(GM.info.script.version);
         }
         fetch_inject_default(["https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js"]).then(async function(e) {
-          console.log("apline js fetched", e);
+          console.log("%cALPINE js fetched", APP_DEBUG_STYLE);
+        });
+        fetch_inject_default([
+          "https://unpkg.com/htmx.org@1.1.0",
+          "https://unpkg.com/htmx.org@1.1.0/dist/ext/debug.js"
+        ]).then(async function(e) {
+          console.log("%cHTMX fetched", APP_DEBUG_STYLE);
+          htmx.defineExtension("get-dirty", {
+            onEvent: function(name, evt) {
+              if (name === "htmx:configRequest") {
+                console.log("%cPatched htmx htmx:configRequest", APP_DEBUG_STYLE);
+              }
+              if (name === "htmx:loadstart") {
+                console.log("%cPatched htmx htmx:loadstart", APP_DEBUG_STYLE);
+                xhr.addEventListener("abort", function() {
+                  console.log("Patched Abort", APP_WARN_STYLE);
+                });
+                xhr.abort();
+              }
+            }
+          });
+          htmx.defineExtension("stt-get", {
+            onEvent: function(name, evt) {
+              if (name === "htmx:afterProcessNode") {
+                console.log("%cExtension 'stt-get' htmx htmx:afterProcessNode", APP_WARN_STYLE);
+              }
+              if (name === "htmx:beforeRequest") {
+                console.log("%cExtension 'stt-get' htmx htmx:beforeRequest", APP_WARN_STYLE);
+                htmx.ajax("GET", "http://127.0.0.1/views/dummy.html", "#myDiv");
+              }
+            }
+          });
+          htmx.on("htmx:configRequest", function(evt) {
+            console.log("%cBroker htmx:configRequest event received", APP_DEBUG_STYLE);
+          });
+          htmx.on("htmx:beforeRequest", function(evt) {
+            console.log("%cBroker htmx:beforeRequest event received", APP_DEBUG_STYLE);
+            if (evt.detail.pathInfo.finalPath && getFileExtension(evt.detail.pathInfo.finalPath) !== "html") {
+              console.log("%cIntercept path without .html need to route it to function", APP_DEBUG_STYLE);
+              console.log(`%cWanna load ${evt.detail.pathInfo.finalPath}`, APP_DEBUG_STYLE);
+              evt.detail.xhr.addEventListener("abort", function() {
+                console.log("%cGLOBAL Patched Abort Function used()", APP_WARN_STYLE);
+              });
+              evt.detail.xhr.onloadstart = function(e2) {
+                this.abort();
+                console.log("%cGLOBAL Patched onloadstart is set", APP_DEBUG_STYLE);
+              };
+              let sHtml = view_default.load(evt.detail.pathInfo.finalPath);
+              let oTarget = evt.detail.target;
+              console.log(evt.detail);
+              console.log(evt.detail.elt.getAttribute("hx-select"));
+              var sTargetSelect = evt.detail.elt.getAttribute("hx-select");
+              if (sTargetSelect) {
+                let oDom = new DOMParser().parseFromString(sHtml, "text/html");
+                oNode = oDom.querySelector(sTargetSelect);
+                if (oNode) {
+                  console.log(`%cfound not ${sTargetSelect} in data received from calling ${evt.detail.pathInfo.finalPath}`, APP_DEBUG_STYLE);
+                  sHtml = oNode.outerHTML;
+                } else {
+                  console.log(`%cWanna select target ${sTargetSelect} in data received from calling ${evt.detail.pathInfo.finalPath} but this node could'nt be found so return the whole string`, APP_ERROR_STYLE);
+                }
+              }
+              console.log(sHtml);
+              var appendFromHtmlStr = function(sHtml2, oDom) {
+                var range = document.createRange();
+                var fragment = range.createContextualFragment(sHtml2);
+                console.log(fragment);
+                for (var i = fragment.childNodes.length - 1; i >= 0; i--) {
+                  var child = fragment.childNodes[i];
+                  oDom.appendChild(child);
+                  console.log("appending to dom");
+                  htmx.process(child);
+                }
+                return oDom.lastChild;
+              };
+              appendFromHtmlStr(sHtml, evt.detail.target);
+            }
+          });
+          htmx.on("htmx:xhr:loadstart", function(evt) {
+            console.log("%cBroker htmx:xhr:loadstart event received", APP_DEBUG_STYLE);
+          });
+        });
+        fetch_inject_default(["https://cdn.jsdelivr.net/npm/sweetalert2@10"]).then(async function(e) {
+          console.log("%cSweetAlert fetched", APP_DEBUG_STYLE);
         });
         if (GM_config.get("use_custom_css") === true) {
           let sDependencies = GM_config.get("custom_css_url");
-          let rDependencies = sDependencies.split(",");
-          if (rDependencies.length !== 0) {
-            console.log(`%cWanna inject Custom CSS from URL:${rDependencies}`, APP_DEBUG_STYLE);
-            fetch_inject_default([rDependencies]).then(() => {
-              console.log(`%cCustom CSS from URL:${rDependencies} loaded`, APP_DEBUG_STYLE);
+          let aDependencies = sDependencies.split(",");
+          if (aDependencies.length !== 0) {
+            console.log(`%cWanna inject Custom CSS from URL:${aDependencies}`, APP_DEBUG_STYLE);
+            fetch_inject_default(aDependencies).then(() => {
+              console.log(`%cCustom CSS from URL:${aDependencies} loaded`, APP_DEBUG_STYLE);
             }).catch((err) => console.log(`%cError detected when loading dependencies ${err}`, APP_ERROR_STYLE));
           } else {
             let sData = GM_config.get("custom_css_data");
@@ -280,18 +946,19 @@
             }
           }
         }
+        unsafeWindow.Facturier = {libs: [], cfg: {dbase: null}, klass: []};
+        unsafeWindow.Facturier.cfg.dbase = Facturier.Cfg.dbase;
+        unsafeWindow.Facturier.libs.push({id: "fetchInject", ptr: fetch_inject_default});
+        unsafeWindow.Facturier.libs.push({id: "dayjs", ptr: dayjs});
+        unsafeWindow.Facturier.klass.push({id: "Student", ptr: students_default});
+        unsafeWindow.Facturier.klass.push({id: "Session", ptr: sessions_default});
+        unsafeWindow.Facturier.klass.push({id: "Archive", ptr: archives_default});
+        unsafeWindow.Facturier.klass.push({id: "History", ptr: history_default});
+        unsafeWindow.Facturier.klass.push({id: "StudentHistory", ptr: students_history_default});
+        unsafeWindow.Facturier.klass.push({id: "Dbase", ptr: dbase_default});
+        console.log("%cImportants values are exported in unsafeWindow.Facturier", APP_DEBUG_STYLE);
         if (GM.info.script.downloadURL === "http://localhost:8000/dist/app-facturier.iife.js") {
           console.log("%cALERTE .... version locale !!!!!! ", "background-color:coral;color:white");
-          unsafeWindow.Facturier = {libs: [], cfg: {dbase: null}, klass: []};
-          unsafeWindow.Facturier.cfg.dbase = Facturier.Cfg.dbase;
-          unsafeWindow.Facturier.libs.push({id: "fetchInject", ptr: fetch_inject_default});
-          unsafeWindow.Facturier.libs.push({id: "dayjs", ptr: dayjs});
-          unsafeWindow.Facturier.klass.push({id: "Student", ptr: students_default});
-          unsafeWindow.Facturier.klass.push({id: "Session", ptr: sessions_default});
-          unsafeWindow.Facturier.klass.push({id: "Archive", ptr: archives_default});
-          unsafeWindow.Facturier.klass.push({id: "History", ptr: history_default});
-          unsafeWindow.Facturier.klass.push({id: "StudentHistory", ptr: students_history_default});
-          console.log("%cImportants values are exported in unsafeWindow.Facturier", APP_DEBUG_STYLE);
           console.log("%c test readfile", APP_DEBUG_STYLE);
           readFile("file:////media/pwyll/USB120Go/DevStt/UserScripts/SttAddon/src/update_data_base.js", function(_res) {
             console.log(_res);
@@ -351,8 +1018,8 @@
   // src/gmc.polyfills.js
   var GMC = {
     async XHR(details) {
-      const xhr = window.GM_xmlhttpRequest || (GM ? GM.xmlHttpRequest : null);
-      if (!xhr) {
+      const xhr2 = window.GM_xmlhttpRequest || (GM ? GM.xmlHttpRequest : null);
+      if (!xhr2) {
         return Promise.reject();
       }
       return new Promise((resolve, reject) => {
@@ -362,7 +1029,7 @@
           onload: resolve,
           ontimeout: reject
         });
-        xhr(details);
+        xhr2(details);
       });
     },
     async getValue(name, failv = null) {
@@ -388,7 +1055,7 @@
   const APP_LOG_STYLE = "background-color:black;color:white";
   const APP_WARN_STYLE = "background-color:coral;color:white";
   const APP_INFO_STYLE = "background-color:cyan;color:white";
-  const APP_ERROR_STYLE2 = "background-color:red;color:white";
+  const APP_ERROR_STYLE = "background-color:red;color:white";
   const APP_PERF_STYLE = "background-color:blue;color:white";
   const OC_AUTOFUNDED = "auto-financé";
   const OC_FUNDED = "financé par un tiers";
@@ -439,7 +1106,7 @@
       onprogress: function(e) {
       }
     }).catch((error) => {
-      console.error(`%cError ${error}`, APP_ERROR_STYLE2);
+      console.error(`%cError ${error}`, APP_ERROR_STYLE);
     });
     let domparser = new DOMParser();
     let doc = domparser.parseFromString(response.responseText.replace(/\n/mg, ""), "text/html");
@@ -461,7 +1128,7 @@
       var _t1 = (el.children[0].href || "/").split("/");
       return _t1[_t1.length + idx];
     } catch (e) {
-      console.error(`%cError in getkey${e.stack || e}`, APP_ERROR_STYLE2);
+      console.error(`%cError in getkey${e.stack || e}`, APP_ERROR_STYLE);
     }
   };
   var extractDate = function(sWhen) {
@@ -469,7 +1136,7 @@
     try {
       var id = dayjs_locale_fr.months.findIndex((m) => m === _t[1]) + 1;
     } catch (e) {
-      console.error(`%cError in extractDate${e.stack || e}`, APP_ERROR_STYLE2);
+      console.error(`%cError in extractDate${e.stack || e}`, APP_ERROR_STYLE);
     }
     return `${_t[2]}-${id}-${_t[0]}T${_t[4]}`;
   };
@@ -484,6 +1151,9 @@
   };
   var sleep = function(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  };
+  const getFileExtension = function(filename) {
+    return filename.substring(filename.lastIndexOf(".") + 1, filename.length) || filename;
   };
   var semverCompare = function(a, b) {
     var pa = a.split(".");
@@ -585,7 +1255,7 @@
   };
 
   // src/components.js
-  var popupDateSelector = async function(dtFrom = null, dtTo = null, bMonthAdjustment = true) {
+  var popupDateSelector = async function(dtFrom2 = null, dtTo2 = null, bMonthAdjustment = true) {
     var sHtml = "";
     sHtml += "<style>";
     sHtml += "form {display: grid;padding: 1em;background: #f9f9f9;border: 1px solid #c1c1c1;margin: 2rem auto 0 auto;max-width: 600px;padding: 1em;}";
@@ -599,14 +1269,14 @@
     sHtml += "</style>";
     sHtml += '<form class="form1" action="">';
     sHtml += '<label for="dtFrom" class="date">Date de début</label>';
-    if (dtFrom) {
-      sHtml += '<input id="dtFrom" type="date" max="2030-12-31" min="2010-12-31" value="' + dayjs(dtFrom).format("YYYY-MM-DD") + '">';
+    if (dtFrom2) {
+      sHtml += '<input id="dtFrom" type="date" max="2030-12-31" min="2010-12-31" value="' + dayjs(dtFrom2).format("YYYY-MM-DD") + '">';
     } else {
       sHtml += '<input id="dtFrom" type="date" max="2030-12-31" min="2010-12-31">';
     }
     sHtml += '<label for="dtTo" class="date">Date de fin</label>';
-    if (dtFrom) {
-      sHtml += '<input id="dtTo" type="date" max="2030-12-31" min="2010-12-31" value="' + dayjs(dtTo).format("YYYY-MM-DD") + '">';
+    if (dtFrom2) {
+      sHtml += '<input id="dtTo" type="date" max="2030-12-31" min="2010-12-31" value="' + dayjs(dtTo2).format("YYYY-MM-DD") + '">';
     } else {
       sHtml += '<input id="dtTo" type="date" max="2030-12-31" min="2010-12-31">';
     }
@@ -644,10 +1314,10 @@
       onDestroy: (el) => {
       }
     });
-    dtFrom = dayjs(formValues[0]);
-    dtTo = dayjs(formValues[1]);
+    dtFrom2 = dayjs(formValues[0]);
+    dtTo2 = dayjs(formValues[1]);
     await sleep(250);
-    return [dtFrom, dtTo];
+    return [dtFrom2, dtTo2];
   };
   var toastOk = async function(text) {
     await Swal.fire({
@@ -690,33 +1360,33 @@
         return _r;
       }
     };
-    static delete = function(dtFrom = null, dtTo = null) {
+    static delete = function(dtFrom2 = null, dtTo2 = null) {
       let db = index.default.Cfg.dbase;
-      if (typeof dtFrom === "string") {
-        dtFrom = dtFrom.format("YYYY-MM-DD");
+      if (typeof dtFrom2 === "string") {
+        dtFrom2 = dtFrom2.format("YYYY-MM-DD");
       }
-      if (typeof dtTo === "string") {
-        dtTo = dtTo.format("YYYY-MM-DD");
+      if (typeof dtTo2 === "string") {
+        dtTo2 = dtTo2.format("YYYY-MM-DD");
       }
-      if (dtFrom === null && dtTo == null) {
+      if (dtFrom2 === null && dtTo2 == null) {
         console.log(`%cWanna suppress ALL Archives from DB `, APP_DEBUG_STYLE);
         db.get(Archive.tbl_name).remove().write();
         return;
       }
-      if (dtTo == null) {
+      if (dtTo2 == null) {
         db.get(Archive.tbl_name).remove(function(o) {
-          return dayjs(o.id, "YYYYMM").isBefore(dtTo), "month";
+          return dayjs(o.id, "YYYYMM").isBefore(dtTo2), "month";
         }).write();
         return;
       }
-      if (dtFrom == null) {
+      if (dtFrom2 == null) {
         db.get(Archive.tbl_name).remove(function(o) {
-          return dayjs(o.id, "YYYYMM").isAfter(dtFrom, "month");
+          return dayjs(o.id, "YYYYMM").isAfter(dtFrom2, "month");
         }).write();
         return;
       }
       db.get(Archive.tbl_name).remove(function(o) {
-        return dayjs(o.id, "YYYYMM").isBetween(dtFrom, dtTo, "month", "[]");
+        return dayjs(o.id, "YYYYMM").isBetween(dtFrom2, dtTo2, "month", "[]");
       }).write();
     };
   }
@@ -780,16 +1450,16 @@
       console.log(`%cAdd in student history at date ${dayjs(me.date).format("YYYY-MM-DDTHH:mm:ssZZ")} data ${data} with type:${iType}`, APP_DEBUG_STYLE);
       return db.get(TBL_NAME).push(JSON.parse(JSON.stringify(me))).write();
     };
-    const remove = function(sStudentId, iType = null, dtFrom = null) {
+    const remove = function(sStudentId, iType = null, dtFrom2 = null) {
       const db = index2.default.Cfg.dbase;
-      if (sStudentId == null && iType == null && dtFrom == null) {
+      if (sStudentId == null && iType == null && dtFrom2 == null) {
         console.log(`%cRemove all in student history`, APP_DEBUG_STYLE);
         return db.get(TBL_NAME).remove().write();
       }
-      if (typeof dtFrom === "string") {
-        dtFrom = dayjs(dtFrom);
+      if (typeof dtFrom2 === "string") {
+        dtFrom2 = dayjs(dtFrom2);
       }
-      if (dtFrom == null) {
+      if (dtFrom2 == null) {
         if (iType == null) {
           console.log(`%cRemove for student id:${sStudentId} history for all type of event`, APP_DEBUG_STYLE);
           return db.get(TBL_NAME).remove({id: sStudentId}).write();
@@ -798,22 +1468,22 @@
           return db.get(TBL_NAME).remove({id: sStudentId, type: iType}).write();
         }
       }
-      console.log(`%cRemove for student id:${sStudentId} history at date ${dtFrom.format("DD/MM/YYYY")} with event type:${type}`, APP_DEBUG_STYLE);
-      return db.get(TBL_NAME).remove({id: sStudentId, type: iType, date: dtFrom.valueOf()}).write();
+      console.log(`%cRemove for student id:${sStudentId} history at date ${dtFrom2.format("DD/MM/YYYY")} with event type:${type}`, APP_DEBUG_STYLE);
+      return db.get(TBL_NAME).remove({id: sStudentId, type: iType, date: dtFrom2.valueOf()}).write();
     };
-    const find = function(sStudentId, iType, dtFrom = null) {
+    const find = function(sStudentId, iType, dtFrom2 = null) {
       const db = index2.default.Cfg.dbase;
-      if (typeof dtFrom === "string") {
-        dtFrom = dayjs(dtFrom);
+      if (typeof dtFrom2 === "string") {
+        dtFrom2 = dayjs(dtFrom2);
       }
-      if (dtFrom === null) {
-        dtFrom = dayjs();
+      if (dtFrom2 === null) {
+        dtFrom2 = dayjs();
       }
-      console.log(`%cSearching in student history at date ${dtFrom.format("DD/MM/YYYY")} any data with type:${iType}`, APP_DEBUG_STYLE);
-      var _iBaseDay = +dtFrom.valueOf();
+      console.log(`%cSearching in student history at date ${dtFrom2.format("DD/MM/YYYY")} any data with type:${iType}`, APP_DEBUG_STYLE);
+      var _iBaseDay = +dtFrom2.valueOf();
       var _r = db.get(TBL_NAME).filter((o) => o.id === sStudentId && o.type & iType).map((i) => i.date - _iBaseDay).filter((i) => i >= 0).value();
       if (_r.length == 0) {
-        console.log(`%cThere is no data in student history at date ${dtFrom.format("DD/MM/YYYY")} with type:${iType}`, APP_DEBUG_STYLE);
+        console.log(`%cThere is no data in student history at date ${dtFrom2.format("DD/MM/YYYY")} with type:${iType}`, APP_DEBUG_STYLE);
         return void 0;
       }
       const min = (arr) => Math.min(...arr);
@@ -853,39 +1523,39 @@
       let me = {id: sStudentId, fullname: sStudentFullName, path: sStudentPath, funding: sStudentFunding, created: now};
       db.get(Student.tbl_name).push(JSON.parse(JSON.stringify(me))).write();
     };
-    static exists = function(needle, dtFrom = null) {
-      let _r = Student.findById(needle, dtFrom);
+    static exists = function(needle, dtFrom2 = null) {
+      let _r = Student.findById(needle, dtFrom2);
       console.log(`%cStudent ${needle} exists in db ? ${_r === void 0 ? false : true}`, APP_DEBUG_STYLE);
       return _r === void 0 ? false : true;
     };
-    static findById = function(sNeedle, dtFrom = null) {
+    static findById = function(sNeedle, dtFrom2 = null) {
       assert(typeof sNeedle === "string", "You must provide a string.", TypeError);
-      if (typeof dtFrom === "string") {
-        dtFrom = dayjs(dtFrom);
+      if (typeof dtFrom2 === "string") {
+        dtFrom2 = dayjs(dtFrom2);
       }
       ;
-      if (dtFrom == null) {
-        return Student.m_findById(sNeedle, dtFrom);
+      if (dtFrom2 == null) {
+        return Student.m_findById(sNeedle, dtFrom2);
       }
-      return Student.m_findById(sNeedle, dtFrom.format("YYYY-MM-DDTHH:mm:ssZZ"));
+      return Student.m_findById(sNeedle, dtFrom2.format("YYYY-MM-DDTHH:mm:ssZZ"));
     };
-    static _findById = function(sNeedle, dtFrom = null) {
+    static _findById = function(sNeedle, dtFrom2 = null) {
       let db = index3.default.Cfg.dbase;
-      if (typeof dtFrom === "string") {
-        dtFrom = dayjs(dtFrom);
+      if (typeof dtFrom2 === "string") {
+        dtFrom2 = dayjs(dtFrom2);
       }
       console.log(`%cSearching student with id:${sNeedle} in db`, APP_DEBUG_STYLE);
       var _r = db.get(Student.tbl_name).find({id: sNeedle}).value();
       if (_r === void 0) {
         return void 0;
       } else {
-        if (dtFrom !== null) {
+        if (dtFrom2 !== null) {
           var _rClone = {..._r};
-          var _rFunding = students_history_default.find(sNeedle, students_history_default.getType("FUNDING"), dtFrom);
+          var _rFunding = students_history_default.find(sNeedle, students_history_default.getType("FUNDING"), dtFrom2);
           if (_rFunding !== void 0) {
             _rClone.funding = _rFunding.value;
           }
-          var _rPath = students_history_default.find(sNeedle, students_history_default.getType("PATH"), dtFrom);
+          var _rPath = students_history_default.find(sNeedle, students_history_default.getType("PATH"), dtFrom2);
           if (_rPath !== void 0) {
             _rClone.path = _rPath.value;
           }
@@ -901,15 +1571,15 @@
         console.log("%cGet data from cache", APP_DEBUG_STYLE);
       }
     });
-    static getFunding = function(sId, dtFrom = null) {
-      if (typeof dtFrom === "string") {
-        dtFrom = dayjs(dtFrom);
+    static getFunding = function(sId, dtFrom2 = null) {
+      if (typeof dtFrom2 === "string") {
+        dtFrom2 = dayjs(dtFrom2);
       }
       ;
-      return Student.m_getFunding(sId, dtFrom);
+      return Student.m_getFunding(sId, dtFrom2);
     };
-    static _getFunding = function(sId, dtFrom = null) {
-      let _r = Student.findById(sId, dtFrom);
+    static _getFunding = function(sId, dtFrom2 = null) {
+      let _r = Student.findById(sId, dtFrom2);
       if (_r === void 0) {
         console.log(`%cStudent ${studentId} is not in db, fetchin data:'funded mode' from webpage`, APP_DEBUG_STYLE);
         return Student.getFundingFomDashboard(studentId).toLowerCase();
@@ -922,53 +1592,53 @@
       isSerialized: true
     });
     static isAutoFunded = function(iStudentId) {
-      console.log(`%cFUNCTION DEPRECATED !!!!!!!!!!!!!!!!!!!!!! `, APP_ERROR_STYLE2);
+      console.log(`%cFUNCTION DEPRECATED !!!!!!!!!!!!!!!!!!!!!! `, APP_ERROR_STYLE);
       return Student.getFunded(iStudentId).toLowerCase() === OC_AUTOFUNDED;
     };
     static getFundingFomDashboard = async function(id) {
       const oDom = await _fetch(`https://openclassrooms.com/fr/mentorship/students/${id}/dashboard`, ".mentorshipStudent__details > p");
       return oDom.innerText.trim();
     };
-    static getPath = async function(sId, dtFrom = null) {
-      let _r = Student.findById(sId, dtFrom);
+    static getPath = async function(sId, dtFrom2 = null) {
+      let _r = Student.findById(sId, dtFrom2);
       if (_r == void 0) {
         console.log(`%cStudent ${sId} is not in db, fetching data: 'path' from webpage ....`, APP_DEBUG_STYLE);
         const oDom = await _fetch(`https://openclassrooms.com/fr/mentorship/students/${sId}/dashboard`, "a[href*='paths/']");
         if (oDom.innerText.length == 0) {
-          console.error(`%cStudent path is not readable from url : https://openclassrooms.com/fr/mentorship/students/${sId}/dashboard`, APP_ERROR_STYLE2);
+          console.error(`%cStudent path is not readable from url : https://openclassrooms.com/fr/mentorship/students/${sId}/dashboard`, APP_ERROR_STYLE);
         }
         return oDom.innerText.trim();
       } else {
         return _r.path;
       }
     };
-    static delete = function(dtFrom = null, dtTo = null) {
+    static delete = function(dtFrom2 = null, dtTo2 = null) {
       let db = index3.default.Cfg.dbase;
-      if (typeof dtFrom === "string") {
-        dtFrom = dtFrom.format("YYYY-MM-DD");
+      if (typeof dtFrom2 === "string") {
+        dtFrom2 = dtFrom2.format("YYYY-MM-DD");
       }
-      if (typeof dtTo === "string") {
-        dtTo = dtTo.format("YYYY-MM-DD");
+      if (typeof dtTo2 === "string") {
+        dtTo2 = dtTo2.format("YYYY-MM-DD");
       }
-      if (dtFrom === null && dtTo == null) {
+      if (dtFrom2 === null && dtTo2 == null) {
         console.log(`%cWanna suppress ALL Students from DB`, APP_DEBUG_STYLE);
         db.get(Student.tbl_name).remove().write();
         return;
       }
-      if (dtTo == null) {
+      if (dtTo2 == null) {
         db.get(Student.tbl_name).remove(function(o) {
-          return dayjs(o.created, "YYYY-MM-DDTHH:mm:ssZ[Z]").isBefore(dtTo), "day";
+          return dayjs(o.created, "YYYY-MM-DDTHH:mm:ssZ[Z]").isBefore(dtTo2), "day";
         }).write();
         return;
       }
-      if (dtFrom == null) {
+      if (dtFrom2 == null) {
         db.get(Student.tbl_name).remove(function(o) {
-          return dayjs(o.created, "YYYY-MM-DDTHH:mm:ssZ[Z]").isAfter(dtFrom, "day");
+          return dayjs(o.created, "YYYY-MM-DDTHH:mm:ssZ[Z]").isAfter(dtFrom2, "day");
         }).write();
         return;
       }
       db.get(Student.tbl_name).remove(function(o) {
-        return dayjs(o.created, "YYYY-MM-DDTHH:mm:ssZ[Z]").isBetween(dtFrom, dtTo, "day", "[]");
+        return dayjs(o.created, "YYYY-MM-DDTHH:mm:ssZ[Z]").isBetween(dtFrom2, dtTo2, "day", "[]");
       }).write();
     };
     static deleteById = function(sId, dtCreated = null) {
@@ -976,13 +1646,13 @@
       db.get("students").remove((o) => o.id === sId).write();
       console.log(`%cAll students with id:${sId} are removed from DataBase`, APP_DEBUG_STYLE);
     };
-    static modifyFunding(sId, dtFrom, sNewState) {
-      if (typeof dtFrom === "string") {
-        dtFrom = dayjs(dtFrom);
+    static modifyFunding(sId, dtFrom2, sNewState) {
+      if (typeof dtFrom2 === "string") {
+        dtFrom2 = dayjs(dtFrom2);
       }
       ;
       assert(created instanceof dayjs, "modifyFunding date must be a string, a dayjs instance or null.", TypeError);
-      const sCurFunding = Student.getFunding(sId, dtFrom);
+      const sCurFunding = Student.getFunding(sId, dtFrom2);
       if (sNewState.toLower() === sCurFunding.toLower()) {
         console.log(`%cFundingMode ${sNewState} is identical as current: ${sCurrent}, nothing to do`, APP_DEBUG_STYLE);
         return;
@@ -992,14 +1662,14 @@
       }
       const db = index3.default.Cfg.dbase;
       const dtNow = dayjs().format("YYYY-MM-DDTHH:mm:ssZZ");
-      if (dtFrom === null) {
-        dtFrom = dtNow;
+      if (dtFrom2 === null) {
+        dtFrom2 = dtNow;
       }
-      oLastHistory = students_history_default.find(sId, students_history_default.getType("FUNDING"), dtFrom);
+      oLastHistory = students_history_default.find(sId, students_history_default.getType("FUNDING"), dtFrom2);
       db.get(Student.tbl_name).find({id: sId}).assign({funding: sNewState}).write();
       students_history_default.addFunding(sId, sCurFunding, dtNow);
-      if (dtFrom.isSameOrAfter(core_default.getOldModeDate())) {
-        var oListToUpdate = db.get("sessions").filter((v) => v.who_id === sId && ((v2) => dayjs(v2.when).isSameOrAfter(dtFrom, "day")));
+      if (dtFrom2.isSameOrAfter(core_default.getOldModeDate())) {
+        var oListToUpdate = db.get("sessions").filter((v) => v.who_id === sId && ((v2) => dayjs(v2.when).isSameOrAfter(dtFrom2, "day")));
       } else {
         var oListToUpdate = db.get("sessions").filter((v) => v.who_id === sId && ((v2) => dayjs(v2.when).isSameOrAfter(core_default.getOldModeDate(), "day")));
       }
@@ -1129,23 +1799,23 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
         grow: "row",
         footer: `votre étudiant(e) ${sStudentName} n'a pas été trouvé`,
         preConfirm: () => {
-          return [
-            document.getElementById("student_id").value,
-            document.getElementById("student_name").value,
-            document.getElementById("student_path").value,
-            document.getElementById("funding").checked,
-            document.getElementById("session_date").value
-          ];
+          return {
+            student_id: document.getElementById("student_id").value,
+            student_name: document.getElementById("student_name").value,
+            student_path: document.getElementById("student_path").value,
+            student_funding: document.getElementById("funding").checked,
+            session_date: document.getElementById("session_date").value
+          };
         }
       });
-      if (formValues) {
-        var sFundedBy = "";
-        if (formValues[3] === true) {
+      if (formValues && formValues.hasOwnProperty("student_id")) {
+        var sFunding = "";
+        if (formValues.student_funding === true) {
           sFunding = OC_AUTOFUNDED;
         } else {
           sFunding = OC_FUNDED;
         }
-        Student.add(formValues[0], formValues[1], formValues[2], sFunding, formValues[4]);
+        Student.add(formValues.student_id, formValues.student_name, formValues.student_path, sFunding, formValues.session_date);
       }
     };
   }
@@ -1201,33 +1871,33 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
         return true;
       }
     };
-    static delete = function(dtFrom = null, dtTo = null) {
+    static delete = function(dtFrom2 = null, dtTo2 = null) {
       let db = index4.default.Cfg.dbase;
-      if (typeof dtFrom === "string") {
-        dtFrom = dtFrom.format("YYYY-MM-DD");
+      if (typeof dtFrom2 === "string") {
+        dtFrom2 = dtFrom2.format("YYYY-MM-DD");
       }
-      if (typeof dtTo === "string") {
-        dtTo = dtTo.format("YYYY-MM-DD");
+      if (typeof dtTo2 === "string") {
+        dtTo2 = dtTo2.format("YYYY-MM-DD");
       }
-      if (dtFrom === null && dtTo == null) {
+      if (dtFrom2 === null && dtTo2 == null) {
         console.log(`%cWanna suppress ALL Sessions from DB`, APP_DEBUG_STYLE);
         db.get(Session.tbl_name).remove().write();
         return;
       }
-      if (dtTo == null) {
+      if (dtTo2 == null) {
         db.get(Session.tbl_name).remove(function(o) {
-          return dayjs(o.when).isBefore(dtTo), "day";
+          return dayjs(o.when).isBefore(dtTo2), "day";
         }).write();
         return;
       }
-      if (dtFrom == null) {
+      if (dtFrom2 == null) {
         db.get(Session.tbl_name).remove(function(o) {
-          return dayjs(o.when).isAfter(dtFrom, "day");
+          return dayjs(o.when).isAfter(dtFrom2, "day");
         }).write();
         return;
       }
       db.get(Session.tbl_name).remove(function(o) {
-        return dayjs(o.when).isBetween(dtFrom, dtTo, "day", "[]");
+        return dayjs(o.when).isBetween(dtFrom2, dtTo2, "day", "[]");
       }).write();
     };
     static deleteById = function(sId) {
@@ -1235,17 +1905,17 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
       db.get("sessions").remove((o) => o.id === sId).write();
       console.log(`%cSession ${sId} suppressed from DB`, APP_DEBUG_STYLE);
     };
-    static getBetween(dtFrom, dtTo) {
-      if (typeof dtFrom === "string") {
-        dtFrom = dayjs(dtFrom);
+    static getBetween(dtFrom2, dtTo2) {
+      if (typeof dtFrom2 === "string") {
+        dtFrom2 = dayjs(dtFrom2);
       }
       ;
-      if (typeof dtTo === "string") {
-        dtFrom = dayjs(dtTo);
+      if (typeof dtTo2 === "string") {
+        dtFrom2 = dayjs(dtTo2);
       }
       ;
       let db = index4.default.Cfg.dbase;
-      let _r = db.get(Session.tbl_name).filter((v) => dayjs(v.when).isSameOrBefore(dtTo, "day") && dayjs(v.when).isSameOrAfter(dtFrom, "day")).value();
+      let _r = db.get(Session.tbl_name).filter((v) => dayjs(v.when).isSameOrBefore(dtTo2, "day") && dayjs(v.when).isSameOrAfter(dtFrom2, "day")).value();
       return _r;
     }
     static parseTable = function(oEl) {
@@ -1269,41 +1939,41 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
   // src/accounting.js
   const index5 = __toModule(require_src());
   class Accounting {
-    static calculateBill = function(dtFrom, dtTo) {
-      let sArchiveId = dtTo.format("YYYYMM");
+    static calculateBill = function(dtFrom2, dtTo2) {
+      let sArchiveId = dtTo2.format("YYYYMM");
       if (archives_default.exists(sArchiveId) === true) {
         console.log(`%cUse Archived version ${sArchiveId} of accounting`, APP_DEBUG_STYLE);
         let _r = archives_default.get(sArchiveId);
         return _r.data;
       }
-      if (typeof dtFrom === "string") {
-        dtFrom = dtFrom.format("YYYY-MM-DD");
+      if (typeof dtFrom2 === "string") {
+        dtFrom2 = dtFrom2.format("YYYY-MM-DD");
       }
-      if (typeof dtTo === "string") {
-        dtTo = dtTo.format("YYYY-MM-DD");
+      if (typeof dtTo2 === "string") {
+        dtTo2 = dtTo2.format("YYYY-MM-DD");
       }
-      return Accounting.m_calculateBill(dtFrom, dtTo);
+      return Accounting.m_calculateBill(dtFrom2, dtTo2);
     };
-    static _calculateBill = function(dtFrom, dtTo) {
-      if (typeof dtFrom === "string") {
-        dtFrom = dayjs(dtFrom);
+    static _calculateBill = function(dtFrom2, dtTo2) {
+      if (typeof dtFrom2 === "string") {
+        dtFrom2 = dayjs(dtFrom2);
       }
-      if (typeof dtTo === "string") {
-        dtTo = dayjs(dtTo);
+      if (typeof dtTo2 === "string") {
+        dtTo2 = dayjs(dtTo2);
       }
       const now = dayjs().format("YYYY-MM-DDTHH:mm:ssZ[Z]");
       var _1 = 0, _2 = 0;
       var t0 = performance.now();
       const db = index5.default.Cfg.dbase;
-      const dbSessions = db.get(sessions_default.tbl_name).filter((v) => dayjs(v.when).isSameOrBefore(dtTo, "day") && dayjs(v.when).isSameOrAfter(dtFrom, "day"));
+      const dbSessions = db.get(sessions_default.tbl_name).filter((v) => dayjs(v.when).isSameOrBefore(dtTo2, "day") && dayjs(v.when).isSameOrAfter(dtFrom2, "day"));
       const oSessions = dbSessions.value();
       const iSessionsNumber = oSessions.length;
-      let oMeta = {from: dtFrom, to: dtTo, created_at: null, maxLevel: OC_MAX_LEVEL, number: 0, amount: 0, errors: {funding: [], level: [], path: [], status: [], type: []}, flatFee: []};
+      let oMeta = {from: dtFrom2, to: dtTo2, created_at: null, maxLevel: OC_MAX_LEVEL, number: 0, amount: 0, errors: {funding: [], level: [], path: [], status: [], type: []}, flatFee: []};
       let iNumber = 0;
       let iAmount = 0;
       let aBonus = [];
       _1 = performance.now();
-      const aPu = Accounting.getPriceList(dtFrom);
+      const aPu = Accounting.getPriceList(dtFrom2);
       _2 = performance.now();
       console.log("%cGetPriceList took " + (_2 - _1) + " milliseconds.", APP_PERF_STYLE);
       let theSessionsMatrix = matrix([OC_MAX_LEVEL + 1, OC_MAX_LEVEL + 1, OC_MAX_LEVEL + 1, OC_MAX_LEVEL + 1]);
@@ -1326,7 +1996,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
         if (oTheSession.path != void 0 && oTheSession.path.toLowerCase() === "158-trouvez-lemploi-qui-vous-correspond" && oTheSession.type !== "soutenance")
           iType = TYPE_COACHING;
         var iFunding = 0;
-        const bIsInOldMode = core_default.isInOldMode(dtFrom);
+        const bIsInOldMode = core_default.isInOldMode(dtFrom2);
         if (bIsInOldMode === true) {
           iFunding = oTheSession.isFunded === true ? BILL_FUNDED : BILL_AUTOFUNDED;
         }
@@ -1378,7 +2048,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
       oMeta.number = iNumber;
       oMeta.amount = iAmount;
       if (oMeta.number + oMeta.errors.funding.length + oMeta.errors.level.length + oMeta.errors.path.length + oMeta.errors.status.length + oMeta.errors.type.length < iSessionsNumber) {
-        console.log(`%cError total number of sessions is ${iSessionsNumber} and total number of sessions in bill ${iNumber} + all errors are different`, APP_ERROR_STYLE2);
+        console.log(`%cError total number of sessions is ${iSessionsNumber} and total number of sessions in bill ${iNumber} + all errors are different`, APP_ERROR_STYLE);
         console.log("errors are", oMeta.errors);
         console.log("sessions are", oSessions);
       }
@@ -1399,13 +2069,13 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
         console.log("%cGet data from cache", APP_DEBUG_STYLE);
       }
     });
-    static getPriceList = function(dtFrom) {
-      if (typeof dtFrom === "string") {
-        dtFrom = dayjs(dtFrom);
+    static getPriceList = function(dtFrom2) {
+      if (typeof dtFrom2 === "string") {
+        dtFrom2 = dayjs(dtFrom2);
       }
       ;
       var aPrice = [0, OC_PRICE1, OC_PRICE2, OC_PRICE3, OC_PRICE4, OC_PRICE5, OC_PRICE6];
-      const bIsInOldMode = core_default.isInOldMode(dtFrom);
+      const bIsInOldMode = core_default.isInOldMode(dtFrom2);
       var aPu = new Array(7);
       for (let _i = 1; _i <= OC_MAX_LEVEL; _i += 1) {
         let iPrice = aPrice[_i];
@@ -1528,38 +2198,38 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
   const index6 = __toModule(require_src());
   class History {
     static tbl_name = "history_session_cache";
-    static getSessionPage = function(dtTo) {
-      if (dtTo.get("day") < dtTo.daysInMonth()) {
-        dtTo = dtTo.endOf("month");
+    static getSessionPage = function(dtTo2) {
+      if (dtTo2.get("day") < dtTo2.daysInMonth()) {
+        dtTo2 = dtTo2.endOf("month");
       }
-      console.log(`%cSearch in history session cache data for id: ${dtTo.format("DD/MM/YYYY")}`, APP_DEBUG_STYLE);
+      console.log(`%cSearch in history session cache data for id: ${dtTo2.format("DD/MM/YYYY")}`, APP_DEBUG_STYLE);
       let db = index6.default.Cfg.dbase;
       if (!db.has(History.tbl_name).value()) {
         throw Error(`DB ${History.db_name} NOT FOUND`);
         return -1;
       }
-      let _r = db.get(History.tbl_name).find({id: +dtTo.format("YYYYMMDD")}).value();
+      let _r = db.get(History.tbl_name).find({id: +dtTo2.format("YYYYMMDD")}).value();
       if (_r === void 0) {
         return -1;
       } else {
         return _r;
       }
     };
-    static getNearestSessionPage = function(dtTo) {
-      if (dtTo.get("day") < dtTo.daysInMonth()) {
-        dtTo = dtTo.endOf("month");
+    static getNearestSessionPage = function(dtTo2) {
+      if (dtTo2.get("day") < dtTo2.daysInMonth()) {
+        dtTo2 = dtTo2.endOf("month");
       }
-      console.log(`%cSearch in history session cache NEAREST cached data for id: ${dtTo.format("DD/MM/YYYY")}`, APP_DEBUG_STYLE);
+      console.log(`%cSearch in history session cache NEAREST cached data for id: ${dtTo2.format("DD/MM/YYYY")}`, APP_DEBUG_STYLE);
       let db = index6.default.Cfg.dbase;
       if (!db.has(History.tbl_name).value()) {
         throw Error(`DB ${History.db_name} NOT FOUND`);
         return -1;
       }
-      let _iBaseDay = +dtTo.format("YYYYMMDD");
+      let _iBaseDay = +dtTo2.format("YYYYMMDD");
       let _r = db.get(History.tbl_name).value().map((i) => +i.id - _iBaseDay).filter((i) => i > 0);
       const min = (arr) => Math.min(...arr);
       let _needle = min(_r) + _iBaseDay;
-      console.log(`%cNearest data in history session cache is data with id: ${dtTo.format("DD/MM/YYYY")}`, APP_DEBUG_STYLE);
+      console.log(`%cNearest data in history session cache is data with id: ${dtTo2.format("DD/MM/YYYY")}`, APP_DEBUG_STYLE);
       _r = db.get(History.tbl_name).find({id: _needle}).value();
       if (_r === void 0) {
         return -1;
@@ -1567,61 +2237,61 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
         return _r;
       }
     };
-    static getSameOrNearestSessionPage = function(dtTo) {
-      let _r = History.getSessionPage(dtTo);
+    static getSameOrNearestSessionPage = function(dtTo2) {
+      let _r = History.getSessionPage(dtTo2);
       if (_r === -1) {
-        _r = History.getNearestSessionPage(dtTo);
+        _r = History.getNearestSessionPage(dtTo2);
       }
       return _r;
     };
-    static delete = function(dtFrom = null, dtTo = null) {
+    static delete = function(dtFrom2 = null, dtTo2 = null) {
       let db = index6.default.Cfg.dbase;
-      if (typeof dtFrom === "string") {
-        dtFrom = dtFrom.format("YYYY-MM-DD");
+      if (typeof dtFrom2 === "string") {
+        dtFrom2 = dtFrom2.format("YYYY-MM-DD");
       }
-      if (typeof dtTo === "string") {
-        dtTo = dtTo.format("YYYY-MM-DD");
+      if (typeof dtTo2 === "string") {
+        dtTo2 = dtTo2.format("YYYY-MM-DD");
       }
-      if (dtFrom === null && dtTo == null) {
+      if (dtFrom2 === null && dtTo2 == null) {
         db.get(History.tbl_name).remove().write();
         console.log(`%cWanna suppress ALL History from DB`, APP_DEBUG_STYLE);
         return;
       }
-      if (dtTo == null) {
+      if (dtTo2 == null) {
         db.get(History.tbl_name).remove(function(o) {
-          return dayjs(o.id, "YYYYMMDD").isBefore(dtTo), "day";
+          return dayjs(o.id, "YYYYMMDD").isBefore(dtTo2), "day";
         }).write();
         return;
       }
-      if (dtFrom == null) {
+      if (dtFrom2 == null) {
         db.get(History.tbl_name).remove(function(o) {
-          return dayjs(o.id, "YYYYMMDD").isAfter(dtFrom, "day");
+          return dayjs(o.id, "YYYYMMDD").isAfter(dtFrom2, "day");
         }).write();
         return;
       }
       db.get(History.tbl_name).remove(function(o) {
-        return dayjs(o.id, "YYYYMMDD").isBetween(dtFrom, dtTo, "day", "[]");
+        return dayjs(o.id, "YYYYMMDD").isBetween(dtFrom2, dtTo2, "day", "[]");
       }).write();
     };
-    static addOrUpdateSessionPage = function(page = 1, dtTo = dayjs("1970-10-06")) {
-      if (History.getSessionPage(dtTo) == -1) {
-        History.addSessionPage(page, dtTo);
+    static addOrUpdateSessionPage = function(page = 1, dtTo2 = dayjs("1970-10-06")) {
+      if (History.getSessionPage(dtTo2) == -1) {
+        History.addSessionPage(page, dtTo2);
       } else {
-        History.updateSessionPage(page, dtTo);
+        History.updateSessionPage(page, dtTo2);
       }
     };
-    static updateSessionPage = function(page = 1, dtTo = dayjs("1970-10-06")) {
+    static updateSessionPage = function(page = 1, dtTo2 = dayjs("1970-10-06")) {
       let db = index6.default.Cfg.dbase;
-      let _r = History.getSessionPage(dtTo);
+      let _r = History.getSessionPage(dtTo2);
       if (_r == -1) {
         throw Error("session page not found in history");
         return -1;
       }
-      db.get(History.tbl_name).find({id: +dtTo.format("YYYYMMDD")}).assign({page}).write();
+      db.get(History.tbl_name).find({id: +dtTo2.format("YYYYMMDD")}).assign({page}).write();
     };
-    static addSessionPage = function(page = 1, dtTo = dayjs("1970-10-06")) {
+    static addSessionPage = function(page = 1, dtTo2 = dayjs("1970-10-06")) {
       let db = index6.default.Cfg.dbase;
-      db.get(History.tbl_name).push(JSON.parse(JSON.stringify({id: +dtTo.format("YYYYMMDD"), page}))).write();
+      db.get(History.tbl_name).push(JSON.parse(JSON.stringify({id: +dtTo2.format("YYYYMMDD"), page}))).write();
     };
   }
   var history_default = History;
@@ -1644,9 +2314,9 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
   const index7 = __toModule(require_src());
   class List {
     static detail_bill = "truc";
-    static getListDetailBill = function(dtFrom, dtTo) {
+    static getListDetailBill = function(dtFrom2, dtTo2) {
       let db = index7.default.Cfg.dbase;
-      let _r = db.get(sessions_default.tbl_name).filter((v) => dayjs(v.when).isSameOrBefore(dtTo, "day") && dayjs(v.when).isSameOrAfter(dtFrom, "day")).sortBy(function(o) {
+      let _r = db.get(sessions_default.tbl_name).filter((v) => dayjs(v.when).isSameOrBefore(dtTo2, "day") && dayjs(v.when).isSameOrAfter(dtFrom2, "day")).sortBy(function(o) {
         return dayjs(o.when).valueOf();
       }).value();
       const dtNewMode = core_default.getOldModeDate();
@@ -1694,22 +2364,22 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
       }
       return _rClone;
     };
-    static getListStatistic = function(dtFrom, dtTo) {
-      let dtCurFrom = dtFrom.clone();
+    static getListStatistic = function(dtFrom2, dtTo2) {
+      let dtCurFrom = dtFrom2.clone();
       let dtCurTo = dtCurFrom.endOf("month");
       let aData = [];
       let aStat = [];
       let _m = 0;
-      let _iMaxIndex = dtTo.diff(dtFrom, "month");
+      let _iMaxIndex = dtTo2.diff(dtFrom2, "month");
       var t0 = performance.now();
-      while (dtCurFrom.isSameOrBefore(dtTo, "day")) {
+      while (dtCurFrom.isSameOrBefore(dtTo2, "day")) {
         aData.push(accounting_default.calculateBill(dtCurFrom, dtCurTo));
         dtCurFrom = dtCurFrom.add(1, "month");
         dtCurTo = dtCurFrom.endOf("month");
       }
       var t1 = performance.now();
       console.log("%cComputed data between the two dates in" + (t1 - t0) + " milliseconds.", APP_PERF_STYLE);
-      dtCurFrom = dtFrom.clone();
+      dtCurFrom = dtFrom2.clone();
       dtCurTo = dtCurFrom.endOf("month");
       let _i02 = 0, _i1 = 0, _i2 = 0, _qs = 0, _ms = 0, _qsc = 0, _msc = 0;
       while (_m <= _iMaxIndex) {
@@ -1919,8 +2589,8 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
         for (var t = 0; t < iFlatFeeNumber; t += 1) {
           aStat[_m].bonus += 30;
         }
-        if (dtCurTo.isAfter(dtTo, "day"))
-          dtCurTo = dtTo.clone();
+        if (dtCurTo.isAfter(dtTo2, "day"))
+          dtCurTo = dtTo2.clone();
         aStat[_m].kpi.jrs = workday_count(dtCurFrom, dtCurTo);
         aStat[_m].header.dtFrom = dtCurFrom.format("YYYY-MM-DD");
         aStat[_m].header.dtTo = dtCurTo.format("YYYY-MM-DD");
@@ -1931,14 +2601,14 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
       }
       return aStat;
     };
-    static getListStatisticOld = function(dtFrom, dtTo) {
-      let dtCurFrom = dtFrom.clone();
+    static getListStatisticOld = function(dtFrom2, dtTo2) {
+      let dtCurFrom = dtFrom2.clone();
       let dtCurTo = dtCurFrom.endOf("month");
       let aData = [];
       let aStat = [];
-      let _iMaxIndex = dtTo.get("month") - dtFrom.get("month");
+      let _iMaxIndex = dtTo2.get("month") - dtFrom2.get("month");
       var t0 = performance.now();
-      while (dtCurFrom.isSameOrBefore(dtTo, "day")) {
+      while (dtCurFrom.isSameOrBefore(dtTo2, "day")) {
         aData.push(accounting_default.calculateBill(dtCurFrom, dtCurTo));
         dtCurFrom = dtCurFrom.add(1, "month");
         dtCurTo = dtCurFrom.endOf("month");
@@ -1946,7 +2616,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
       var t1 = performance.now();
       console.log("%cComputed data between the two dates in" + (t1 - t0) + " milliseconds.", APP_PERF_STYLE);
       let _m = 0;
-      dtCurFrom = dtFrom.clone();
+      dtCurFrom = dtFrom2.clone();
       dtCurTo = dtCurFrom.endOf("month");
       console.log(aData);
       while (_m <= _iMaxIndex) {
@@ -2005,8 +2675,8 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
         for (let _i = 0; _i < aData[_m][0].bonus.length; _i += 1) {
           aStat[_m].bonus += aData[_m][0].bonus[_i].sessions > 0 ? 30 : 0;
         }
-        if (dtCurTo.isAfter(dtTo, "day"))
-          dtCurTo = dtTo.clone();
+        if (dtCurTo.isAfter(dtTo2, "day"))
+          dtCurTo = dtTo2.clone();
         aStat[_m].kpi.jrs = workday_count(dtCurFrom, dtCurTo);
         aStat[_m].header.dtFrom = dtCurFrom.format("YYYY-MM-DD");
         aStat[_m].header.dtTo = dtCurTo.format("YYYY-MM-DD");
@@ -2087,16 +2757,25 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
   const index8 = __toModule(require_src());
   var fMeta = function() {
     const TBL_NAME = "meta";
-    const setVersion = function(sVersion) {
-      return index8.default.Cfg.dbase.get("meta").find({key: "dbVersion"}).assign({value: sVersion}).write();
+    const setDbVersion = function(sVersion) {
+      assert(typeof sVersion === "string", "You must provide a string.", TypeError);
+      return index8.default.Cfg.dbase.get(Meta.tbl_name).find({key: "dbVersion"}).assign({value: sVersion}).write().value;
     };
-    const getVersion = function() {
-      let _r = index8.default.Cfg.dbase.get("meta").find({key: "dbVersion"}).value;
+    const getDbVersion = function() {
+      let _r = index8.default.Cfg.dbase.get(Meta.tbl_name).find({key: "dbVersion"}).value();
       return typeof _r === "undefined" ? -1 : _r.value;
     };
+    const reset = function() {
+      return index8.default.Cfg.dbase.get("meta").remove((item) => true).write();
+    };
+    const delDbVersion = function() {
+      console.log("%c resetDbVersion NE FONCTIONNE PAS", APP_ERROR_STYLE);
+      return index8.default.Cfg.dbase.get("meta").find({key: "dbVersion"}).remove((item) => true).write();
+    };
     return Object.freeze({
-      getVersion,
-      setVersion,
+      getDbVersion,
+      setDbVersion,
+      delDbVersion,
       tbl_name: TBL_NAME
     });
   };
@@ -2137,10 +2816,10 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
         onOpen: async function(modal) {
           console.log("%cMigration table des étudiants correction du who_id", APP_DEBUG_STYLE);
           Swal.showLoading();
-          var dtFrom2 = dayjs("2020-06-01");
+          var dtFrom3 = dayjs("2020-06-01");
           var oListStudents = db.get("students");
           var aListStudents2 = oListStudents.value();
-          var aListSessionsSinceJune2 = db.get("sessions").filter((v) => dayjs(v.when).isSameOrAfter(dtFrom2, "day"));
+          var aListSessionsSinceJune2 = db.get("sessions").filter((v) => dayjs(v.when).isSameOrAfter(dtFrom3, "day"));
           var iSize = oListStudents.size().value();
           var sContent = Swal.getContent().textContent;
           for (i = 0; i < iSize; i += 1) {
@@ -2192,10 +2871,10 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
         onOpen: async function(modal) {
           console.log("%cMigration table des sessions correction de id_who", APP_DEBUG_STYLE);
           Swal.showLoading();
-          var dtFrom2 = dayjs("2020-06-01");
+          var dtFrom3 = dayjs("2020-06-01");
           var oListStudents = db.get("students");
           var aListStudents2 = oListStudents.value();
-          var aListSessionsSinceJune2 = db.get("sessions").filter((v) => dayjs(v.when).isSameOrAfter(dtFrom2, "day"));
+          var aListSessionsSinceJune2 = db.get("sessions").filter((v) => dayjs(v.when).isSameOrAfter(dtFrom3, "day"));
           var aListToUpdate2 = aListSessionsSinceJune2.filter((v) => v.type != "soutenance").value();
           var sContent = Swal.getContent().textContent;
           for (i = 0; i < aListToUpdate2.length; i += 1) {
@@ -2220,9 +2899,9 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
         onOpen: async function(modal) {
           console.log("%cMigration : table des sessions suppression de isFunded", APP_DEBUG_STYLE);
           Swal.showLoading();
-          var dtFrom2 = dayjs("2020-06-01");
+          var dtFrom3 = dayjs("2020-06-01");
           var aListStudents2 = db.get("students").value();
-          var aListSessionsSinceJune2 = db.get("sessions").filter((v) => dayjs(v.when).isSameOrAfter(dtFrom2, "day"));
+          var aListSessionsSinceJune2 = db.get("sessions").filter((v) => dayjs(v.when).isSameOrAfter(dtFrom3, "day"));
           var sContent = Swal.getContent().textContent;
           for (var i2 = aListSessionsSinceJune2.value().length; i2 -= 1; ) {
             var _r2 = aListSessionsSinceJune2.get(i2);
@@ -2248,9 +2927,9 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
         onOpen: async function(modal) {
           console.log("%cMigration : table des sessions ajout de fundedBy", APP_DEBUG_STYLE);
           Swal.showLoading();
-          var dtFrom2 = dayjs("2020-06-01");
+          var dtFrom3 = dayjs("2020-06-01");
           var aListStudents2 = db.get("students").value();
-          var aListSessionsSinceJune2 = db.get("sessions").filter((v) => dayjs(v.when).isSameOrAfter(dtFrom2, "day"));
+          var aListSessionsSinceJune2 = db.get("sessions").filter((v) => dayjs(v.when).isSameOrAfter(dtFrom3, "day"));
           var oListToUpdate2 = aListSessionsSinceJune2.filter((v) => v.type != "soutenance");
           var sContent = Swal.getContent().textContent;
           for (var i2 = oListToUpdate2.value().length; i2 -= 1; ) {
@@ -2296,9 +2975,9 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
       }
     });
     return majWorkFlow;
-    var dtFrom = dayjs("2020-06-01");
+    var dtFrom2 = dayjs("2020-06-01");
     var aListStudents = db.get("students").value();
-    var aListSessionsSinceJune = db.get("sessions").filter((v) => dayjs(v.when).isSameOrAfter(dtFrom, "day"));
+    var aListSessionsSinceJune = db.get("sessions").filter((v) => dayjs(v.when).isSameOrAfter(dtFrom2, "day"));
     for (i = 0; i < aListStudents.length; i += 1) {
       var r2 = aListSessionsSinceJune.find((v) => v.who_name === aListStudents[i].fullname).value();
       if (r2 !== void 0)
@@ -2326,41 +3005,88 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
 
   // src/dbase.js
   const index10 = __toModule(require_src());
+  const papaparse_min = __toModule(require_papaparse_min());
   class Dbase {
-    static export = function() {
-      console.log(`%cWanna export DBASE`, APP_DEBUG_STYLE);
+    static save = function() {
+      console.log(`%cWanna save DBASE`, APP_DEBUG_STYLE);
       return JSON.stringify(index10.default.Cfg.dbase.getState());
     };
-    static import = function(sExport) {
-      console.log(`%cWanna import ${sExport} in DBASE`, APP_DEBUG_STYLE);
+    static load = function(sFileName) {
+      console.log(`%cWanna load ${sFileName} in DBASE`, APP_DEBUG_STYLE);
       console.log(`%c !!!!!! TYPE NOT CHECKED BE CARREFULL`, APP_DEBUG_STYLE);
-      return index10.default.Cfg.dbase.setState(JSON.parse(sExport)).write();
+      return index10.default.Cfg.dbase.setState(JSON.parse(sFileName)).write();
     };
     static update = async function(sVersion) {
       console.log(`%cIs there any update to DB to go to version ${sVersion}`, APP_DEBUG_STYLE);
-      if (semverCompare(sVersion, "1.00.0006") == 0) {
-        console.log("%cFound an update to DB version '1.00.0006' proceed conversion...", APP_DEBUG_STYLE);
-        let _r2 = await maj_1_00_0006();
-        if (_r2 == -1) {
-          console.log("%cError something was wrong during update.... you have canceled it", APP_ERROR_STYLE);
-          Swal.fire({
-            icon: "error",
-            title: "Oops...",
-            text: "Quelque chose s'est mal passé ou vous avez annulé l'update \n\nUtiliser l'application dans ces conditions n'est pas garanti  !",
-            footer: '<a href="https://github.com/StephaneTy-Pro/OC-Mentors-AccountAddon/issues">Générer un bug?</a>'
-          });
-        } else {
-          let _r3 = meta_default.setVersion(sVersion);
-          console.log(`%cChanged DB to version ${_r3}`, APP_DEBUG_STYLE);
+      const aDbNeedUpdate = [
+        {version: "1.00.0006", action: maj_1_00_0006}
+      ];
+      for (let _i = 0, _size = aDbNeedUpdate.length; _i < _size; _i++) {
+        if (semverCompare(sVersion, aDbNeedUpdate[_i].version) == 0) {
+          console.log(`%cFound an update to DB version '${aDbNeedUpdate[_i].version}' proceed conversion...`, APP_DEBUG_STYLE);
+          let _r2 = await aDbNeedUpdate[_i].action();
+          if (_r2 == -1) {
+            console.log(`%cError something was wrong during update of database from version: ${meta_default.getVersion()} to version:${aDbNeedUpdate[_i].version}.... you have canceled it`, APP_ERROR_STYLE);
+            Swal.fire({
+              icon: "error",
+              title: "Oops...",
+              text: "Quelque chose s'est mal passé ou vous avez annulé l'update \n\nUtiliser l'application dans ces conditions n'est pas garanti  !",
+              footer: '<a href="https://github.com/StephaneTy-Pro/OC-Mentors-AccountAddon/issues">Générer un bug?</a>'
+            });
+          } else {
+            let _r3 = meta_default.setDbVersion(sVersion);
+            console.log(`%cChanged DB to version ${_r3}`, APP_DEBUG_STYLE);
+          }
         }
-        return;
       }
-      let _r = meta_default.setVersion(sVersion);
+      let _r = meta_default.setDbVersion(sVersion);
       console.log(`%cChanged DB to version ${_r}`, APP_DEBUG_STYLE);
     };
     static erase = function(sTableName) {
       console.log(`%cErase all data of table: ${sTableName}`, APP_DEBUG_STYLE);
       return index10.default.Cfg.dbase.get(sTableName).remove().write();
+    };
+    static exportTblToCSV = function(sTableName = "", sDateFrom, sDateTo) {
+      const data = Dbase.exportTblToJSON(sTableName, sDateFrom, sDateTo);
+      const config2 = {
+        quotes: false,
+        quoteChar: '"',
+        escapeChar: '"',
+        delimiter: ",",
+        header: true,
+        newline: "\r\n",
+        skipEmptyLines: false,
+        columns: null
+      };
+      return papaparse_min.default.unparse(data, config2);
+    };
+    static exportTblToJSON = function(sTableName = "", sDateFrom, sDateTo) {
+      if (sTableName == "") {
+        console.log(`%cIrrecoverable Error: You forget to define a data table name`, APP_ERROR_STYLE);
+        return -1;
+      }
+      if (sDateFrom !== null && sDateFrom !== "") {
+        dtFrom = dayjs(sDateFrom);
+      }
+      if (sDateTo !== null && sDateTo !== "") {
+        dtTo = dayjs(sDateTo);
+      }
+      if (index10.default.Cfg.dbase.has(sTableName).value == false) {
+        console.log(`%cIrrecoverable Error: table ${sTableName} don't exist`, APP_ERROR_STYLE);
+        return -1;
+      }
+      if (sTableName === sessions_default.tbl_name) {
+        if (typeof dtFrom === "object" && dtTo === "object") {
+          return index10.default.Cfg.dbase.get(sTableName).filter((v) => dayjs(v.when).isSameOrBefore(dtTo, "day") && dayjs(v.when).isSameOrAfter(dtFrom, "day")).value();
+        }
+        if (typeof dtFrom === "object") {
+          return index10.default.Cfg.dbase.get(sTableName).filter((v) => dayjs(v.when).isSameOrAfter(dtFrom, "day")).value();
+        }
+        if (typeof dtTo === "object") {
+          return index10.default.Cfg.dbase.get(sTableName).filter((v) => dayjs(v.when).isSameOrBefore(dtTo, "day")).value();
+        }
+      }
+      return index10.default.Cfg.dbase.get(sTableName).value();
     };
   }
   var dbase_default = Dbase;
@@ -2397,10 +3123,10 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
   };
   var addCbox = function() {
     var sPath = "table.crud-list tbody";
-    var sessions6 = document.querySelector(sPath);
+    var sessions7 = document.querySelector(sPath);
     var bChecked = false;
-    if (sessions6.querySelector("[type=checkbox]") === null) {
-      for (const el2 of sessions6.children) {
+    if (sessions7.querySelector("[type=checkbox]") === null) {
+      for (const el2 of sessions7.children) {
         var id = getKey(el2.children[0]);
         var inputElem = document.createElement("input");
         inputElem.type = "checkbox";
@@ -2437,7 +3163,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
       td.appendChild(label);
       el.appendChild(td);
     } else {
-      var _t = sessions6.querySelectorAll("[type=checkbox]");
+      var _t = sessions7.querySelectorAll("[type=checkbox]");
       var i = _t.length, aChkBox = new Array(i);
       for (; i--; aChkBox[i] = _t[i])
         ;
@@ -2452,8 +3178,8 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
     }
   };
   var billInDetails = async function() {
-    var [dtFrom, dtTo] = await popupDateSelector(dayjs().startOf("month"), dayjs().endOf("month"));
-    let _r = lists_default.getListDetailBill(dtFrom, dtTo);
+    var [dtFrom2, dtTo2] = await popupDateSelector(dayjs().startOf("month"), dayjs().endOf("month"));
+    let _r = lists_default.getListDetailBill(dtFrom2, dtTo2);
     let sHtml = "";
     sHtml += "<table>";
     sHtml += "<thead>";
@@ -2476,7 +3202,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
     sHtml += "</tbody>";
     sHtml += "</table>";
     Swal.fire({
-      title: `<strong>Liste détaillées des sessions du ${dtFrom.format("DD/MM/YYYY")} au ${dtTo.format("DD/MM/YYYY")}</strong>`,
+      title: `<strong>Liste détaillées des sessions du ${dtFrom2.format("DD/MM/YYYY")} au ${dtTo2.format("DD/MM/YYYY")}</strong>`,
       icon: "info",
       html: sHtml,
       showCloseButton: true,
@@ -2490,14 +3216,14 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
     });
   };
   var collectAuto = async function() {
-    var [dtFrom, dtTo] = await popupDateSelector(dayjs().startOf("month"), dayjs().endOf("month"));
+    var [dtFrom2, dtTo2] = await popupDateSelector(dayjs().startOf("month"), dayjs().endOf("month"));
     let iRecurse = 0;
     let iMaxRecurse = GM_config.get("maxfetchpg");
     let bBrowse = true;
     var res = {};
     let data = [];
     let pg = 1;
-    let _r = history_default.getSameOrNearestSessionPage(dtTo);
+    let _r = history_default.getSameOrNearestSessionPage(dtTo2);
     if (_r !== void 0 && _r.page > pg) {
       pg = _r.page;
     }
@@ -2507,12 +3233,12 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
         break;
       }
       try {
-        res = await _historyFetch(dtFrom, dtTo, pg, data);
+        res = await _historyFetch(dtFrom2, dtTo2, pg, data);
       } catch (e) {
-        console.error(`%c IRRECOVERABLE ERROR ... ${e}, will exit !!!! `, APP_ERROR_STYLE2);
+        console.error(`%c IRRECOVERABLE ERROR ... ${e}, will exit !!!! `, APP_ERROR_STYLE);
         throw new Error();
       }
-      if (res.length > 0 && dayjs(res[res.length - 1].when).isSameOrBefore(dtFrom) === true) {
+      if (res.length > 0 && dayjs(res[res.length - 1].when).isSameOrBefore(dtFrom2) === true) {
         bBrowse = false;
       }
       pg += 1;
@@ -2534,14 +3260,14 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
       onOpen: async function(modal) {
         var bar = document.getElementById("pbar").ldBar;
         for (var i in res) {
-          if (dayjs(res[i].when).isBefore(dtFrom, "day") === true) {
+          if (dayjs(res[i].when).isBefore(dtFrom2, "day") === true) {
             break;
           }
-          if (dayjs(res[i].when).isAfter(dtTo, "day") === true) {
+          if (dayjs(res[i].when).isAfter(dtTo2, "day") === true) {
             bar.set(i / cb * 100, false);
             continue;
           }
-          if (dayjs(res[i].when).isBetween(dtFrom, dtTo, "day", "[]")) {
+          if (dayjs(res[i].when).isBetween(dtFrom2, dtTo2, "day", "[]")) {
             await sessions_default.add(res[i]);
             bar.set(i / cb * 100, false);
           }
@@ -2631,12 +3357,12 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
     console.groupEnd();
     debugger;
   };
-  var _historyFetch = async function(dtFrom, dtTo, pg = 1, data = []) {
+  var _historyFetch = async function(dtFrom2, dtTo2, pg = 1, data = []) {
     Swal.fire({
       position: "top-end",
       icon: "info",
       toast: true,
-      title: "Collecte des sessions de l'historique\ndu " + dtFrom.format("DD/MM/YYYY") + " au " + dtTo.format("DD/MM/YYYY") + " \npage : " + pg + "\ncela peut prendre du temps...",
+      title: "Collecte des sessions de l'historique\ndu " + dtFrom2.format("DD/MM/YYYY") + " au " + dtTo2.format("DD/MM/YYYY") + " \npage : " + pg + "\ncela peut prendre du temps...",
       showConfirmButton: false,
       timer: 3e3
     });
@@ -2644,10 +3370,10 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
     try {
       oDom = await _fetch(`https://openclassrooms.com/fr/mentorship/dashboard/mentorship-sessions-history?page=${pg}`, "table.crud-list tbody");
     } catch (e) {
-      console.error(`%c _historyFetch : ${e}`, APP_ERROR_STYLE2);
+      console.error(`%c _historyFetch : ${e}`, APP_ERROR_STYLE);
     }
     if (oDom === null) {
-      throw new Error(`Something went wrong could'nt collect anything from ${dtFrom.format("DD/MM/YYYY")} to ${dtTo.format("DD/MM/YYYY")} working on history page:${pg}.... try to navigate forward and backward or click some buttons to change url`);
+      throw new Error(`Something went wrong could'nt collect anything from ${dtFrom2.format("DD/MM/YYYY")} to ${dtTo2.format("DD/MM/YYYY")} working on history page:${pg}.... try to navigate forward and backward or click some buttons to change url`);
     }
     let _from = convertRowToDate(oDom);
     let _to = convertRowToDate(oDom, -1);
@@ -2655,8 +3381,8 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
       let _z = _to.endOf("month");
       history_default.addOrUpdateSessionPage(pg, _z);
     }
-    if (_to.isAfter(dtTo, "day") === true) {
-      console.log(`%cOptimization: oldest (last) data from page are at :${_to.format("DD/MM/YYYY")}, don't analyze what was before end date of extraction ${dtTo.format("DD/MM/YYYY")}`, APP_DEBUG_STYLE);
+    if (_to.isAfter(dtTo2, "day") === true) {
+      console.log(`%cOptimization: oldest (last) data from page are at :${_to.format("DD/MM/YYYY")}, don't analyze what was before end date of extraction ${dtTo2.format("DD/MM/YYYY")}`, APP_DEBUG_STYLE);
       return data;
     }
     for (var i = 0; i < oDom.children.length; i += 1) {
@@ -2704,8 +3430,8 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
       download(pdfBytes, "pdf-lib_modification_example.pdf", "application/pdf");
     }
     async function createPdf2() {
-      var [dtFrom, dtTo] = await popupDateSelector(dayjs().startOf("month"), dayjs().endOf("month"));
-      let _r = lists_default.getListDetailBill(dtFrom, dtTo);
+      var [dtFrom2, dtTo2] = await popupDateSelector(dayjs().startOf("month"), dayjs().endOf("month"));
+      let _r = lists_default.getListDetailBill(dtFrom2, dtTo2);
       const pdfDoc = await PDFDocument.create();
       const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
       const page = pdfDoc.addPage();
@@ -2713,7 +3439,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
       const fontSize = 30;
       page.drawText(`Prestations en détail 
 
- du ${dtFrom.format("DD/MM/YYYY")} au ${dtTo.format("DD/MM/YYYY")}`, {
+ du ${dtFrom2.format("DD/MM/YYYY")} au ${dtTo2.format("DD/MM/YYYY")}`, {
         x: 50,
         y: height / 2 - fontSize,
         size: fontSize,
@@ -2785,14 +3511,14 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
           lineHeight: iLineHeigth
         });
         iCurX += _iWidth[2];
-        let sFunding2 = _r[_l3].funding.trim().slice(0, _iStrMaxLength[3]);
+        let sFunding = _r[_l3].funding.trim().slice(0, _iStrMaxLength[3]);
         if (_r[_l3].funding === "auto-financé") {
-          sFunding2 = "Au. Fin.";
+          sFunding = "Au. Fin.";
         }
         if (_r[_l3].funding === "financé par un tiers") {
-          sFunding2 = "Fin.";
+          sFunding = "Fin.";
         }
-        curPage.drawText(sFunding2, {
+        curPage.drawText(sFunding, {
           font: timesRomanFont,
           size: font_size,
           y: iCurrentHeigth,
@@ -2848,7 +3574,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
         });
         curLine += 1;
       }
-      var data = await accounting_default.calculateBill(dtFrom, dtTo);
+      var data = await accounting_default.calculateBill(dtFrom2, dtTo2);
       const oMeta = data.get(0, 0, 0, 0);
       const iCurrentMaxLevel = oMeta.maxLevel;
       const dtNewMode = core_default.getOldModeDate();
@@ -3004,7 +3730,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
       }
       pdf_default.addFooter(pdfDoc, `Généré avec Facturier version ${core_default.getAppVersion()}`);
       const pdfBytes = await pdfDoc.save();
-      download(pdfBytes, `prestations_facturees_detail_${dtFrom.format("YYYYMMDD")}-${dtTo.format("YYYYMMDD")}.pdf`, "application/pdf");
+      download(pdfBytes, `prestations_facturees_detail_${dtFrom2.format("YYYYMMDD")}-${dtTo2.format("YYYYMMDD")}.pdf`, "application/pdf");
     }
     createPdf2();
   };
@@ -3016,8 +3742,27 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
     sHtml += "<fieldset>";
     sHtml += '<div class="formgrid">';
     sHtml += 'Epurer<button id="answer1" data-action="raz" class="swal2-styled" type="button">RAZ</button>';
-    sHtml += 'Exporter<button id="answer2" data-action="export" class="swal2-styled" type="button">Exporter</button>';
-    sHtml += 'Importer<button id="answer3" data-action="import" class="swal2-styled" type="button">Importer</button>';
+    sHtml += 'Sauvegarder toute la base<button id="answer2" data-action="export" class="swal2-styled" type="button">Sauvegarder</button>';
+    sHtml += 'Charger toute la base<button id="answer3" data-action="import" class="swal2-styled" type="button">Charger</button>';
+    if (false) {
+      sHtml += `Exporter les tables
+    <button class="swal2-styled" type="button"
+    	hx-get="http://127.0.0.1:8000/views/test-swal-sauvegarde.html"
+        hx-target="#sttPlaceHolder"
+        hx-include="[name='email']"
+        hx-swap="innerHTML"> Exporter
+    </button>
+		`;
+    }
+    sHtml += `Exporter les tables
+    <button class="swal2-styled" type="button"
+    	hx-get="/views/test-swal-sauvegarde"
+		hx-select="body"
+        hx-target="#sttPlaceHolder"
+        hx-include="[name='email']"
+        hx-swap="innerHTML"> Exporter
+    </button>
+		`;
     sHtml += "</fieldset>";
     sHtml += "</div>";
     const {value: formValues} = await Swal.fire({
@@ -3030,7 +3775,10 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
           document.getElementById("answer2").value
         ];
       },
-      onOpen: (el) => {
+      didOpen: (el) => {
+        console.log("%conOpen popup", "color:coral");
+        htmx.process(document.querySelector(".swal2-container"));
+        console.log("%cHtmx Process done", "color:coral");
         el.querySelector(".formgrid").addEventListener("click", _handler = function(e) {
           const raz_action = function(evt) {
             if (evt.target.matches('button[data-action="raz"]')) {
@@ -3039,25 +3787,24 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
             }
             return;
           };
-          const export_action = function(evt) {
+          const save_action = function(evt) {
             if (evt.target.matches('button[data-action="export"]')) {
               Swal.close();
-              export_database();
+              save_database();
             }
             return;
           };
-          const import_action = function(evt) {
+          const load_action = function(evt) {
             if (evt.target.matches('button[data-action="import"]')) {
               Swal.close();
-              import_database();
+              load_database();
             }
             return;
           };
           raz_action(e);
-          export_action(e);
-          import_action(e);
+          save_action(e);
+          load_action(e);
         });
-        console.log("%conOpen popup", "color:coral");
       },
       onClose: (el) => {
         el.querySelector(".formgrid").removeEventListener("click", _handler);
@@ -3068,15 +3815,14 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
       Swal.fire(JSON.stringify(formValues));
     }
   };
-  var export_database = async function() {
-    let sExport = dbase_default.export();
-    console.log(`%cWanna export : ${sExport}`, APP_DEBUG_STYLE);
+  var save_database = async function() {
+    let sExport = dbase_default.save();
+    console.log(`%cWanna save : ${sExport}`, APP_DEBUG_STYLE);
     let now = dayjs();
     let sHtml = "";
-    sHtml += `<a id="download" href="data:text/plain;charset=utf-8,${encodeURIComponent(sExport)}" download="export_${now.format("YYYYMMDD")}.json" style="display:none"></a>`;
-    sHtml += `<a id="download" href="data:text/plain;charset=utf-8,${encodeURIComponent(sExport)}" download="export_${now.format("YYYYMMDD")}.json">export_${now.format("YYYYMMDD")}.json</a>`;
+    sHtml += `<a id="download" href="data:text/plain;charset=utf-8,${encodeURIComponent(sExport)}" download="save_${now.format("YYYYMMDD")}.json">save_${now.format("YYYYMMDD")}.json</a>`;
     Swal.fire({
-      title: "Export de la base de donnée",
+      title: "Sauvegarde de la base de donnée",
       html: sHtml,
       focusConfirm: false,
       onOpen: (el) => {
@@ -3086,8 +3832,8 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
       }
     });
   };
-  var import_database = async function() {
-    console.log(`%cWanna import DATABASE`, APP_DEBUG_STYLE);
+  var load_database = async function() {
+    console.log(`%cWanna load DATABASE`, APP_DEBUG_STYLE);
     const {value: file} = await Swal.fire({
       title: "Selection de la sauvegarde (json)",
       input: "file",
@@ -3101,7 +3847,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
       reader.onload = (e) => {
         dbase_default.import(e.target.result);
         addCbox();
-        toastOk("Import terminé");
+        toastOk("Chargement de la base terminé");
       };
       reader.readAsText(file);
     }
@@ -3191,8 +3937,8 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
     let bRAZArchives = formValues[2];
     let bRAZHistorySessionCache = formValues[3];
     console.log(`%cWanna raz students ? ${bRAZStudents}, wanna raz sessions ? ${bRAZSessions}, wanna raz archives ? ${bRAZArchives}`, APP_DEBUG_STYLE);
-    let dtFrom = formValues[4] ? dayjs(formValues[4]) : null;
-    let dtTo = formValues[5] ? dayjs(formValues[5]) : null;
+    let dtFrom2 = formValues[4] ? dayjs(formValues[4]) : null;
+    let dtTo2 = formValues[5] ? dayjs(formValues[5]) : null;
     if (bRAZStudents === true) {
       setTimeout(function() {
         Toastify({
@@ -3203,7 +3949,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
           backgroundColor: "linear-gradient(to right, #ff5f6d, #ffc371)"
         }).showToast();
       }, 500);
-      students_default.delete(dtFrom, dtTo);
+      students_default.delete(dtFrom2, dtTo2);
     }
     if (bRAZSessions === true) {
       setTimeout(function() {
@@ -3215,7 +3961,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
           backgroundColor: "linear-gradient(to right, #ff5f6d, #ffc371)"
         }).showToast();
       }, 500);
-      sessions_default.delete(dtFrom, dtTo);
+      sessions_default.delete(dtFrom2, dtTo2);
       addCbox();
     }
     if (bRAZArchives === true) {
@@ -3228,7 +3974,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
           backgroundColor: "linear-gradient(to right, #ff5f6d, #ffc371)"
         }).showToast();
       }, 500);
-      archives_default.delete(dtFrom, dtTo);
+      archives_default.delete(dtFrom2, dtTo2);
     }
     if (bRAZHistorySessionCache === true) {
       setTimeout(function() {
@@ -3240,7 +3986,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
           backgroundColor: "linear-gradient(to right, #ff5f6d, #ffc371)"
         }).showToast();
       }, 500);
-      history_default.delete(dtFrom, dtTo);
+      history_default.delete(dtFrom2, dtTo2);
     }
   };
   var showBill = async function() {
@@ -3261,15 +4007,15 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
     sHtml += '<label for="df" class="date">Date de fin</label>';
     sHtml += '<input id="df" type="date" max="2030-12-31" min="2010-12-31">';
     sHtml += "</form>";
-    var [dtFrom, dtTo] = await popupDateSelector(dayjs().startOf("month"), dayjs().endOf("month"));
-    var data = await accounting_default.calculateBill(dtFrom, dtTo);
-    if (core_default.isInOldMode(dtFrom)) {
-      showBillPhase1(dtFrom, dtTo, data);
+    var [dtFrom2, dtTo2] = await popupDateSelector(dayjs().startOf("month"), dayjs().endOf("month"));
+    var data = await accounting_default.calculateBill(dtFrom2, dtTo2);
+    if (core_default.isInOldMode(dtFrom2)) {
+      showBillPhase1(dtFrom2, dtTo2, data);
     } else {
-      showBillPhase2(dtFrom, dtTo, data);
+      showBillPhase2(dtFrom2, dtTo2, data);
     }
   };
-  var showBillPhase1 = function(dtFrom, dtTo, data) {
+  var showBillPhase1 = function(dtFrom2, dtTo2, data) {
     const oMeta = data.get(0, 0, 0, 0);
     const iCurrentMaxLevel = 4;
     var sHtml = "";
@@ -3652,7 +4398,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
     sHtml += "</table>";
     sHtml += `<p>Soit un total général à facturer de ${iTotG}€`;
     Swal.fire({
-      title: `<strong>Liste des formations tarifées du ${dtFrom.format("DD/MM/YYYY")} au ${dtTo.format("DD/MM/YYYY")}</strong>`,
+      title: `<strong>Liste des formations tarifées du ${dtFrom2.format("DD/MM/YYYY")} au ${dtTo2.format("DD/MM/YYYY")}</strong>`,
       html: sHtml,
       showCloseButton: true,
       focusConfirm: false,
@@ -3660,7 +4406,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
       grow: "fullscreen"
     });
   };
-  var showBillPhase2 = function(dtFrom, dtTo, data) {
+  var showBillPhase2 = function(dtFrom2, dtTo2, data) {
     console.log("%cEnter computation bill", APP_DEBUG_STYLE);
     const bShowEmptyLine = false;
     var sHtml = "";
@@ -4123,7 +4869,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
     sHtml += `. Le forfait est donc de ${iTotG}€</p>`;
     sHtml += `<p>Soit un total général à facturer de ${iTotGMa + iTotGMf + iTotGMo + iTotG}€</p>`;
     Swal.fire({
-      title: `<strong>Liste des formations tarifées du ${dtFrom.format("DD/MM/YYYY")} au ${dtTo.format("DD/MM/YYYY")}</strong>`,
+      title: `<strong>Liste des formations tarifées du ${dtFrom2.format("DD/MM/YYYY")} au ${dtTo2.format("DD/MM/YYYY")}</strong>`,
       html: sHtml,
       showCloseButton: true,
       focusConfirm: false,
@@ -4132,16 +4878,16 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
     });
   };
   var statistics = async function() {
-    var [dtFrom, dtTo] = await popupDateSelector(dayjs().startOf("month"), dayjs().endOf("month"), false);
-    if (dtFrom === null || dtTo === null) {
-      console.log("%cError need date from, date to", APP_ERROR_STYLE2);
+    var [dtFrom2, dtTo2] = await popupDateSelector(dayjs().startOf("month"), dayjs().endOf("month"), false);
+    if (dtFrom2 === null || dtTo2 === null) {
+      console.log("%cError need date from, date to", APP_ERROR_STYLE);
       throw new Error();
     }
-    const aData = lists_default.getListStatistic(dtFrom, dtTo);
+    const aData = lists_default.getListStatistic(dtFrom2, dtTo2);
     let sHtml = "";
     let aHtml = new Array(22);
     let aTot = Array.apply(null, Array(22)).map(Number.prototype.valueOf, 0);
-    let dtCurFrom = dtFrom.clone();
+    let dtCurFrom = dtFrom2.clone();
     let dtCurTo = dtCurFrom.endOf("month");
     let sSuffix = "";
     aHtml[0] = `<thead><tr><th>Sessions</th>`;
@@ -4186,7 +4932,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
       if (aData.length == 1)
         sSuffix = "</tr>";
       if (_m === aData.length - 1 && aData.length > 1) {
-        if (dtCurTo.isAfter(dtTo, "day")) {
+        if (dtCurTo.isAfter(dtTo2, "day")) {
           aTot[2] -= aData[_m].sessions.total;
           aTot[3] -= aData[_m].sessions.nb - aData[_m].sessions.nbc;
           aTot[4] -= aData[_m].sessions.pu;
@@ -4279,7 +5025,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
     }
     sHtml = "<table>" + aHtml.join(" ") + `</tbody><tfoot><tr><td colspan=${aData.length + 1}>la valeur entre parenthèse fait reference aux annulés</td></tr></tfoot></table>`;
     Swal.fire({
-      title: `<strong>Statistiques du ${dtFrom.format("DD/MM/YYYY")} au ${dtTo.format("DD/MM/YYYY")}</strong>`,
+      title: `<strong>Statistiques du ${dtFrom2.format("DD/MM/YYYY")} au ${dtTo2.format("DD/MM/YYYY")}</strong>`,
       icon: "info",
       html: sHtml,
       showCloseButton: true,
@@ -4955,6 +5701,11 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
         UI.addButton("Sandbox", popup_students, {}, div);
       }
       UI.addButton("about", about, {}, div);
+      let el = document.createElement("div"), elStyle = el.style;
+      el.id = "sttPlaceHolder";
+      let cssObj = {position: "absolute", bottom: "7%", left: "4%", "z-index": 999, display: "hidden"};
+      document.body.insertAdjacentElement("beforeend", el);
+      Object.keys(cssObj).forEach((key) => elStyle[key] = cssObj[key]);
       if (GM_config.get("hackheaderzindex") === true) {
         var fpstracker = document.createElement("div");
         fpstracker.id = "animation-target";
@@ -5252,7 +6003,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
       return;
     }
     var arriveUniqueId = 0;
-    var utils10 = function() {
+    var utils11 = function() {
       var matches = HTMLElement.prototype.matches || HTMLElement.prototype.webkitMatchesSelector || HTMLElement.prototype.mozMatchesSelector || HTMLElement.prototype.msMatchesSelector;
       return {
         matchesSelector: function(elem, selector) {
@@ -5287,7 +6038,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
               callbacksToBeCalled.push({callback: registrationData.callback, elem: node});
             }
             if (node.childNodes.length > 0) {
-              utils10.checkChildNodesRecursively(node.childNodes, registrationData, matchFunc, callbacksToBeCalled);
+              utils11.checkChildNodesRecursively(node.childNodes, registrationData, matchFunc, callbacksToBeCalled);
             }
           }
         },
@@ -5376,14 +6127,14 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
         eventData.observer.disconnect();
       });
       this.bindEvent = function(selector, options, callback) {
-        options = utils10.mergeArrays(defaultOptions, options);
-        var elements = utils10.toElementsArray(this);
+        options = utils11.mergeArrays(defaultOptions, options);
+        var elements = utils11.toElementsArray(this);
         for (var i = 0; i < elements.length; i++) {
           eventsBucket.addEvent(elements[i], selector, options, callback);
         }
       };
       this.unbindEvent = function() {
-        var elements = utils10.toElementsArray(this);
+        var elements = utils11.toElementsArray(this);
         eventsBucket.removeEvent(function(eventObj) {
           for (var i = 0; i < elements.length; i++) {
             if (this === undefined2 || eventObj.target === elements[i]) {
@@ -5394,7 +6145,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
         });
       };
       this.unbindEventWithSelectorOrCallback = function(selector) {
-        var elements = utils10.toElementsArray(this), callback = selector, compareFunction;
+        var elements = utils11.toElementsArray(this), callback = selector, compareFunction;
         if (typeof selector === "function") {
           compareFunction = function(eventObj) {
             for (var i = 0; i < elements.length; i++) {
@@ -5417,7 +6168,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
         eventsBucket.removeEvent(compareFunction);
       };
       this.unbindEventWithSelectorAndCallback = function(selector, callback) {
-        var elements = utils10.toElementsArray(this);
+        var elements = utils11.toElementsArray(this);
         eventsBucket.removeEvent(function(eventObj) {
           for (var i = 0; i < elements.length; i++) {
             if ((this === undefined2 || eventObj.target === elements[i]) && eventObj.selector === selector && eventObj.callback === callback) {
@@ -5450,17 +6201,17 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
         mutations.forEach(function(mutation) {
           var newNodes = mutation.addedNodes, targetNode = mutation.target, callbacksToBeCalled = [], node;
           if (newNodes !== null && newNodes.length > 0) {
-            utils10.checkChildNodesRecursively(newNodes, registrationData, nodeMatchFunc, callbacksToBeCalled);
+            utils11.checkChildNodesRecursively(newNodes, registrationData, nodeMatchFunc, callbacksToBeCalled);
           } else if (mutation.type === "attributes") {
             if (nodeMatchFunc(targetNode, registrationData, callbacksToBeCalled)) {
               callbacksToBeCalled.push({callback: registrationData.callback, elem: targetNode});
             }
           }
-          utils10.callCallbacks(callbacksToBeCalled, registrationData);
+          utils11.callCallbacks(callbacksToBeCalled, registrationData);
         });
       }
       function nodeMatchFunc(node, registrationData, callbacksToBeCalled) {
-        if (utils10.matchesSelector(node, registrationData.selector)) {
+        if (utils11.matchesSelector(node, registrationData.selector)) {
           if (node._id === undefined2) {
             node._id = arriveUniqueId++;
           }
@@ -5478,9 +6229,9 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
           callback = options;
           options = arriveDefaultOptions;
         } else {
-          options = utils10.mergeArrays(arriveDefaultOptions, options);
+          options = utils11.mergeArrays(arriveDefaultOptions, options);
         }
-        var elements = utils10.toElementsArray(this);
+        var elements = utils11.toElementsArray(this);
         if (options.existing) {
           var existing = [];
           for (var i = 0; i < elements.length; i++) {
@@ -5492,7 +6243,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
           if (options.onceOnly && existing.length) {
             return callback.call(existing[0].elem, existing[0].elem);
           }
-          setTimeout(utils10.callCallbacks, 1, existing);
+          setTimeout(utils11.callCallbacks, 1, existing);
         }
         mutationBindEvent.call(this, selector, options, callback);
       };
@@ -5511,13 +6262,13 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
         mutations.forEach(function(mutation) {
           var removedNodes = mutation.removedNodes, callbacksToBeCalled = [];
           if (removedNodes !== null && removedNodes.length > 0) {
-            utils10.checkChildNodesRecursively(removedNodes, registrationData, nodeMatchFunc, callbacksToBeCalled);
+            utils11.checkChildNodesRecursively(removedNodes, registrationData, nodeMatchFunc, callbacksToBeCalled);
           }
-          utils10.callCallbacks(callbacksToBeCalled, registrationData);
+          utils11.callCallbacks(callbacksToBeCalled, registrationData);
         });
       }
       function nodeMatchFunc(node, registrationData) {
-        return utils10.matchesSelector(node, registrationData.selector);
+        return utils11.matchesSelector(node, registrationData.selector);
       }
       leaveEvents = new MutationEvents(getLeaveObserverConfig, onLeaveMutation);
       var mutationBindEvent = leaveEvents.bindEvent;
@@ -5526,7 +6277,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
           callback = options;
           options = leaveDefaultOptions;
         } else {
-          options = utils10.mergeArrays(leaveDefaultOptions, options);
+          options = utils11.mergeArrays(leaveDefaultOptions, options);
         }
         mutationBindEvent.call(this, selector, options, callback);
       };
@@ -5534,9 +6285,9 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
     };
     var arriveEvents = new ArriveEvents(), leaveEvents = new LeaveEvents();
     function exposeUnbindApi(eventObj, exposeTo, funcName) {
-      utils10.addMethod(exposeTo, funcName, eventObj.unbindEvent);
-      utils10.addMethod(exposeTo, funcName, eventObj.unbindEventWithSelectorOrCallback);
-      utils10.addMethod(exposeTo, funcName, eventObj.unbindEventWithSelectorAndCallback);
+      utils11.addMethod(exposeTo, funcName, eventObj.unbindEvent);
+      utils11.addMethod(exposeTo, funcName, eventObj.unbindEventWithSelectorOrCallback);
+      utils11.addMethod(exposeTo, funcName, eventObj.unbindEventWithSelectorAndCallback);
     }
     function exposeApi(exposeTo) {
       exposeTo.arrive = arriveEvents.bindEvent;
@@ -5557,6 +6308,484 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.children.len
     exposeUnbindApi(leaveEvents, Arrive2, "unbindAllLeave");
     return Arrive2;
   }(window, typeof jQuery === "undefined" ? null : jQuery, void 0);
+
+  // src/views/dummy.js
+
+  // src/views/export_table.js
+  var export_table_default = {
+    data: "DwCwLgtgNgfAUKApgQwCb2BRZkAIDGIyATgM7YC8ARAK5gBmAtABxUYCEjjuADgPY1iARxp8AlrjEA7fFEGJcURKUViARitSIaAD1z1xKgPy5GMXgOIWaAN3FWlKgFYDEVxFNwQ+W3KRxSqMhQfFIKXBik+MRiPGB+xPjU4GA8pABcAPSZ+KhSAHROpFpQYjbE+WFgmVI8EJmkAO6I2MFuYABMAAIAjAAMbMAN0bFgkSNxCUlUKWlZmTS1ANYA5vn4fPVBAJ5FvfnM+R09mTtF+RDShaRUuFr0brgwQ1ExcRxcuNZWAJIAoj0eqYzAhXqMpskwKkMtlcgUiiUyhUqpkViBMsEeNJEEUMVAsWEujYOvkdKTTmJ-HiCYhGGJEIDrrd7m5nsM3mMEJxuPxBIplLhkHRiAKpMgbGIVsgwNoyMDxhyITMoXNYXlrojypVsKj0Zjsbj9YTiaTyahKdUjYgmWywe84KCwNslPA1D5trgAN5wL4GKRgRj0ZCXKDbdK4KgAeR4HlwAGVkFIbgAaUzIHg8JSMUjbfyICCpgBCpSkSwAssh8HHczKIAAxUJgVNUOOIFZ8BQAVR+VFTACU+G6wHxU5GdNsVh5GAmk6nO2pFmAaKmAMKJnAiqBQZsACUQUBs2DE+DwADltIhe7g9wejyfUwBBGLBVOkROkbNuMT0ADcuDgAC+CANE6LrASAKDoA6wBuqg2zwAg5o2AQUDIKQpDULWmbSpeGAUjYCGghMnJwI00ioHwjT5CyxAADJ8Gg0grA++LYrgFD6Is+BgGIoS4AAFCeW5qJWSwAJRenAACQUkbEmfBKPkIQrPxVA0YoDHmlIKxUGJP4+l8hlfGRgSUfkaCoH8h7+rRFoeG4-EAORNMEjmpvQXE8Xx-GIBJ3pGUZsmhKQCnWspqmINZ8TOY0rm4CK+CIGUiCoKmFEEMEUAifgSy6fpAWGUF8mKeFvn5QVAVCVlon8XpBkFQBdUVQQwWhUpfAqY5kUePE5BgI5TWGQB+lySFJUdapNH0Yx2ksTSfjYDKqB5XAHkyF5niTmAnbEFAABqJCkLVklGTYJC4GdcocZ6w31Rd508CQYAqBxJkUVRIQnht+QgCK9D5CK2GJfxmQANpGAAZAAugA1PxoMAHoUNDMNiRQ8MI9DABUYmomI7mebxUj8QWSyINsyZnXIvknRVl2kKDZPbFD7H3dT5VfI1HPxdggiePT+lAathN8VtO1QAACiQwb8Y9xDBtgbhpYgQY0FAYBUzQvn+YZl24II+LS1gMpWBx9xCurmuINz378W9ZmfdKRM-X9+TkYgOiRvQstG4rxASeYjA9GJOsFQbcsKybrNi7tB1kLVoMR8bbhQ9zRlAUZIpLsQnjh77JuCw6esURAfaQR6HFrdxRMCX50lZ3zuBhI0uAS8QmyUog-EimNh7seY3oyd+AkUfgNBYP6APl3GOAyuxHFUCEM06XXMlSaP489eZqCWVFtl5mExCqQAIpGZYro2PXTVoy2pj3CmHmJ0lSQBuD7uQklr-ft61fpMlAS-J+t04D8TQtsGQx0KAD2kqNNq4UqAAFJ8D5HyP4J6V4qAbBCMQdIGx5ZQBWlJZAsUxDxBLmXNA2xf4wNauNFSiDch8HwJIFQIpKEYKwXwHBeDgiEP4DwGgPBqFFTGmFCaDCUH5A8LfCMnDuFcN4XVKSgExLULgJkLGPosb6x4qUJ0nF1o1xoOQVAkhTFnBUJSRy-p9YmK0f+XA2ivgNxzgQQQIobFBBlKmR6O8Uq4DImAEAuA+iSHoE3FoN8tGZDgHrLaAAVCCx8cLsSrhtY6g80k118fxUgfkebZ08Lk3AwBcD9AkiYRyfRHK4Bhn4XA4ZSB-gAcXVmzdcDJJlLVeuvNXGg1QPkLadY1ZQAAJooCPhJHxaB+IDK2mWRsIBaow2DtM1AszBnYE6V3MSYkoaFHEMTRyjABqASLg9PgAieCszATIAx1dQi1UHsPfiToYx8HCXGWKUBcDsAoBxRyWTQgDUHiItqbh25HwYT8YgCU+CHnlmoJQb9YVcIwdlVY7dFioEYHI9IIpUp4qRaJQhUkXFSD-i-aS2RgR3AAJf0GkKQmuWgVD7nzD1FQGwIAQEWKQalORgq9RlGkVmoNHI9DcrgRyHQpWOQAMyOShtJJQwrECio4uKyVyYZVKpoUmXq3yACKWstYz3VazL5wQLhiB0NIfioKAD6WE44ZCbiM5MBkZJyUZcQCAhY6DDikPEj2YBwyOTjDQMo65cAQ3lrCn8bkvWyUTIlKAAaoShBDToMN0q250vwHSrQNiIaoQTUmr4MkeDtxWD3Ug5q5h+BFaQT1layXdTIIgDNQa3VgGIFrVtuAZJUzEF4omZZlBvknOGlcChCDBlFcoeIIoRBWM9TJc0qBoweHDECop3gghQFXmvWBdDVKSKtVAdIm7t1SFJTJe2VFzSkEemAQgVker8WfmvdpK5jHDggB+-0TkXJQCld+mSnpcALjUEi5Q4Y+0DruK0MQV6vS4BlDm8MUYADS+RbivwAWvKST9iNKJfqmZ+ZEty3t3SLYm2tv2nrEfQi93z0jUagLe0lAF13r1HWXQIbg6OGO8ge4IIcIPMfaqxtjwRr0CekW4e9UlH3UUpK+99UV+K-v-ZsIDYAQPfKlVBmDcHe39sQMrHAqHwxQcw7myB5gHMkBQPkK2uBCO7OfrxqjqGoArhCOQETDzibiaPaC71tCWPnskfkS9HH-OBb4OQHjfHN3JeC-c9J4XJPEek-AuLKCEsZaC5ecjvmN2juPku9uYZstExJj4CTkWwVnqoEV4r7HN01f8HVtLz9pJc2kvq-wbMtYvVwKDVOKrsBuNhT1Btf9RvxEemEKAjrGggFCpGYgrYlDcVZqCniYBkVSXDSahQdg1aIAAF4XQECoN8tg2wkC0MQJNMlwDQCMuGAABs-YAShJyBBgCubblJKTkHu2BulMpAhayGMD6R8AZLAEZfuVAfVUdSWAEhFCaEMJUAMH62to62CA+kAI+Io7qCEHEIlW4YosB04h4zjD2wYzJFHcW24VtqBSBGYMbkRBAjIoXJmzwshjxLAIGz8IIIZLxIEPED2-BiAmxgoGvitOqDvmaMQHozJpTIEYJWDa1A1dcLAI6zKtxZCE+oKBjo2ZQIpVuG8xA1AJdBrYJGHDQwfehBx3GOlUAC0bUPvyFQOBzNa8l2Y6g+u3AdGNzgM3oXLc6HVzb0Il4CfoSd98l3-hnTu451zqgQe70wH94H7XUgcdDAx1ALH2Am+ohiFBGSf2+PVsQBfKQvqIAhfScgVMahkz4GTKlGmn8ovFRi+Pyf0-Z-kakqq3Azr8w8Fdd+vtHpWvb4gLvw6rMABScZIynnyHLcgsymGb0niINw2x9uIG4lwpyoNmde8wfLqgKGAadzYILWdfKSWEaLGTVSENE-dIK8Y-U-MgdfV+L6QgHyY9GSSAxfaAv7JBP4HQRKOIGuAAEk9EQAAl72lTxR4SgB-AxVrQEECFxQUi4XxRSgGkpRkkvVQW20aAOlKDHVCAnXQmQEnH4j+wnUSAkF8Hp0hysEWAUFZWQ10FwEuQ2lID+3APJX0GCHIC4KIzaxi0v2v1v0Oi7g3gnjAHyBf2IDf3ZU-yPkch-wVlZwZ0vCALEhAOpl2S4OyFtk9w+S3xdTP3+QBWxRVmxFQBqQAB8Yjgid9XV54OJBctw8sh5vYEiT8kiwj3U0jWseDSA+CBDR0nZhDJ0xCu5JC3B8AZC50IdSAxAFCwhkNNBtA9B1CiZNDtDelPAgwoB9Dv1X5v1sDRFcCkFYCkCWFcAyDEDXVKDkxMFWD5F8F70dDPQ8weB0gehUwrZ0g5jDohZ-4+MNFn4nArtkBKRkM7AmjeAnpbjSA+RFDkMZRQs7hHI6VrIOUbE5smhSFCBHhHiHBHJFg1CaBFBHIhQ+0lCBR2UrC2jFA8AX8tY34+jQhQsziFAYxVCtBXio5UIWoDU7j1tNttslBdt39uJUxzivAupPByANc7h0TvheB25HpJwHAFBiA6VHj1ZpRcBJFcAABzvAFov0ULFox6FQZ+LGGJB9fzWjBrbyfcTAgrcROTK9Tjbjdfb9fcGwrWOwyk4cJw-IEnCAMnaIrwiyAzfeeHByRyaXHKKVR1UXVAJQU2JUhjSTKTKA8KPA-AAzXAeJEgLacMMg60DcLaBYpY7BXBBRAhcAn0okq3DXFiDbc3GuSuejHyGwMAdIteW2SKawyM7AC4aUAEo6RyavfpE3DPC3KgFMm3O3Tw-Mk9X0iaf0ggnPXAB8WiWiOXdw3vGMtg2glTLAzINbfcUknbPbBw6wg4q6aVRs23LcRyP8GlDYNWPIRyeIYxBQUhCDGSIs9YdxHqYM4gLafU1-I0r-Zw3-Nw48Dw4AjzDiEwm-PrJib8KhT0PYhs7Pa3FcghRqQ8iA04RABcFYDkrgmSIdHgx0pYQfYfYRYjIdQwmSclaC26fLIVN+f8jXSMMIW3N4rM0TBjXM1sqSQs3M-IEs6ww8iAcsiCSs6srxU3DM0ILPHPR1PPQAgaCi0CycjbLbGco0-IBcybLqPC3PMINc3ADcgQVvKQHc2xfcsAEC48seBbf0c8y82w+wg7Y07-e8--dw3irwl83AN81BPtT8+gb8385cni4C4jKSIdNUlSf0n4JMdoQUJtC1fk-gRojaBpGYz0HgraS7M1EVZZHoaMmg+Msc2C75N2byjXSKxABtH2EkrbaUZXBMQ8ZMcK7AdKzKsSFZUjFyzY0gVBTMR8-iIqsAEq6KsqnYkJVMCVNQTgkCng6QBkxq01DK6KwSx1M06UQq5KiKga0qmGDoCq4jKqmq0oYGBqpq9VZZDoVMPodqnofALqlyoybITfR1NQMATwDiBqxCpo-1BvZCteIdbIY6069YJapYW6mCqSOCl6y6v1N6l+f8YjDCiDLCteDRQUN40hRxOUteRstMoi9JMqCDRsgixAOGxrBGteYbf+IbB0ERVbRMKcnKsAPK8UBQa6Z+E7M7C7FE67JQe7a7J7IUQ8KUYgd7T7KSb7KAc7XAAHNePHMoZNKSHQRgVi6gUOIdGSWPRwOzO6NtKSHoOzMxcMfoVMMAJFdIZyJcYtZ6KVBzcNP4TWsQdcUgGpXzAqNeDoBW0dcMDoLajDNW5ySdLonW0NcNVsdCJ2zzQdQKGSeVS21AcMeVW21Wq9DWmgLW0gF0i0LhbYZ2rDaVHcKOmIF-FQOHMOw2-0Y2z2mW8WqSAAFj9vDFzqDvtpAETu2EdXIHdtCEdRPABNjtzUcgrGEBRPZIUErsaOChNq9sKhkgAFYC7cBe7i6Q7jZkB67w1j5QgpA6UWgVB0xaqvpkpM7Tae6qVZaAIqBv0cdcc1Z4BZbgBuQeYxsgisJUI54Ig7pebT6cJs614haSdqBQZR1djQDEAWZpBcBIw1BzjuIpF-QYhlBXlkBzMxJN6zaZJ0gmZqBydL6ZI96ApebSh4Hva0cqc6AK8-8ASco3QdBbh0hdcrY3ZloGljLCHg6+dX7qAKdwG0dUI1B9wGkH6qBCHydcAhaHNqAyHQ1BhMg6H9xkHV6kcxABHebMhr6ZRt7ccFhYBv0hgkIcde9n5+9vqR9a5+559QLBQY8IIRRpi8AsGlgcGAlSFgkpA+AzFJAvB-19BUMo4ddTFhw+AmMcLuLLUJrsAJZLlBFaorzDS5yuE0zv9PcKADGcGoYn7UBPCuDN8JAOJuKlIPAVgglUxbdYU2lEAW4nx5YqExA9J-qZISd+I-wxAuA-xUniAn6WZrorbuLKmiHUxf99i+A6nf8p8IIcoUomm6mDGUpMb0Lej0NNj0gNrxtEBwxymiMAEsLRo8aSSvFSb58KbEAuaqBLstwBR5mUxn4OauaebcdS8wIsDtEhJpEAGrA0B0wwA6VkNcBZgYRBVsFSg1B1hNhMhsB8BMgRQVgzSHmuEnnGAvmzTGAOhe7MhbmVR7m5EnmXmthKIpAl5UBMgegABOVFsF2U5+DRPhqAaiHCdIdIZAegKOT0OSeHXNKgAAHUQGYHlQADYqAfxArmVQhwxNwnZDwfwlAiXC6+geAdAfxhwtjB6+WfwAIMWCmuEIAvRn1sJ6sLTGWLImIlb8x6DRJGDsVwwABiegZFnVnV+grhd7JWvlvwBSUdXATV-AHa61n8Bii86Qa2kUKVqE8x0JF1215AIWsiVAIJcMWlvoXl-l3xLSFYZViAUV5+M0yQWodBz0BgrFQILV+gZNg1lm4TMpE1sac1zV5F-AXN3NiNiVv1aDBvL0eNpg-21QNEMAWtcmBVneJVkJfIAAdhVe9d9bKQDYQVTaNZCULakijer3SG2wRTLbVYTcrfbFb37ajexa9GDcbb6HyF7vzCbZXalaXfXb7aIyjbQfiE9AXe0nDCXdbfDbtZWGkEYCHAA2PeXadZnclejep3SAMDHhUE9BVxLDGdwHlUzbNdMSndQH7a6CwHNDwBJkvfbZAB5cDb8lNMldtx3j4k9AtMYHEdpCwXHiTGtoDZNZ6HoGIB-FQ6lCFZ6FpZFdfng79UQ4ok8Dnc9AczN1KBWCkFZclHACI67xYLkAgFY7KTktwA6FFYFLNJo51xjabBE4Q4sj4mry9FQ8w94+toE-lVFaIxeDdyb13dQGoD7AfAAC17dUJC9idpOkO70wb6yKdUGJOMHWcP9DG+BcHE8q8jS082LM8qA+oK65yjB7d2myZu9cc52mH8A1AjTdtTw+AwA2BQ8DKiYo9nieA6UYgfAFAjAkdgH+HAcQuuFqAfW6x24IAjPHc1IcI2BtkbnUA6UJdMv6GZGbPqcXOCuiuPdOc-95nbgGKdBqAbbA6g4Xd5UjcvBpBeu+h+gBvGAhv3O6yiYndsBHV5mRrWu7hazUJtIaBKiKBAUPsm9cviB8uia+ASuTPOuYBKvfBGUpA6vsvGv0HdcfXlc2vK9OuvBPWxv+uehBvhvLgpAxuJuvupvhvWLZuOKvOFulvhwZv1uVhNvJxtuCPHIO8zSm8X1EwYAouZRwxkVGV1ZdGgTETVu54WjShLg54X9o8Foq6kwClLBp7lAXg1sFG+8RQVHwwnMNHv01BzwUpKuzZH8rDNkwA-glArDCxtgfh1kqyjTgCemgPv0WvNhWZLCt4toRfviwBxfJenJFeIBnzX6uDHvzH+ex5Be1fReeotepfdf9f2Zv1v1bZufIk+f-kMNLNY0IYBI7gwBCulfciqBbg4jvfldkiIxdJcBWzCjijghSiNoRCp0qipDaibnSAw8P9I9Hhnj5mwT6UNgASYd9G0IYS-A0-QstDoKdD+jBiMb8nlEv4BnWshn5VKNiM9jQZDyVfJ5zeNerenJwu5zZeAuUo+M15O-rDu+xeJfrefeivgDn1gGlBTFcjEN0u8iflwwx+hf1fJ-tfHIbfzLX6R+N0BfVfsBt-Lep+deju5-KQF--Fl-3eTBUj1+mTTfT-heLf-Re+9-r+D-qYINlUGNSlJVn4xboYwfHHyEenUZi1AoepPSjeRNKicZOSlK0jvBtJ2RD4TkedNpEQDOlXS7pVmHugwIwCKouNBaGAG2S+8IAqNPiCRVCw5k8yrWSit7GPK0Uyyb6Jit-hB7sU-u4PG3EtwI6bAzKFFTfBYlZh1hzcggekBUCebVUru6yY3uYD4BEN540qCxHtWIy2wxBuRCIldxSj8V3KqkJBD8D7B9g-gK4SMHtD+B6dCwtEP4LgGsF9hIwfYXAKeD+B-Bj4PZFcCuD+Bxg4wQZSMPGDPj2CHwEsCWLRB+ArgHw8SH4NflwB7QHwfYOML2BApVlx2FbbjmwQJR-giUqEHKImhArgF+mhSaClShcraDVuuwaqnEGIAd8T+XfM-p-016X8f+yuW3iiQ4ggULED+N-g0I-498Wh+-bwmARAp-0t03sRyN4H9AgBgCo1QzFQFGSLDRkjAMsGWEYDHxj4Y5KSOQCgD-RxKYqT0IINUab8J+F-XfkMKtgq0+A16eoeP0aEDDzhv-YYRQUAEoU0K7aEoUDWgpJkxsfUB8HBjypzk+enpBgRRSorFkQypZBihwMAbOFuBnnbzjsPT5+cWyTAoyEdTUDK9bhW-Jod-374GVB+DnFKKUPXjYjThX-QYTP02A383wcGJfr8i3xqAuhZI+4Tv2n5tCvC8-OkazHYCMjDyaFYGkc0s41wIa4rNeH1EoFFcaBXpaCn8IBF8AjS2yDAmnAqjDZmoB1QVDgXgRIJQgt6CwFcg4TLE4yqxQaKqO7pGRSsKWb9pAIkhQJaY6ogKHAINL6V0+t5KjtQOQHAEnW8KRAOgIPgOR-8iYScAgVFyt43ApogKJViGx-wZmxJKcnMKOzk1SElNaVGs30CStpQbNHZv9kBxIQBaQtEWlQDFprxJa8Ge0avXlroYranbdyBmLDSOQigwKFWi7WlSNilKWdGhhbSrGVsbatYv1NKHVr4BSANgcetQWHFd1b6MkWBmvRzob0t6sjXegLQPqfAe48QE+jvjPoK4RGaOdDpOMFqBg8uVACJi-Wpjv1PAX9H+tYR6gAMjopYvJGAwQYQMoGVAGBigwEb70kGe43HHuzs7-4HOODPBgQ1fpEM8GpDYCXMIobUwqG74nOsFyy7r8mGLDYhuw1DScNgJDmHhtixgmiNPxKDIYOh0kZDBFxojeRoNh7ws8B8oQYfOz1tHQIQaYLNCBhh0b7k56cuf8U52MZBIm45jc1hIF5RjZcedjTwOa0cY-D4grjc6u4zACeMrkPjeAf42ICBNnCwTUJk53CajoomEGGJqzHiZKBtIyTLfCQA9LtIsmyAHJnkwgyFNimpTQybCkqZHYamzTMQPsmfpNwFYXTZyZUAVhtMiR-tWpp5Ll59NihjcKDEM1zonitY4zIyYYSmbLZthxqKaiKivJax4YSjfGkJTJKIAKSc5PvOlMW44R10UMLwkEg8D8QBIPcNWHmWgHPxRBjqY+CJA-gcQJB3EKQW4HyBLBjOcg8iPxEUFqEVBrvRyPVKL4aCtBdUhqaTVd66Coi+ZQwdClMHmDLB1gh8LYPsGODnBrg9wZ4IfDeDfB-g+JIEKvxlgQhYQiIVEJiFxCEhSQlIWvDSE5R1WzBPFNkJaixliUOUY2t+nXyA0saG6MaUX2V6-TyAt+PtM-BeQVT1YzwzAjSj7TvgzSjwMDIOHOKq5PA5oCUpcRFDfojqKM1mGDOsKEMCUNAYGKAmTA6BaJAkT0JInHxTYyQmxKGOGDJBWxGoqYG6BJChnywkwUbBGenwwzmMUZQaMUHYQEhMx0gmxCKWMythzVN8pAHcJACgDUApSNzbkryVngMsMZc2XXm0g9TB9jea-LgiMTBaNF+QcuBdJoBSRLpUSa-VMASWz5KUzZ8s6tJ3HNnco4giAB3uEn4iLdjwoMeVOEz6BVNXeK-TAuvCpFSspIcTFGV7PCY9AZsxGI3kOjDmezvZoMDoNHLbJaiOySCHng43MZ7kieCgMgrr1fjcB85R3BYrIiNGjkUC9vAspkQ9n4BQYUcj3l8Frn1z9kL5V3n+S4p24Q4clMFg2jKQQYaUOc0uioATH0MTwOciGrFG0YKA88KlUxB-StACQScb8MBC1B4DbA5qZAu8YmJcqVioM1Y5WnbRDr+Aw6nKUcY5H1pp0jaE4lyl2P3k9jh66tduk7WbFx0I0jtTulnRcq+1uxAdR+aHXDqR1-A0dc+QnWAVJ0JsuAVOmBwzo3ziM+dX+bgCLoq0S6ZdHztTxrqVgII58puhT1bpU8O6SYOBWvH7qIKh6KCkeq0HPmT0pA9PAUPPSWrstlAxCmcbLSOr3YOIF49Pn-RsqAM7xLMsFoU14nnjv63C68fSFvF388kIcQwXeIiZFTX4HiG4goGeIQpZQ7xd2HoD-DIpe6b8MbPLL7QCAbAdKLSb8S7LW4qGf4SyV-j1hiAKAjqW7Ak30kgAg4xTGABQD6DWTGAIg34sGTgyngFYOk27JUxbk0UkUpQ2aZxlwo54rwpAPxUoACVYAihpAcxYyRhivkr875GytpC-IOpSxws+JYgESVWZWK16AGdaEbLxIkUyuN8rkkKXFK0owcxpcrjEhBSyh4o6WdAEsUQYpZMs9JX9mAB4AHucLBFrcF+gqx8uJudIA5gnKoRpAP4edJ2jAAUA6ATAZgMmHDIyA0unYPsJEM2D8AwgwGFJVJVaXMgRlmkTigBTIIJIkkOEWqABGuChA2Ay5a5dgESSIAlRrSx5ddwxAwA-s0FbIL0ugD9LgAPAGAFc3DyLLJwVhG5i8s9BmMqIcwpyEsNGSrCNhA0B5W2MdmWBqqkiIYGCv+Vrwhib8AYgoCgw0pmgASRMGKGiXW5fKSIt4ifTv4DzeGFobGcoEqnPCyyQiPQHaIdSJgxADFNDDoEajgEaUnwUsdzNpUa5TF4k27BQGmzQVJZIqR1I2R0nhzk5Vi7CmnJUi1zN5EGNQA2H7FgA3y6qz2bnX2TyCypvU5Qb-lUENiQoKA9YEP1QAGqjV0IlcHGD2hfB45dci1aaW6lqF1GtqwJQNKHEjivCcvCDI73dXShPVe0CioUyOp2LbajqCABQE2KqqpKTipJiAB-COoxAwANNWUzEAwxUYTAowtAUzWNlQYBaoqSSNtjVqpKtagKS6v4pSQHFt+YxEslr4uVPQNTfGCBQ3RTKPAGwLQDsr2Un488wGVAOUqkRSUqlUAZXPGtyQqqa1daryVgEaVUDmlfAXZEf2IyNMm1OeFtfslaZDqpILYh0uOIvXvCZIRQ9pRjSBrRrvYhqusW+UTVf5k1HilJumuPXW4c1QSfNYWuLVb5S15akCoYP-Ua5T1D6xtWuubUbq5e7aztQIiKJlSL1-avyYOpcqj8R1Wy8dbsovhTrDlhmKyh+RyV2VZkc6ypdUr4C1LoNYAU9Zuqsze8d1Ws3ZGJAPU-p3JjG5jeetw1Hk35bYxyLeqHUPr3hAoiDD0s6WyyqAwAXeirOIxJq5sBan9VvilZxNHFek3NSWqLXhswNZanxb1DrCoYiloa7mnCocX8aFYAER1K8qJq3KukXy2YsEo3WhpKCh5IFVAH6WHkgcwjECoMua7nK0AYyv6JMpwDTLQ0syy4hSkWV9QVlDAFgBss9DWaN1rFOcYJvejwsLlVAMgqQFM0JLbNbAVzTZqwAAR+IpW9zTmmcq4bAtvyvzayr+XPr5qsm9JfJukYwAlNWNb2jwV9RdwSBEtZMd+0cimbCA0glQCsDpTT1FZ7ACtI+I5o5jmodfNHPI3y2yaAIcjMoNhKkiKNwGPqK6t2izRXr6Ih4UMHNtgZ9MpmdUV+IZGAh2hOQged0HhA5rwAgAA",
+    method: "decompressFromEncodedURIComponent"
+  };
+
+  // src/vendor/lz-string/lz-string.js
+  var LZString = function() {
+    var f = String.fromCharCode;
+    var keyStrBase64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+    var keyStrUriSafe = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$";
+    var baseReverseDic = {};
+    function getBaseValue(alphabet, character) {
+      if (!baseReverseDic[alphabet]) {
+        baseReverseDic[alphabet] = {};
+        for (var i = 0; i < alphabet.length; i++) {
+          baseReverseDic[alphabet][alphabet.charAt(i)] = i;
+        }
+      }
+      return baseReverseDic[alphabet][character];
+    }
+    var LZString2 = {
+      compressToBase64: function(input) {
+        if (input == null)
+          return "";
+        var res = LZString2._compress(input, 6, function(a) {
+          return keyStrBase64.charAt(a);
+        });
+        switch (res.length % 4) {
+          default:
+          case 0:
+            return res;
+          case 1:
+            return res + "===";
+          case 2:
+            return res + "==";
+          case 3:
+            return res + "=";
+        }
+      },
+      decompressFromBase64: function(input) {
+        if (input == null)
+          return "";
+        if (input == "")
+          return null;
+        return LZString2._decompress(input.length, 32, function(index11) {
+          return getBaseValue(keyStrBase64, input.charAt(index11));
+        });
+      },
+      compressToUTF16: function(input) {
+        if (input == null)
+          return "";
+        return LZString2._compress(input, 15, function(a) {
+          return f(a + 32);
+        }) + " ";
+      },
+      decompressFromUTF16: function(compressed) {
+        if (compressed == null)
+          return "";
+        if (compressed == "")
+          return null;
+        return LZString2._decompress(compressed.length, 16384, function(index11) {
+          return compressed.charCodeAt(index11) - 32;
+        });
+      },
+      compressToUint8Array: function(uncompressed) {
+        var compressed = LZString2.compress(uncompressed);
+        var buf = new Uint8Array(compressed.length * 2);
+        for (var i = 0, TotalLen = compressed.length; i < TotalLen; i++) {
+          var current_value = compressed.charCodeAt(i);
+          buf[i * 2] = current_value >>> 8;
+          buf[i * 2 + 1] = current_value % 256;
+        }
+        return buf;
+      },
+      decompressFromUint8Array: function(compressed) {
+        if (compressed === null || compressed === void 0) {
+          return LZString2.decompress(compressed);
+        } else {
+          var buf = new Array(compressed.length / 2);
+          for (var i = 0, TotalLen = buf.length; i < TotalLen; i++) {
+            buf[i] = compressed[i * 2] * 256 + compressed[i * 2 + 1];
+          }
+          var result = [];
+          buf.forEach(function(c) {
+            result.push(f(c));
+          });
+          return LZString2.decompress(result.join(""));
+        }
+      },
+      compressToEncodedURIComponent: function(input) {
+        if (input == null)
+          return "";
+        return LZString2._compress(input, 6, function(a) {
+          return keyStrUriSafe.charAt(a);
+        });
+      },
+      decompressFromEncodedURIComponent: function(input) {
+        if (input == null)
+          return "";
+        if (input == "")
+          return null;
+        input = input.replace(/ /g, "+");
+        return LZString2._decompress(input.length, 32, function(index11) {
+          return getBaseValue(keyStrUriSafe, input.charAt(index11));
+        });
+      },
+      compress: function(uncompressed) {
+        return LZString2._compress(uncompressed, 16, function(a) {
+          return f(a);
+        });
+      },
+      _compress: function(uncompressed, bitsPerChar, getCharFromInt) {
+        if (uncompressed == null)
+          return "";
+        var i, value, context_dictionary = {}, context_dictionaryToCreate = {}, context_c = "", context_wc = "", context_w = "", context_enlargeIn = 2, context_dictSize = 3, context_numBits = 2, context_data = [], context_data_val = 0, context_data_position = 0, ii;
+        for (ii = 0; ii < uncompressed.length; ii += 1) {
+          context_c = uncompressed.charAt(ii);
+          if (!Object.prototype.hasOwnProperty.call(context_dictionary, context_c)) {
+            context_dictionary[context_c] = context_dictSize++;
+            context_dictionaryToCreate[context_c] = true;
+          }
+          context_wc = context_w + context_c;
+          if (Object.prototype.hasOwnProperty.call(context_dictionary, context_wc)) {
+            context_w = context_wc;
+          } else {
+            if (Object.prototype.hasOwnProperty.call(context_dictionaryToCreate, context_w)) {
+              if (context_w.charCodeAt(0) < 256) {
+                for (i = 0; i < context_numBits; i++) {
+                  context_data_val = context_data_val << 1;
+                  if (context_data_position == bitsPerChar - 1) {
+                    context_data_position = 0;
+                    context_data.push(getCharFromInt(context_data_val));
+                    context_data_val = 0;
+                  } else {
+                    context_data_position++;
+                  }
+                }
+                value = context_w.charCodeAt(0);
+                for (i = 0; i < 8; i++) {
+                  context_data_val = context_data_val << 1 | value & 1;
+                  if (context_data_position == bitsPerChar - 1) {
+                    context_data_position = 0;
+                    context_data.push(getCharFromInt(context_data_val));
+                    context_data_val = 0;
+                  } else {
+                    context_data_position++;
+                  }
+                  value = value >> 1;
+                }
+              } else {
+                value = 1;
+                for (i = 0; i < context_numBits; i++) {
+                  context_data_val = context_data_val << 1 | value;
+                  if (context_data_position == bitsPerChar - 1) {
+                    context_data_position = 0;
+                    context_data.push(getCharFromInt(context_data_val));
+                    context_data_val = 0;
+                  } else {
+                    context_data_position++;
+                  }
+                  value = 0;
+                }
+                value = context_w.charCodeAt(0);
+                for (i = 0; i < 16; i++) {
+                  context_data_val = context_data_val << 1 | value & 1;
+                  if (context_data_position == bitsPerChar - 1) {
+                    context_data_position = 0;
+                    context_data.push(getCharFromInt(context_data_val));
+                    context_data_val = 0;
+                  } else {
+                    context_data_position++;
+                  }
+                  value = value >> 1;
+                }
+              }
+              context_enlargeIn--;
+              if (context_enlargeIn == 0) {
+                context_enlargeIn = Math.pow(2, context_numBits);
+                context_numBits++;
+              }
+              delete context_dictionaryToCreate[context_w];
+            } else {
+              value = context_dictionary[context_w];
+              for (i = 0; i < context_numBits; i++) {
+                context_data_val = context_data_val << 1 | value & 1;
+                if (context_data_position == bitsPerChar - 1) {
+                  context_data_position = 0;
+                  context_data.push(getCharFromInt(context_data_val));
+                  context_data_val = 0;
+                } else {
+                  context_data_position++;
+                }
+                value = value >> 1;
+              }
+            }
+            context_enlargeIn--;
+            if (context_enlargeIn == 0) {
+              context_enlargeIn = Math.pow(2, context_numBits);
+              context_numBits++;
+            }
+            context_dictionary[context_wc] = context_dictSize++;
+            context_w = String(context_c);
+          }
+        }
+        if (context_w !== "") {
+          if (Object.prototype.hasOwnProperty.call(context_dictionaryToCreate, context_w)) {
+            if (context_w.charCodeAt(0) < 256) {
+              for (i = 0; i < context_numBits; i++) {
+                context_data_val = context_data_val << 1;
+                if (context_data_position == bitsPerChar - 1) {
+                  context_data_position = 0;
+                  context_data.push(getCharFromInt(context_data_val));
+                  context_data_val = 0;
+                } else {
+                  context_data_position++;
+                }
+              }
+              value = context_w.charCodeAt(0);
+              for (i = 0; i < 8; i++) {
+                context_data_val = context_data_val << 1 | value & 1;
+                if (context_data_position == bitsPerChar - 1) {
+                  context_data_position = 0;
+                  context_data.push(getCharFromInt(context_data_val));
+                  context_data_val = 0;
+                } else {
+                  context_data_position++;
+                }
+                value = value >> 1;
+              }
+            } else {
+              value = 1;
+              for (i = 0; i < context_numBits; i++) {
+                context_data_val = context_data_val << 1 | value;
+                if (context_data_position == bitsPerChar - 1) {
+                  context_data_position = 0;
+                  context_data.push(getCharFromInt(context_data_val));
+                  context_data_val = 0;
+                } else {
+                  context_data_position++;
+                }
+                value = 0;
+              }
+              value = context_w.charCodeAt(0);
+              for (i = 0; i < 16; i++) {
+                context_data_val = context_data_val << 1 | value & 1;
+                if (context_data_position == bitsPerChar - 1) {
+                  context_data_position = 0;
+                  context_data.push(getCharFromInt(context_data_val));
+                  context_data_val = 0;
+                } else {
+                  context_data_position++;
+                }
+                value = value >> 1;
+              }
+            }
+            context_enlargeIn--;
+            if (context_enlargeIn == 0) {
+              context_enlargeIn = Math.pow(2, context_numBits);
+              context_numBits++;
+            }
+            delete context_dictionaryToCreate[context_w];
+          } else {
+            value = context_dictionary[context_w];
+            for (i = 0; i < context_numBits; i++) {
+              context_data_val = context_data_val << 1 | value & 1;
+              if (context_data_position == bitsPerChar - 1) {
+                context_data_position = 0;
+                context_data.push(getCharFromInt(context_data_val));
+                context_data_val = 0;
+              } else {
+                context_data_position++;
+              }
+              value = value >> 1;
+            }
+          }
+          context_enlargeIn--;
+          if (context_enlargeIn == 0) {
+            context_enlargeIn = Math.pow(2, context_numBits);
+            context_numBits++;
+          }
+        }
+        value = 2;
+        for (i = 0; i < context_numBits; i++) {
+          context_data_val = context_data_val << 1 | value & 1;
+          if (context_data_position == bitsPerChar - 1) {
+            context_data_position = 0;
+            context_data.push(getCharFromInt(context_data_val));
+            context_data_val = 0;
+          } else {
+            context_data_position++;
+          }
+          value = value >> 1;
+        }
+        while (true) {
+          context_data_val = context_data_val << 1;
+          if (context_data_position == bitsPerChar - 1) {
+            context_data.push(getCharFromInt(context_data_val));
+            break;
+          } else
+            context_data_position++;
+        }
+        return context_data.join("");
+      },
+      decompress: function(compressed) {
+        if (compressed == null)
+          return "";
+        if (compressed == "")
+          return null;
+        return LZString2._decompress(compressed.length, 32768, function(index11) {
+          return compressed.charCodeAt(index11);
+        });
+      },
+      _decompress: function(length, resetValue, getNextValue) {
+        var dictionary = [], next, enlargeIn = 4, dictSize = 4, numBits = 3, entry = "", result = [], i, w, bits, resb, maxpower, power, c, data = {val: getNextValue(0), position: resetValue, index: 1};
+        for (i = 0; i < 3; i += 1) {
+          dictionary[i] = i;
+        }
+        bits = 0;
+        maxpower = Math.pow(2, 2);
+        power = 1;
+        while (power != maxpower) {
+          resb = data.val & data.position;
+          data.position >>= 1;
+          if (data.position == 0) {
+            data.position = resetValue;
+            data.val = getNextValue(data.index++);
+          }
+          bits |= (resb > 0 ? 1 : 0) * power;
+          power <<= 1;
+        }
+        switch (next = bits) {
+          case 0:
+            bits = 0;
+            maxpower = Math.pow(2, 8);
+            power = 1;
+            while (power != maxpower) {
+              resb = data.val & data.position;
+              data.position >>= 1;
+              if (data.position == 0) {
+                data.position = resetValue;
+                data.val = getNextValue(data.index++);
+              }
+              bits |= (resb > 0 ? 1 : 0) * power;
+              power <<= 1;
+            }
+            c = f(bits);
+            break;
+          case 1:
+            bits = 0;
+            maxpower = Math.pow(2, 16);
+            power = 1;
+            while (power != maxpower) {
+              resb = data.val & data.position;
+              data.position >>= 1;
+              if (data.position == 0) {
+                data.position = resetValue;
+                data.val = getNextValue(data.index++);
+              }
+              bits |= (resb > 0 ? 1 : 0) * power;
+              power <<= 1;
+            }
+            c = f(bits);
+            break;
+          case 2:
+            return "";
+        }
+        dictionary[3] = c;
+        w = c;
+        result.push(c);
+        while (true) {
+          if (data.index > length) {
+            return "";
+          }
+          bits = 0;
+          maxpower = Math.pow(2, numBits);
+          power = 1;
+          while (power != maxpower) {
+            resb = data.val & data.position;
+            data.position >>= 1;
+            if (data.position == 0) {
+              data.position = resetValue;
+              data.val = getNextValue(data.index++);
+            }
+            bits |= (resb > 0 ? 1 : 0) * power;
+            power <<= 1;
+          }
+          switch (c = bits) {
+            case 0:
+              bits = 0;
+              maxpower = Math.pow(2, 8);
+              power = 1;
+              while (power != maxpower) {
+                resb = data.val & data.position;
+                data.position >>= 1;
+                if (data.position == 0) {
+                  data.position = resetValue;
+                  data.val = getNextValue(data.index++);
+                }
+                bits |= (resb > 0 ? 1 : 0) * power;
+                power <<= 1;
+              }
+              dictionary[dictSize++] = f(bits);
+              c = dictSize - 1;
+              enlargeIn--;
+              break;
+            case 1:
+              bits = 0;
+              maxpower = Math.pow(2, 16);
+              power = 1;
+              while (power != maxpower) {
+                resb = data.val & data.position;
+                data.position >>= 1;
+                if (data.position == 0) {
+                  data.position = resetValue;
+                  data.val = getNextValue(data.index++);
+                }
+                bits |= (resb > 0 ? 1 : 0) * power;
+                power <<= 1;
+              }
+              dictionary[dictSize++] = f(bits);
+              c = dictSize - 1;
+              enlargeIn--;
+              break;
+            case 2:
+              return result.join("");
+          }
+          if (enlargeIn == 0) {
+            enlargeIn = Math.pow(2, numBits);
+            numBits++;
+          }
+          if (dictionary[c]) {
+            entry = dictionary[c];
+          } else {
+            if (c === dictSize) {
+              entry = w + w.charAt(0);
+            } else {
+              return null;
+            }
+          }
+          result.push(entry);
+          dictionary[dictSize++] = w + entry.charAt(0);
+          enlargeIn--;
+          w = entry;
+          if (enlargeIn == 0) {
+            enlargeIn = Math.pow(2, numBits);
+            numBits++;
+          }
+        }
+      }
+    };
+    return LZString2;
+  }();
+
+  // src/view.js
+  var fView = function() {
+    var views = [
+      {id: "/views/test-swal-sauvegarde", path: "views", file: "test-swal-sauvegarde", ptr: export_table_default}
+    ];
+    var load = function(sView) {
+      oCurView = views.find((o) => o.id == sView);
+      if (oCurView === void 0) {
+        console.log(`%cError view ${sView} could't be found`, APP_ERROR_STYLE);
+      }
+      oCurView = oCurView.ptr;
+      let sHtmlPacked = oCurView.data;
+      let sHtmlUnpacked = LZString[oCurView.method](sHtmlPacked);
+      return sHtmlUnpacked;
+    };
+    return Object.freeze({
+      load
+    });
+  };
+  const View = fView();
+  var view_default = View;
   require_src();
 })();
 //# sourceMappingURL=app-facturier.js.map

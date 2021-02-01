@@ -80,9 +80,7 @@ var _fetch = async function(sUrl="", sPath="", bAll=false){
 	return oDom;
 } 
     
-/*
 
- */
 /*
  * 
  * name: getKey
@@ -94,16 +92,22 @@ var _fetch = async function(sUrl="", sPath="", bAll=false){
  * @return
  * 
  */
- 
- 
 var getKey = function(el, idx=-1){
 	try {
 		var _t1 = (el.children[0].href || "/").split("/");
 		return _t1[_t1.length+idx];
 	} catch(e) { console.error(`%cError in getkey${e.stack||e}`,APP_ERROR_STYLE);} // Erreur qui ne devrait jamais arriver en getkey 
-}      
+}
+
 /*
- * extract date from string dd mmmm yyyy à hh:mm
+ * name: extractDate
+ * 
+ * 	extract date from string dd mmmm yyyy à hh:mm
+ * 
+ * 	@param (string) the date (format: 'dd mmmm yyyy à hh:mm') 
+ *  @return (string) YYYY-MM-DDTHH:MM
+ * 
+ * 
  */
 var extractDate = function(sWhen){
 	//var _t = sWhen.split(' ');
@@ -126,9 +130,6 @@ var extractDate = function(sWhen){
  *  if -1 is given return converted date from last children of dom element
  *  return converted date from 'index' children of dom element
  */
-/**
- *
- */
 var convertRowToDate =  function(oDom, index=0){
 	 if (index === -1) {
 		index = oDom.children.length-1
@@ -142,13 +143,28 @@ var convertRowToDate =  function(oDom, index=0){
 	//console.log(`convertRowToDate:: la date extraite est : ${dtRowDate} pour trouver la date `);
 	return dtRowDate;
 }
-
-
-/* https://www.sitepoint.com/delay-sleep-pause-wait/ */
-/* ne pas oublier de mettre un await avant son utilisation : await sleep(1000);*/
+/*
+ * name: sleep
+ * 	@param (integer) ms
+ *  @return (promise) void
+ *
+ * https://www.sitepoint.com/delay-sleep-pause-wait
+ * ne pas oublier de mettre un await avant son utilisation : await sleep(1000);
+ */
 var sleep = function (ms) {
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+/*
+ * return file extension
+ * 
+ * https://stackoverflow.com/questions/190852/how-can-i-get-file-extensions-with-javascript/1203361#1203361
+ */
+
+const getFileExtension = function(filename){
+	return filename.substring(filename.lastIndexOf('.')+1, filename.length) || filename;
+}
+
 
 /* semverCompare 
  * SRC https://github.com/substack/semver-compare/blob/master/index.js
@@ -156,6 +172,9 @@ var sleep = function (ms) {
  * compare two semver version strings, returning -1, 0, or 1
  * The return value can be fed straight into [].sort.
  * 
+ *  return -1 if a < b
+ *  return 1 if a > b
+ *  return 0 if equals
  * */
 var semverCompare = function(a,b){
     var pa = a.split('.');
@@ -403,6 +422,7 @@ export {
 	convertRowToDate,
 	sleep,
 	semverCompare,
+	getFileExtension,
 	readFile,
 	matrix,
 	assert,

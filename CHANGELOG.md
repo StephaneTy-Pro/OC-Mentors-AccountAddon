@@ -2,6 +2,17 @@
 
 C : Corrections(Fixes) / B : Corrections de Bug (BugFixes) / F : Ajout de fonctionnalité (Features) / D : Divers (Misc)
 
+  ## 1.10.0003 (01/02/2021)
+  
+  	- C: Correction d'un bug dans la partie ajout d'étudiant
+  	- A: Ajout de la fonctionnalité d'export
+  	- D: Changement de nom pour la fonctionnalité export de base total qui est devenu sauvegarde
+  	- D: Changement de nom pour la fonctionnalité import de base total qui est devenu chargement
+
+  ## 1.10.0002 (18/01/2021)
+  
+  	- C: Correction d'un bug dans la partie ajout d'étudiant
+
   ## 1.10.0001 (14/01/2021)
   
   	- C: Correction d'un bug dans la partie management de base de donnée RAZ

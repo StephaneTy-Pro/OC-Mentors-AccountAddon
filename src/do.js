@@ -11,7 +11,11 @@ import {
 	OC_STATUS_0, OC_STATUS_1, OC_STATUS_2, OC_STATUS_3_M
 	} from './constants.js';
 import { _fetch, getKey, convertRowToDate } from './utils.js';
-import {popupDateSelector,toastOk} from './components.js';
+import {
+	popupDateSelector,
+	toastOk,
+	tableSelector
+	} from './components.js';
 import Accounting from './accounting.js';
 import Core from './core.js';
 import History from './history.js'
@@ -932,10 +936,32 @@ var debugMode = function(){
 		sHtml+="<fieldset>"
 		sHtml+='<div class="formgrid">';
 		sHtml+='Epurer<button id="answer1" data-action="raz" class="swal2-styled" type="button">RAZ</button>';  
-		sHtml+='Exporter<button id="answer2" data-action="export" class="swal2-styled" type="button">Exporter</button>';
-		sHtml+='Importer<button id="answer3" data-action="import" class="swal2-styled" type="button">Importer</button>';      
+		sHtml+='Sauvegarder toute la base<button id="answer2" data-action="export" class="swal2-styled" type="button">Sauvegarder</button>';
+		sHtml+='Charger toute la base<button id="answer3" data-action="import" class="swal2-styled" type="button">Charger</button>'; 
+if(STT_VERSION) {     
+		sHtml+=`Exporter les tables
+    <button class="swal2-styled" type="button"
+    	hx-get="http://127.0.0.1:8000/views/test-swal-sauvegarde.html"
+        hx-target="#sttPlaceHolder"
+        hx-include="[name='email']"
+        hx-swap="innerHTML"> Exporter
+    </button>
+		`;   
+		}   
+		sHtml+=`Exporter les tables
+    <button class="swal2-styled" type="button"
+    	hx-get="/views/test-swal-sauvegarde"
+		hx-select="body"
+        hx-target="#sttPlaceHolder"
+        hx-include="[name='email']"
+        hx-swap="innerHTML"> Exporter
+    </button>
+		`; 
 		sHtml+="</fieldset>";
 		sHtml+="</div>";
+
+		
+		// Be carreful about two arguments function ine removeEventListener_handler
 
 		const { value: formValues } = await Swal.fire({
 			title: 'Gestion de la base de donnée',
@@ -947,25 +973,40 @@ var debugMode = function(){
 				document.getElementById('answer2').value
 			  ]
 			},
-			onOpen: (el) => {
+			//deprecated onOpen: (el) => {
+			didOpen: (el) => {
+				console.log("%conOpen popup", "color:coral");
+				// include all js needed
+				
+				// process htmx
+				htmx.process(document.querySelector('.swal2-container'));
+				console.log("%cHtmx Process done", "color:coral");
+				/* Sending that to index.js (~ BUS BROKER)
+				 * document.body.addEventListener('htmx:beforeRequest', function(detail) {
+					
+					console.log("HTMX event received...");
+					console.dir(detail);
+					console.dir(detail.elt);
+					console.dir(detail.xhr);
+					console.dir(detail.target);
+					console.dir(detail.requestConfig);
+					
+				});
+				*/
+				
 				/* generic addEventListener with handler functions src : https://gomakethings.com/event-delegation-and-multiple-selectors-with-vanilla-js/*/
-				el.querySelector('.formgrid').addEventListener('click', function(e){
-					//console.log(e);
-					//console.log(e.src);
-					//console.log(e.target);
-					//  e.target.matches('button[data-action="raz"]')
-					const raz_action = function(evt){ if(evt.target.matches('button[data-action="raz"]')){Swal.close(); razDbase();} return;};
-					const export_action = function(evt){ if(evt.target.matches('button[data-action="export"]')){Swal.close();export_database();} return;};
-					const import_action = function(evt){ if(evt.target.matches('button[data-action="import"]')){Swal.close();import_database();} return;};
+				el.querySelector('.formgrid').addEventListener('click', _handler = function(e){
+					const raz_action    = function(evt){ if(evt.target.matches('button[data-action="raz"]')){Swal.close(); razDbase();} return;};
+					const save_action = function(evt){ if(evt.target.matches('button[data-action="export"]')){Swal.close();save_database();} return;};
+					const load_action = function(evt){ if(evt.target.matches('button[data-action="import"]')){Swal.close();load_database();} return;};
 					/* action it */
 					raz_action(e);
-					export_action(e);
-					import_action(e);
+					save_action(e);
+					load_action(e);
 				});
-				console.log("%conOpen popup", "color:coral")
 			},
 			onClose: (el) => {
-                el.querySelector('.formgrid').removeEventListener("click");
+                el.querySelector('.formgrid').removeEventListener("click", _handler);
                 console.log("%conClose popup", "color:coral")
             },
 		});
@@ -985,24 +1026,57 @@ var debugMode = function(){
 	 * @return
 	 * 
 	 */
-	var export_database = async function(){
+	var save_database = async function(){
 		/* SRC: https://ourcodeworld.com/articles/read/189/how-to-create-a-file-and-generate-a-download-with-javascript-in-the-browser-without-a-server */
-		let sExport = Dbase.export();
-		console.log(`%cWanna export : ${sExport}`, APP_DEBUG_STYLE);
+		let sExport = Dbase.save();
+		console.log(`%cWanna save : ${sExport}`, APP_DEBUG_STYLE);
 		let now = dayjs();
 		
 		let sHtml="";
-		sHtml+=`<a id="download" href="data:text/plain;charset=utf-8,${encodeURIComponent(sExport)}" download="export_${now.format('YYYYMMDD')}.json" style="display:none"></a>`;
-		sHtml+=`<a id="download" href="data:text/plain;charset=utf-8,${encodeURIComponent(sExport)}" download="export_${now.format('YYYYMMDD')}.json">export_${now.format('YYYYMMDD')}.json</a>`;
+		//sHtml+=`<a id="download" href="data:text/plain;charset=utf-8,${encodeURIComponent(sExport)}" download="export_${now.format('YYYYMMDD')}.json" style="display:none"></a>`;
+		sHtml+=`<a id="download" href="data:text/plain;charset=utf-8,${encodeURIComponent(sExport)}" download="save_${now.format('YYYYMMDD')}.json">save_${now.format('YYYYMMDD')}.json</a>`;
 		//sHtml+=`<p>téléchargement de export_${now.format('YYYYMMDD')}.json en cours....</p>`;
 		
 		Swal.fire({
-			title: 'Export de la base de donnée',
+			title: 'Sauvegarde de la base de donnée',
 			html: sHtml,
 			focusConfirm: false,
 			onOpen: (el) => {el.querySelector('#download').click();},
 			onClose: (el) => {},
 		});
+	}
+	var export_database_v2 = async function(){
+		
+		oTableList = await tableSelector("Export des données");
+		console.log(oTableList);
+		
+		// -- selection du mode d'export CSV ou JSON
+		
+		// -- export de la ou des tables choisies
+		
+		let _TableName = Student.tbl_name; // TEMPORARY
+		
+		console.log(`%cWanna export ${_TableName}`, APP_DEBUG_STYLE);
+		let sExport = Dbase.exportTblToCSV(_TableName);
+		
+		console.log(`%cWanna export : ${sExport}`, APP_DEBUG_STYLE);
+		let now = dayjs();
+		
+		let sHtml="";
+		sHtml+=`<a id="download" href="data:text/plain;charset=utf-8,${encodeURIComponent(sExport)}" download="export_${now.format('YYYYMMDD')}.json" style="display:none"></a>`;
+		sHtml+=`<a id="download" href="data:text/plain;charset=utf-8,${encodeURIComponent(sExport)}" download="export_${now.format('YYYYMMDD')}.csv">export_${now.format('YYYYMMDD')}.csv</a>`;
+		//sHtml+=`<p>téléchargement de export_${now.format('YYYYMMDD')}.json en cours....</p>`;
+		
+		Swal.fire({
+			title: 'Export de la table ou des table suivante: AAAAAAAAAAAAAA',
+			html: sHtml,
+			focusConfirm: false,
+			onOpen: (el) => {el.querySelector('#download').click();},
+			onClose: (el) => {},
+		});
+		
+		
+		return
 	}
 	/*
 	 * SWAL2 source and 
@@ -1016,8 +1090,8 @@ var debugMode = function(){
 	 * voir egalement ici : https://stackoverflow.com/questions/42108782/firefox-webextensions-get-local-files-content-by-path/44516256#44516256
 	 * c'était sur un autre sujet (tampermonkey et local files) mais .....
 	 */
-	var import_database = async function(){
-		console.log(`%cWanna import DATABASE`, APP_DEBUG_STYLE);
+	var load_database = async function(){
+		console.log(`%cWanna load DATABASE`, APP_DEBUG_STYLE);
 		const { value: file } = await Swal.fire({
 		  title: 'Selection de la sauvegarde (json)',
 		  input: 'file',
@@ -1032,7 +1106,7 @@ var debugMode = function(){
 		  reader.onload = (e) => {
 			Dbase.import(e.target.result);
 			addCbox();
-			toastOk("Import terminé");
+			toastOk("Chargement de la base terminé");
 		  }
 		  reader.readAsText(file)
 		}
