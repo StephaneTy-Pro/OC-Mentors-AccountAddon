@@ -2,6 +2,9 @@
 
 C : Corrections(Fixes) / B : Corrections de Bug (BugFixes) / F : Ajout de fonctionnalité (Features) / D : Divers (Misc)
 
+  ## 1.10.0004 (27/04/2021)
+  	- C: Prise en compte d'une évolution d'OpenClassrooms sur l'ui de l'écran de contrôle mentor
+
   ## 1.10.0003 (01/02/2021)
   
   	- C: Correction d'un bug dans la partie ajout d'étudiant

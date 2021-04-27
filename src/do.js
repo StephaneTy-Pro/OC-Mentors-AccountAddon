@@ -1278,7 +1278,91 @@ if(STT_VERSION) {
             History.delete(dtFrom, dtTo);
         }        
         
-    }     
+    }
+    
+	/*
+	 * sandbox
+	 * 
+	 */
+	 
+	 var sandbox = async function(){
+		GM_addStyle('.formgrid{font-family: "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", Helvetica, Arial, sans-serif;}');
+		/* CSS compressed with : https://csscompressor.com/*/
+		GM_addStyle(".swal2-styled[type=button]{background-color:#3085d6;border-radius:.75em;color:#fff;font-size:1.0625em;border-left-color:#3085d6;border-right-color:#3085d6;display:inline-block}.formgrid{display:grid;grid-template-columns:1fr 1em 1fr;grid-gap:.3em .6em;grid-auto-flow:dense;align-items:center}input,output,textarea,select,button{grid-column:2 / 4;width:auto;margin:0}legend{font-size:1.2em;width:100%;border-bottom:1px dotted #99c}fieldset{max-width:40em;padding:4px;margin:2em auto;border:0 none}");
+		/* modelized here https://codepen.io/stephane_ty/pen/mdVzWpQ */
+		let sHtml="";
+		sHtml+="<legend>Que voulez vous faire ?</legend>";
+		sHtml+="<fieldset>"
+		sHtml+='<div class="formgrid">';
+if(STT_VERSION) {     
+		sHtml+=`Etudiants Listes
+    <button class="swal2-styled" type="button"
+    	hx-get="http://127.0.0.1:8000/views/test-students.html"
+        hx-target="#sttPlaceHolder"
+        hx-include="[name='email']"
+        hx-swap="innerHTML"> Exporter
+    </button>
+		`;   
+}   
+		sHtml+=`Exporter les tables
+    <button class="swal2-styled" type="button"
+    	hx-get="/views/test-swal-sauvegarde"
+		hx-select="body"
+        hx-target="#sttPlaceHolder"
+        hx-include="[name='email']"
+        hx-swap="innerHTML"> Exporter
+    </button>
+		`; 
+		sHtml+="</fieldset>";
+		sHtml+="</div>";
+
+		
+		// Be carreful about two arguments function ine removeEventListener_handler
+
+		const { value: formValues } = await Swal.fire({
+			title: 'Gestion de la base de donnée',
+			html: sHtml,
+			focusConfirm: false,
+			preConfirm: () => {
+				return true;
+			},
+			//deprecated onOpen: (el) => {
+			didOpen: (el) => {
+				console.log("%conOpen popup", "color:coral");
+				// include all js needed
+				
+				// process htmx
+				htmx.process(document.querySelector('.swal2-container'));
+				console.log("%cHtmx Process done", "color:coral");
+				/* Sending that to index.js (~ BUS BROKER)
+				 * document.body.addEventListener('htmx:beforeRequest', function(detail) {
+					
+					console.log("HTMX event received...");
+					console.dir(detail);
+					console.dir(detail.elt);
+					console.dir(detail.xhr);
+					console.dir(detail.target);
+					console.dir(detail.requestConfig);
+					
+				});
+				*/
+				
+				/* generic addEventListener with handler functions src : https://gomakethings.com/event-delegation-and-multiple-selectors-with-vanilla-js/*/
+				el.querySelector('.formgrid').addEventListener('click', _handler = function(e){
+				});
+			},
+			onClose: (el) => {
+                el.querySelector('.formgrid').removeEventListener("click", _handler);
+                console.log("%conClose popup", "color:coral")
+            },
+		});
+
+		if (formValues) {
+			Swal.fire(JSON.stringify(formValues))
+		}
+	}
+    
+         
 	/**
 	 * 
 	 */
@@ -2603,6 +2687,7 @@ export {
 	mgtDbase,
 	pdf,
 	razDbase,
+	sandbox,
 	showBill,
 	statistics,
 }

@@ -6,7 +6,9 @@
 2020-09-01  Unknown  <pwyll@Pwyll>
 
  * Modification d'un bug sur la collecte automatique avec gestion de l'historique
-
+2021-04-27
+	* OC a modifié la classe de detection de l'avatar
+	* 	.MuiAvatar-img -> .dom-services-4-MuiAvatar-img
 */
 
 
@@ -67,9 +69,10 @@ const Facturier = {
 		const bSupport = Facturier.checkSupport(); //TODO better use it
 		console.log(`%cAre all functions supported ? : ${bSupport}`,APP_DEBUG_STYLE);
 		// when avatar is loaded start application
-		if (document.querySelector(".MuiAvatar-img") === null){ 
+		var sCSSObserved = '.dom-services-4-MuiAvatar-img'; // was .MuiAvatar-img before
+		if (document.querySelector(sCSSObserved) === null){ 
 			console.log(`%c All condition not met, waiting element '.MuiAvatar-img' `, APP_DEBUG_STYLE); 
-			document.arrive(".MuiAvatar-img", Facturier._warmup); 
+			document.arrive(sCSSObserved, Facturier._warmup); 
 		} else { 
 			console.log(`%c All condition already met go`, APP_DEBUG_STYLE);
 			Facturier._warmup(); 
@@ -196,14 +199,15 @@ const Facturier = {
 
 		// inject
 		fetchInject(
-			['https://unpkg.com/htmx.org@1.1.0',
+			[
+			'https://unpkg.com/htmx.org@1.1.0',
 			'https://unpkg.com/htmx.org@1.1.0/dist/ext/debug.js'
 			]
 		).then( async function (e) {
-			console.log('%cHTMX fetched', APP_DEBUG_STYLE);
+			//console.log('%cHTMX fetched', APP_DEBUG_STYLE);
 			
 			//htmx.logAll();
-			
+			/*
 			htmx.defineExtension('get-dirty', {
 				onEvent: function (name, evt) {
 				if (name === "htmx:configRequest") {
@@ -234,14 +238,14 @@ const Facturier = {
 					}
 				}
 			});
-			
+			*/
 			
 			// htmx broker
 			htmx.on("htmx:configRequest", function(evt){
-				console.log("%cBroker htmx:configRequest event received", APP_DEBUG_STYLE);
+				//console.log("%cBroker htmx:configRequest event received", APP_DEBUG_STYLE);
 			});
 			htmx.on("htmx:beforeRequest", function(evt){
-				console.log("%cBroker htmx:beforeRequest event received", APP_DEBUG_STYLE);
+				//console.log("%cBroker htmx:beforeRequest event received", APP_DEBUG_STYLE);
 				/*
 				 * i first try to use xhr.abort() but it won't works 
 				 * think it was already started
@@ -249,20 +253,20 @@ const Facturier = {
 				if (evt.detail.pathInfo.finalPath 
 					&& getFileExtension(evt.detail.pathInfo.finalPath) 
 					!== "html"){
-					console.log("%cIntercept path without .html need to route it to function", APP_DEBUG_STYLE);
-					console.log(`%cWanna load ${evt.detail.pathInfo.finalPath}`, APP_DEBUG_STYLE);
-					evt.detail.xhr.addEventListener("abort", function(){console.log("%cGLOBAL Patched Abort Function used()", APP_WARN_STYLE)}); // trace
+					//console.log("%cIntercept path without .html need to route it to function", APP_DEBUG_STYLE);
+					//console.log(`%cWanna load ${evt.detail.pathInfo.finalPath}`, APP_DEBUG_STYLE);
+					evt.detail.xhr.addEventListener("abort", function(){/*console.log("%cGLOBAL Patched Abort Function used()", APP_WARN_STYLE)*/}); // trace
 					evt.detail.xhr.onloadstart = function(e){
 							this.abort();
-							console.log("%cGLOBAL Patched onloadstart is set", APP_DEBUG_STYLE);
+							//console.log("%cGLOBAL Patched onloadstart is set", APP_DEBUG_STYLE);
 							} // patch on load start to autocancel
 					let sHtml = View.load(evt.detail.pathInfo.finalPath);
 					let oTarget = evt.detail.target
 					
 					// if target a node
 					
-					console.log(evt.detail);
-					console.log(evt.detail.elt.getAttribute('hx-select'));
+					//console.log(evt.detail);
+					//console.log(evt.detail.elt.getAttribute('hx-select'));
 					
 					var sTargetSelect = evt.detail.elt.getAttribute('hx-select');
 					
@@ -270,7 +274,7 @@ const Facturier = {
 						let oDom = new DOMParser().parseFromString(sHtml, "text/html"); 
 						oNode = oDom.querySelector(sTargetSelect);
 						if(oNode){
-							console.log(`%cfound not ${sTargetSelect} in data received from calling ${evt.detail.pathInfo.finalPath}`, APP_DEBUG_STYLE);
+							//console.log(`%cfound not ${sTargetSelect} in data received from calling ${evt.detail.pathInfo.finalPath}`, APP_DEBUG_STYLE);
 							sHtml = oNode.outerHTML;
 						} else
 						{
@@ -278,8 +282,7 @@ const Facturier = {
 						}
 					}
 					
-					console.log(sHtml);
-
+					//console.log(sHtml);
 					/*
 					 * appendFromHtmlStr
 					 *  sHtml {string}  HTML to add
@@ -293,24 +296,17 @@ const Facturier = {
 							for (var  i = fragment.childNodes.length - 1; i >= 0; i--) {
 								var child = fragment.childNodes[i];
 								oDom.appendChild(child);
-								console.log("appending to dom");
+								//console.log("appending to dom");
 								htmx.process(child);
 							}
 							return oDom.lastChild;
 						}
 					appendFromHtmlStr(sHtml, evt.detail.target);
-
-					/*
-					 * el.insertAdjacentHTML('beforebegin', string_of_html);
-						el.insertAdjacentHTML('afterbegin', string_of_html);
-						el.insertAdjacentHTML('beforeend', string_of_html);
-						el.insertAdjacentHTML('afterend', string_of_html);
-						*/
 				}
 			});
 			
 			htmx.on('htmx:xhr:loadstart' , function(evt){
-				console.log("%cBroker htmx:xhr:loadstart event received", APP_DEBUG_STYLE);
+				//console.log("%cBroker htmx:xhr:loadstart event received", APP_DEBUG_STYLE);
 				// ne contient aucune reference sur xhr
 			});
 

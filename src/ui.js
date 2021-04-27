@@ -88,7 +88,8 @@ class UI {
 		UI.addButton('DbgMode', debugMode, {}, div);
 		UI.addButton('statistics', statistics, {}, div);
 		UI.addButton('Database', mgtDbase, {}, div);
-		if(STT_VERSION) {UI.addButton('Sandbox', popup_students, {}, div);} // STT_VERSION is modified by build script in FALSE or TRUE
+		//if(STT_VERSION) {UI.addButton('Sandbox', popup_students, {}, div);} // STT_VERSION is modified by build script in FALSE or TRUE
+		if(STT_VERSION) {UI.addButton('Sandbox', sandbox, {}, div);} // STT_VERSION is modified by build script in FALSE or TRUE
 		UI.addButton('about', about, {},div);
 		/* just a little anchor for all pop*/
 		let el = document.createElement('div'), elStyle = el.style;
