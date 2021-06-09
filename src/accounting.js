@@ -16,7 +16,7 @@ import {
 	OC_PRICE1, OC_PRICE2, OC_PRICE3, OC_PRICE4, OC_PRICE5, OC_PRICE6,
 	BILL_AUTOFUNDED,BILL_FUNDED,BILL_OTHER,
 	SESSION_DONE, SESSION_CANCEL, SESSION_CANCEL_LATE, SESSION_STUDENT_AWAY,
-	TYPE_SESSION, TYPE_DEFENSE, TYPE_COACHING,
+	TYPE_SESSION, TYPE_DEFENSE, TYPE_COACHING, TYPE_MENTORAT
 	} from './constants.js';
 import App from './index.js';
 import Archive from './archives.js';
@@ -99,6 +99,7 @@ class Accounting {
 		/* TODO gérer les erreurs */
 		const dbSessions = db.get(Session.tbl_name).filter(v => dayjs(v.when).isSameOrBefore(dtTo,'day') && dayjs(v.when).isSameOrAfter(dtFrom,'day'));
 		const oSessions = dbSessions.value();
+		//console.log("%cWill Treat those sessions in accounting %o", APP_DEBUG_STYLE, oSessions);
 		const iSessionsNumber = oSessions.length;
 		let oMeta = {from: dtFrom, to: dtTo, created_at: null, maxLevel:OC_MAX_LEVEL, number:0, amount:0, errors:{funding:[], level:[], path:[], status:[],type:[]}, flatFee:[] };
 		let iNumber = 0;
@@ -141,8 +142,9 @@ class Accounting {
 			if (oTheSession.status === OC_STATUS_1) iStatus = SESSION_CANCEL;
 			if (oTheSession.status === OC_STATUS_2) iStatus = SESSION_CANCEL_LATE;
 			if (oTheSession.status === OC_STATUS_3_M || oTheSession.status === OC_STATUS_3_F) iStatus = SESSION_STUDENT_AWAY;
-			var iType =0;
+			var iType = 0;
 			if (oTheSession.type.toLowerCase() === 'session') iType = TYPE_SESSION;
+			if (oTheSession.type.toLowerCase() === 'mentorat') iType = TYPE_MENTORAT;
 			if (oTheSession.type.toLowerCase() === 'soutenance') iType = TYPE_DEFENSE;
 			if (oTheSession.path != undefined && oTheSession.path.toLowerCase() === '158-trouvez-lemploi-qui-vous-correspond' && oTheSession.type !== 'soutenance') iType = TYPE_COACHING;
 			var iFunding = 0;
@@ -157,17 +159,29 @@ class Accounting {
 			if (oTheSession.funding === OC_OTHER) iFunding = BILL_OTHER;
 			
 			// errors
+			if (oTheSession.lvl == ''){
+				// add to error list
+				oMeta.errors.level.push(oTheSession);
+				continue;
+			}
+			if(typeof oTheSession.lvl === 'string'){
+				oTheSession.lvl = parseInt(oTheSession.lvl, 10);
+			}
 			if (oTheSession.lvl < 0){
 				// add to error list
 				oMeta.errors.level.push(oTheSession);
 				continue;
 			}
+
+
+			
 			if (bIsInOldMode === false && oTheSession.funding !== OC_AUTOFUNDED && oTheSession.funding !== OC_FUNDED && oTheSession.funding !== OC_OTHER){
 				// add to error list
 				oMeta.errors.funding.push(oTheSession);
 				continue;
 			}
 			if (oTheSession.type.toLowerCase() !== 'session' /*because session is 0 and default iType is 0*/
+				&& oTheSession.type.toLowerCase() !== 'mentorat' 
 				&& iType !== TYPE_DEFENSE
 				&& iType !== TYPE_COACHING){
 				// add to error list
@@ -185,6 +199,7 @@ class Accounting {
 				oMeta.errors.status.push(oTheSession);
 				continue;
 			}
+			
 			// recupérer la valeur de la matrice, la mettre à jour
 			// déposer la nouvelle valeur
 			// faire une detection de collision en initialisant la valeur avec une valeur improbable genre 987654321 ou 1234567890 ou 666 111 666 (max 32 int is 2,147,483,647) 
@@ -203,6 +218,7 @@ class Accounting {
 				toUpdate.amount += 0;
 				iAmount+=0;
 			} else {
+				//console.log('toUpdate.amount:%o aPu:%o, oTheSession.lvl:%o iType:%o iStatus%o iFunding:%o',toUpdate.amount, aPu, oTheSession.lvl,iType, iStatus, iFunding);
 				toUpdate.amount += 1 * aPu[oTheSession.lvl][iType][iStatus][iFunding];
 				iAmount+=1 * aPu[oTheSession.lvl][iType][iStatus][iFunding];
 			}
@@ -217,6 +233,7 @@ class Accounting {
 			}
 			
 		}
+		
 		
 		//var oSessionsAf = dbSessions.filter( v => v.type.toLowerCase() !== 'soutenance' && v.status === OC_STATUS_0 && v.funding === OC_AUTOFUNDED && v.path !== '158-trouvez-lemploi-qui-vous-correspond');
 		var oBonus = [];
@@ -255,8 +272,17 @@ class Accounting {
 		
 		theSessionsMatrix.set(0, 0, 0, 0, oMeta);
 		var t666 =performance.now();console.log("%cFunction took " + (t666 - t0) + " milliseconds." ,APP_PERF_STYLE);
-		//console.table(_t);
 		//theSessionsMatrix.toConsole();
+		if(
+			oMeta.errors.funding.length +
+			oMeta.errors.level.length + 
+			oMeta.errors.path.length +
+			oMeta.errors.status.length +
+			oMeta.errors.type.length
+			> 0
+		){
+			console.log("%cWarning some errors found %o", APP_WARN_STYLE, oMeta.errors);
+		}
 		return theSessionsMatrix;
 	}
 	

@@ -312,6 +312,25 @@ var maj_1_00_0006 = async function(){
 	for(var i = 0; i < oListToUpdate.value().length; i+=1){oListToUpdate.get(i).assign({'fundedBy':OC_FUNDED}).write();}
 }
 
+var maj_1_10_0005 = async function(){
+	// cid is a calculated id because sessions id are not always known
+	console.log("add new field cid to session table");
+	
+	// 1 - transformer tous les champs id de la table student en Number
+	
+	// 1.1 - transformer les id de la table student history en Number
+	// 1.1.1 - transformer les controles de type à l'insertion
+	
+	// 1.1.2 - attention les requetes sont sensibles au format donc les findById sont aussi à refaire
+		// toute la partie écriture et sauvegarde est sensible au type 
+	
+	// 2 - transformer tous les champs id de la table session en Number
+	
+	// 3 - convertir la date de la table session en format international
+	
+}
+
 export {
 	maj_1_00_0006,
+	maj_1_10_0005,
 }

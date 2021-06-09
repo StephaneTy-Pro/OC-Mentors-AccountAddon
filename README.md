@@ -21,9 +21,16 @@ Prendre l'onglet Utilitaires dernière ligne "Install from URL" , coller l'url d
 
 ### Utilisation
 
-Avant toute chose veuillez noter que la barre de menu ne s'affiche que si on est dans l'historique OC.
+La barre de menu s'affiche dès que vous êtes dans l'interface mentor
 
 Cette barre de menu peut être déplacée en positionnant votre curseur sur le rond gris , il ne vous reste plus qu'à cliquer et déplacer. 
+
+#### Première utilisation
+
+Dans l'interface de votre navigateur vous avez l'icône correpondant a Tapermonkey (ou violentmonkey...), un clic droit dessus permet d'ouvrir un menu. Dans ce menu vous trouverez le menu de paramétrage du Facturier. Dans cet écran de paramétrage, pour pouvoir faire fonctionner la collect automatique il faudra renseigner l'id utilisateur (votre numéro d'indentifiant chez openclassroms visible à chaque fois que vous cliquez sur votre avatar c'est le numéro qui apparait dans l'url).
+
+#### Utilisation futures
+
 
 **Boutons**
 - COLLECTCHECKED :Permet d'ajouter les élements cochés à la bdd
@@ -42,6 +49,13 @@ Cette barre de menu peut être déplacée en positionnant votre curseur sur le r
 
 
 Pour plus d'information voir la [documentation](https://stephanety-pro.github.io/OC-Mentors-AccountAddon/)
+
+## Mise à jour
+
+Après chaque mise à jour avant toute manipulation assurez vous par précaution de faire les choses suivantes
+
+- sauvegarde de la base
+- remise à zéro du mois de facturatione en cours (option database/épurer et cochez la case session et précisez le mois en cours) 
 
 ## FAQ
 

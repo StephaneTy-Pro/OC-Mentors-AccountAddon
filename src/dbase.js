@@ -104,6 +104,28 @@ class Dbase{
 	static erase = function(sTableName){
 		console.log(`%cErase all data of table: ${sTableName}`, APP_DEBUG_STYLE);
 		return App.Cfg.dbase.get(sTableName).remove().write();
+		//db.set(sTableName, []).write() // devrait aussi fonctionner https://jsfiddle.net/typicode/4kd7xxbu/
+	}
+	/*
+	 * seen here
+	 * https://jsfiddle.net/typicode/4kd7xxbu/
+	 */
+	static loadTable = function(sTableName, aValue){
+		if(table_exist(sTableName)){
+			return App.Cfg.dbase.set(sTableName, aValue).write();
+		}
+		throw 'Table :'+sTableName+', not exists in DB !'; 
+		return -1;
+	}
+	
+	static table_exist = (sTableName) => App.Cfg.dbase.has(sTableName).value
+	
+	static table_export = function(sTableName){
+		if(table_exist(sTableName)){
+			return JSON.stringify(App.Cfg.dbase.get(sTableName).value())
+		}
+		throw 'Table :'+sTableName+', not exists id DB !';  
+		return -1;
 	}
 	
 	// table_exist(tbl) = App.Cfg.dbase.has(tbl).value

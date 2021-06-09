@@ -47,3 +47,4 @@ export const SESSION_STUDENT_AWAY = 3;
 export const TYPE_SESSION = 0; 
 export const TYPE_DEFENSE = 1;
 export const TYPE_COACHING = 2;
+export const TYPE_MENTORAT = 0; // new since 202106 --> same as old sessions 

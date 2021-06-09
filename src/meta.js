@@ -42,12 +42,46 @@ var fMeta = function(){
 		console.log("%c resetDbVersion NE FONCTIONNE PAS", APP_ERROR_STYLE)
 		return App.Cfg.dbase.get('meta').find({key: 'dbVersion'}).remove( (item) => true).write();
 	}
+	
+	// Because update all student is a long process
+	
+	const setStudenListUpd = function(sValue){
+		assert(
+			typeof sValue === 'string',
+			'You must provide a string.',
+			TypeError
+		);
+		return App.Cfg.dbase.get(Meta.tbl_name).find({'key':'studentLstUpd'}).assign({value:sValue}).write().value;
+	}
+	
+	const getStudenListUpd = function(){
+		let _r = App.Cfg.dbase.get(Meta.tbl_name).find({'key':'studentLstUpd'}).value()
+		return typeof _r === "undefined" ? -1 : _r.value;
+	}
+
+	const checkSupport = function(){
+		if( App.Cfg.dbase.get("meta").value() === undefined) {
+			console.log("%cDb dont' contain meta table create it", APP_DEBUG_STYLE);
+			App.Cfg.dbase.assign({meta:[]}).write();
+		}
+		if( getDbVersion() == -1){
+			App.Cfg.dbase.get('meta').push({'key':'dbVersion','value':'1.0.0'})
+			.write();
+		}
+		if( getStudenListUpd() == -1){
+			App.Cfg.dbase.get('meta').push({'key':'studentLstUpd','value':dayjs('19701006').toISOString()})
+			.write();
+		}
+	}
 
 
 	return Object.freeze({
+		checkSupport,
 		getDbVersion,
 		setDbVersion,
 		delDbVersion,
+		setStudenListUpd,
+		getStudenListUpd,
 		tbl_name: TBL_NAME,
  	});
   

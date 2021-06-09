@@ -69,7 +69,7 @@ var _fetch = async function(sUrl="", sPath="", bAll=false){
 	let sCaptcha = doc.querySelector('meta[id=captcha-bypass]');
 	if (sCaptcha !==null ){
 		console.error(`%cError CloudFlare CAPTCHA : ${doc.querySelector('title').innerText}`, APP_DEBUG_STYLE);
-		throw new Error("Must Respond to Cloudflare Captcha or waiting....")
+		throw new Error("Must Respond to Cloudflare Captcha or waiting....");
 	}        
 	var oDom = {}
 	if (bAll===true){
@@ -92,9 +92,20 @@ var _fetch = async function(sUrl="", sPath="", bAll=false){
  * @return
  * 
  */
-var getKey = function(el, idx=-1){
+var getKeyOld = function(el, idx=-1){ // before 20210601
 	try {
 		var _t1 = (el.children[0].href || "/").split("/");
+		return _t1[_t1.length+idx];
+	} catch(e) { console.error(`%cError in getkey${e.stack||e}`,APP_ERROR_STYLE);} // Erreur qui ne devrait jamais arriver en getkey 
+}
+
+/*
+ * Cette fonction devrait être réecrite pour ne prendre en parametre que le href
+ */
+
+var getKey = function(el, idx=-1){
+	try {
+		var _t1 = (el.querySelector("a").href || "/").split("/");
 		return _t1[_t1.length+idx];
 	} catch(e) { console.error(`%cError in getkey${e.stack||e}`,APP_ERROR_STYLE);} // Erreur qui ne devrait jamais arriver en getkey 
 }
@@ -388,6 +399,62 @@ var matrix = function(aSizes){
 }
 
 /**
+ * Hash function
+ * https://stackoverflow.com/a/52171480
+ * It is roughly similar to the well-known MurmurHash/xxHash algorithms. 
+ * It uses a combination of multiplication and Xorshift to generate the hash, 
+ * but not as thorough. As a result it's faster than either would be 
+ * in JavaScript and significantly simpler to implement. 
+ * Keep in mind this is not a secure algorithm, 
+ * if privacy/security is a concern, this is not for you.
+
+Like any proper hash, it has an avalanche effect, which basically means small changes in the input have big changes in the output making the resulting hash appear more 'random':
+
+"501c2ba782c97901" = cyrb53("a")
+"459eda5bc254d2bf" = cyrb53("b")
+"fbce64cc3b748385" = cyrb53("revenge")
+"fb1d85148d13f93a" = cyrb53("revenue")
+
+
+
+
+You can also supply a seed for alternate streams of the same input:
+
+"76fee5e6598ccd5c" = cyrb53("revenue", 1)
+"1f672e2831253862" = cyrb53("revenue", 2)
+"2b10de31708e6ab7" = cyrb53("revenue", 3)
+* 
+
+
+
+* 
+* More info on algo https://stackoverflow.com/a/22429679
+
+NOTE STT
+cyrb53("revenue") => 8309097637345594 
+cyrb53("revenge") => 4051478007546757 
+
+cyrb53("revenue", 1) => 8697026808958300
+cyrb53("revenue", 2) => 2021074995066978
+* 
+* 
+	RETURN Number
+
+ */
+ 
+const cyrb53 = function(str, seed = 0) {
+    let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+    for (let i = 0, ch; i < str.length; i++) {
+        ch = str.charCodeAt(i);
+        h1 = Math.imul(h1 ^ ch, 2654435761);
+        h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1>>>16), 2246822507) ^ Math.imul(h2 ^ (h2>>>13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2>>>16), 2246822507) ^ Math.imul(h1 ^ (h1>>>13), 3266489909);
+    return 4294967296 * (2097151 & h2) + (h1>>>0);
+};
+
+/**
  * Performs an assertion.
  * @ignore
  *
@@ -426,4 +493,5 @@ export {
 	readFile,
 	matrix,
 	assert,
+	cyrb53,
 }

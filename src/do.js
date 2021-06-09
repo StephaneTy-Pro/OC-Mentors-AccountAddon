@@ -72,8 +72,8 @@ var about = async function(){
 /**
  * 
  */
-var addCbox = function(){
-	var sPath ="table.crud-list tbody"
+var addCboxOld = function(){
+	var sPath ="table.crud-list tbody";
 	var sessions = document.querySelector(sPath)// le All me retourne aussi le tableau des étudiants
 	var bChecked = false;
 	//console.log(`the sessions are ${sessions}`);
@@ -122,6 +122,152 @@ var addCbox = function(){
 		var i = _t.length, aChkBox = new Array(i);for(; i--; aChkBox[i] = _t[i]); // NOTESTT those two lines are more optimized than ? var aChkBox = Array.prototype.slice.call(_t)
 		for(var v in aChkBox){
 			bChecked = Session.exists(aChkBox[v].value);
+			//console.log(`is the session with id ${aChkBox[v].value} in db ? ${bChecked}`);
+			if (bChecked === true){
+				aChkBox[v].checked = true;
+			} else {
+				aChkBox[v].checked = false;
+			}
+		}
+	}
+}
+
+// a priori je vais devoir attendre 
+/*
+ * sessions.firstChild.querySelector('tr > td > div > div+p')
+ * */
+
+var addCbox = function(){
+	
+	console.log('%c ADDCBOX WAS CALLED', APP_DEBUG_STYLE);
+
+	
+	var sPath ="table#sessions_2";
+	var sessions = document.querySelector(sPath);// le All me retourne aussi le tableau des étudiants
+	var bChecked = false;
+	//console.log(`the sessions object is ${sessions}`);
+    if (sessions === null){ 
+		console.log(`%cERROR:Could'nt find the table which display sessions : ${sessions}`, APP_ERROR_STYLE);
+		throw new Error("!!!! IRRECOVERABLE ERROR NO TABLE OF SESSIONS FOUNDED"); 
+	}
+	if (sessions.querySelector("[type=checkbox]") === null) {
+		//console.log("%cCheckBox NOT already displayed, i ve to build and show checked on|off", APP_DEBUG_STYLE);
+		var sPath ="table#sessions_2 tbody";
+		var sessions = document.querySelector(sPath);// remarque attention le All me retourne aussi le tableau des étudiants
+		for (const oTr of sessions.children) { 
+			//console.log("nom de l'étudiant : %o",el.children[2].innerText)
+			// 0 - annulé|réalisé|absent & type mentorat|soutenance
+			// 1 - date
+			// 2 - zone nom étudiant + avatar
+			// 3 - niveau d'expertise
+			var sWho_id = getKey(oTr.children[2],-2); // get the before last '/' element
+			var inputElem = document.createElement('input');
+			inputElem.type = "checkbox";
+			inputElem.name = "name";
+			var sWhen = oTr.children[1].querySelector('time').dateTime.trim();
+			sWhen = dayjs(sWhen).toISOString()
+			// the cid (calculate id is a combination of id of student and timetime)
+			var iHash = Session.getHashId(sWhen, sWho_id);
+			//console.log('%ciHash is (%o)%o',APP_DEBUG_STYLE, typeof iHash, iHash);
+			inputElem.value = iHash;
+			// because there is a global handler click on whole tr
+			inputElem.onclick = function(event){ event.stopPropagation(); };
+			bChecked = Session.exists(iHash);
+			//console.log(`%cIs the session with cid ${iHash} (this is the calculated id) in db ? ${bChecked}`, APP_DEBUG_STYLE);
+			if (bChecked === true) inputElem.checked = true;
+			var td = document.createElement('td');
+			td.style = "text-align: center";
+			td.appendChild(inputElem);
+			oTr.appendChild(td);
+		}
+		// ajout d'une case selectionner tout
+/*
+ <thead style="
+    display: block;
+"><tr style="
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #e0e0e0;
+    flex-direction: row;
+    background-color: #fff;
+"><td>Facturier 1.12</td><td style="
+    font-size: 1rem;
+    max-width: 280px;
+    font-family: Montserrat;
+    font-weight: 400;
+    line-height: 1.625rem;
+    text-transform: inherit;
+    margin-left: auto;
+">Fact.(o/n)</td></tr>
+</thead>
+ */
+		// 1 - ajout du thead si nécessaire
+		if(document.querySelector('table#sessions_2 thead') === null){
+			const insertBefore = (ele, anotherEle) => anotherEle.insertAdjacentElement('beforebegin', ele);
+			sPath ="table#sessions_2 tbody";
+			var el = document.querySelector(sPath)
+			inputElem = document.createElement('input');
+			inputElem.type = "checkbox";
+			inputElem.name = "name";
+			inputElem.value = "value";
+			inputElem.id = "id";
+			inputElem.onclick = function (){document.querySelectorAll("tbody input[type=checkbox]").forEach( e => e.checked = !e.checked);}
+			inputElem.style = "visibility: hidden;"
+			var label = document.createElement('label');
+			label.innerText = "in DB";
+			label.style="display:block;";
+			label.onMouseOver="this.style.cursor=pointer;";
+			label.onMouseOut="this.style.cursor=auto;";
+			label.appendChild(inputElem);
+			var oTd1 = document.createElement('td');
+			oTd1.style=`
+    font-size: 1rem;
+    max-width: 280px;
+    font-family: Montserrat;
+    font-weight: 400;
+    line-height: 1.625rem;
+    text-transform: inherit;
+`;
+			//oTd.colspan = 4
+			//oTd1.innerText = "Facturier v."+GM.info.script.version;
+			oTd1.innerText = "&nbsp;"+GM.info.script.version;
+			var oTd2 = document.createElement('td');
+			oTd2.style=`
+    font-size: 1rem;
+    max-width: 280px;
+    font-family: Montserrat;
+    font-weight: 400;
+    line-height: 1.625rem;
+    text-transform: inherit;
+    margin-left: auto;
+`;
+			oTd2.innerText = "Fact.(o/n)";
+			oTd2.addEventListener('click', _handler = function(e){
+				document.querySelectorAll("tbody input[type=checkbox]").forEach( e => e.checked = !e.checked );
+			});
+			var oTr = document.createElement('tr');
+			oTr.style=`
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #e0e0e0;
+    flex-direction: row;
+    background-color: #fff;
+`;
+			oTr.appendChild(oTd1);
+			oTr.appendChild(oTd2);
+			var oTh = document.createElement('thead');
+			oTh.style= 'display: block;';
+			oTh.appendChild(oTr);
+			insertBefore(oTh, document.querySelector(sPath)) ;
+		}
+	} else {
+		//console.log("%cCheckBox already displayed, i ve only to show checked on|off", APP_DEBUG_STYLE);
+		var _t = sessions.querySelectorAll("[type=checkbox]"); // NOTESTT could be CPU Consumer ? so by precaution define it here
+		var i = _t.length, aChkBox = new Array(i);for(; i--; aChkBox[i] = _t[i]); // NOTESTT those two lines are more optimized than ? var aChkBox = Array.prototype.slice.call(_t)
+		for(var v in aChkBox){
+			let iHash = parseInt(aChkBox[v].value,10);
+			//console.log('%c....iHash is (%o)%o',APP_DEBUG_STYLE, typeof iHash, iHash);
+			bChecked = Session.exists(iHash);
 			//console.log(`is the session with id ${aChkBox[v].value} in db ? ${bChecked}`);
 			if (bChecked === true){
 				aChkBox[v].checked = true;
@@ -344,7 +490,8 @@ data-transition-in	animate the bar for entering transition, when value is set by
  * 
  */    
 var collectChecked = async function(){
-	var sPath = "table.crud-list tbody input:checked"
+	//var sPath = "table.crud-list tbody input:checked"; //before 20210601
+	var sPath = "table#sessions_2 tbody input:checked";
 	var cb = document.querySelectorAll(sPath);
 	// show progressbar 
 	// working with https://codepen.io/stephane_ty/pen/LYNjvew?editors=1111
@@ -375,8 +522,9 @@ var collectChecked = async function(){
 			//console.log(document.getElementById('pbar'));
 			var bar = document.getElementById('pbar').ldBar;
 			for (var i = 0; i < cb.length; i+=1) {
-				var oEl = cb[i].parentElement.parentElement;
-				var me = Session.parseTable(oEl);
+				var oEl = cb[i].parentElement.parentElement; // the tr
+				//var me = Session.parseTable(oEl);
+				var me = Session.parseRow(oEl);
 				//console.log(`Wanna add a new checkbox content ${me.id}`);
 				await Session.add(me);
 				bar.set( (i / cb.length) * 100, false);
@@ -1322,6 +1470,7 @@ if(STT_VERSION) {
 		const { value: formValues } = await Swal.fire({
 			title: 'Gestion de la base de donnée',
 			html: sHtml,
+			//allowOutsideClick: false, // click outside do nothing
 			focusConfirm: false,
 			preConfirm: () => {
 				return true;

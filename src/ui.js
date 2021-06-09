@@ -14,17 +14,18 @@ import{
 	pdf,
 	mgtDbase,
 	razDbase,
+	sandbox,
 	showBill,
 	statistics,
 } from './do.js';
 
 import Student from './students.js';
-
+/*
 import {
 	popup_students,
 	
 } from './sandbox.js';
- 
+*/ 
 class UI {
 	/*
 	 * 

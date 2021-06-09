@@ -2,6 +2,10 @@
 
 C : Corrections(Fixes) / B : Corrections de Bug (BugFixes) / F : Ajout de fonctionnalité (Features) / D : Divers (Misc)
 
+  ## 1.10.0005 (09/06/2021)
+  	- C: Prise en compte d'une évolution d'OpenClassrooms sur l'ui de l'écran de contrôle mentor
+  	- NOTE : la fonctionnalité de mise à jour par lot COLLECTAUTO n'est pas active pour le moment
+
   ## 1.10.0004 (27/04/2021)
   	- C: Prise en compte d'une évolution d'OpenClassrooms sur l'ui de l'écran de contrôle mentor
 

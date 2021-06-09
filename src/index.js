@@ -11,10 +11,42 @@
 	* 	.MuiAvatar-img -> .dom-services-4-MuiAvatar-img
 */
 
+/**
+ * A FAIRE
+ * 
+ * 
+ * AJouter
+ * 
+ * <a href="" class="dom-services-3-MuiButtonBase-root dom-services-3-MuiTab-root dom-services-3-dom-services73 dom-services-3-MuiTab-textColorInherit" style="
+    margin-left: auto;
+"><span class="dom-services-3-MuiTab-wrapper">En base de donnée (21/24)</span><span class="dom-services-3-MuiTouchRipple-root"></span></a>
+* 
+* Dans le panel pour avoir par exemple le total d'element de la base de donnée
+* 
+* Puis sur la ligne du tableau ajouter le nombre d'enregistrement stocké dans la page, proposer de cocher toute la page
+* je pense que la with minimum doit etre la sommes des autres, et que le td suivant doit etre en flex avec la formule magique : https://medium.com/@iamryanyu/how-to-align-last-flex-item-to-right-73512e4e5912
+*   soit un td à 700px min, puis un autre en flex a envion 200
+*  un clic sur ce td permet de cocher toutes les cases de la grille, pour valider il faut encore cliquer sur collectchecked
+*   collect auto va disparaitre un moment, il faut que je capture le bearer et que je l'utilise pour mes propres requetes api pour pouvoir télécharger des informations
+* 
+* 
+* projet a regarder scoop bucket dans v chat alextwothousand/sccop-bucket
+* ça permet de découvrir 0x0.st
+* ainsi que sqls
+* 
+* deno a aussi un super ouveau packager packup 
+* 
+* // le bandeau A compléter se cible comme suit
+* le premier div de main content est vide et le second et le bon
+*   $('#mainContent > :not(div:empty')
+* il y a 4 enfants, virer les vides est impossible les div ne sont pas vides
+* $('#mainContent > :not(div:empty)').children()[2]
+*/
 
 
 
-import { domReady, readFile } from './utils.js'
+import { domReady, readFile, getKey } from './utils.js';
+import { debounce } from './helpers.js';
 import { APP_DEBUG_STYLE, APP_WARN_STYLE, APP_ERROR_STYLE } from './constants.js';
 import UI from './ui.js';
 import { 
@@ -41,12 +73,14 @@ import fetchInject from './vendor/fetch-inject/fetch-inject.js';
 import arrive from './vendor/arrive/arrive.js';
 
 // utiles juste pour pouvoir etre exportés dans unstafe.window
-import Student from './students.js';
-import Session from './sessions.js';
-import Archive from './archives.js';
-import History from './history.js';
-import StudentHistory from './students_history.js';
-import View from './views.js';
+import Student 			from './students.js';
+import Session 			from './sessions.js';
+import Archive 			from './archives.js';
+import History 			from './history.js';
+import StudentHistory 	from './students_history.js';
+import View 			from './views.js';
+import Ref 				from './refs.js';
+import Api				from './api.openclassrooms.js';
 
 
 const Facturier = {
@@ -69,9 +103,10 @@ const Facturier = {
 		const bSupport = Facturier.checkSupport(); //TODO better use it
 		console.log(`%cAre all functions supported ? : ${bSupport}`,APP_DEBUG_STYLE);
 		// when avatar is loaded start application
-		var sCSSObserved = '.dom-services-4-MuiAvatar-img'; // was .MuiAvatar-img before
+		// var sCSSObserved = '.dom-services-4-MuiAvatar-img'; // was .MuiAvatar-img before
+		var sCSSObserved = 'header [class*=MuiAvatar-img]'; // was .dom-services-4-MuiAvatar-img before
 		if (document.querySelector(sCSSObserved) === null){ 
-			console.log(`%c All condition not met, waiting element '.MuiAvatar-img' `, APP_DEBUG_STYLE); 
+			console.log(`%c All condition not met, waiting element '${sCSSObserved}' `, APP_DEBUG_STYLE); 
 			document.arrive(sCSSObserved, Facturier._warmup); 
 		} else { 
 			console.log(`%c All condition already met go`, APP_DEBUG_STYLE);
@@ -123,8 +158,250 @@ const Facturier = {
 		/* set size of content */
 		//GM_addStyle('.swal2-content{font-size:'+GM_config.get('sizeofcontentlist')+'}');
 		GM_addStyle('.swal2-title{font-size:1.275em)'); // set by default to 1.875em by CSS of SWAL
-		Facturier._main();
+		
+		/* 
+		 * solution de contournement depuis le 01/06/2021 attente du 
+		 * chargement de l'historique sinon le tableau de l'historique
+		 * des sessions n'est pas disponible
+		 */
+		//var sCSSObserved = 'table#sessions_2'; // was .dom-services-4-MuiAvatar-img before
+		var sCSSObserved = 'table#sessions_2 tbody tr > td > div > div+p'; // was .dom-services-4-MuiAvatar-img before
+		if (document.querySelector(sCSSObserved) === null){ 
+			console.log(`%c All condition not met, waiting element '${sCSSObserved}' `, APP_DEBUG_STYLE); 
+			document.arrive(sCSSObserved, Facturier._main); 
+		} else { 
+			console.log(`%c All condition already met go`, APP_DEBUG_STYLE);
+			Facturier._main(); 
+		}
+		
+		
+		//Facturier._main();
 	},
+	
+	/** 
+	 * on href change detection
+	 * https://stackoverflow.com/questions/3522090/event-when-window-location-href-changes
+	 * 
+	 * NOTESTT changed to pathname change because of #param which sometimes follow href
+	 */
+	pathname: document.location.pathname,
+	_eventMonitor : function(){
+		//unsafeWindow.onload = function() {
+			var
+				bodyList = document.querySelector("body")
+				,observer = new MutationObserver(function(mutations) {
+					mutations.forEach(function(mutation) {
+						//console.log("%c mutation is %o", APP_DEBUG_STYLE, mutation);
+						//console.log("%c target mutation is on %o", APP_DEBUG_STYLE, mutation.target);
+						//console.log("%c target mutation class is %o", APP_DEBUG_STYLE, mutation.target.class);
+						// use classList.contains() or className ===
+						if(mutation.target.classList.contains('dom-services-3-MuiTouchRipple-root')){ // click on next page wich target '<span class="dom-services-3-MuiTouchRipple-root"></span>'
+							//console.log("%cPaging on table was modified", APP_DEBUG_STYLE);
+						}
+						if(mutation.target.nodeName === 'TBODY' && mutation.target.parentElement.nodeName === 'TABLE'){
+							//console.log("%cTable data changed",APP_DEBUG_STYLE);
+							//console.log("%c=============> Changed data : %o", APP_DEBUG_STYLE,mutation);
+							//Facturier._applyInjectionOnPathNameMutation();
+							debounce(Facturier._applyInjectionOnPathNameMutation());
+						}
+						
+						if(mutation.target.ariaLabel === 'Page précédente'){
+							//console.log("%cPaging < was modified", APP_DEBUG_STYLE);
+						}
+						// $('.dom-services-3-dom-services101') a priori permet de lister tous les elements du talbeau quelle que soit la catégorie de sessions aléatoire ???
+						// regarder aussi <button class="dom-services-3-MuiButtonBase-root dom-services-3-MuiButton-root dom-services-3-MuiButton-text dom-services-3-dom-services144" tabindex="0" type="button" aria-label="Page précédente"><span class="dom-services-3-MuiButton-label"><svg class="dom-services-3-MuiSvgIcon-root" focusable="false" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"></path></svg></span><span class="dom-services-3-MuiTouchRipple-root"></span></button>
+						if (Facturier.pathname != document.location.pathname) {
+							Facturier.pathname = document.location.pathname;
+							/* Changed ! your code here */
+							//console.log("%cpathname has changed", APP_DEBUG_STYLE);
+							debounce(Facturier._applyInjectionOnPathNameMutation());
+							
+						}
+					});
+				});
+			var config = {
+				childList: true,
+				subtree: true
+			};
+			observer.observe(bodyList, config);
+		//};
+	},
+	
+	_applyInjectionOnPathNameMutation:function(){
+		let bStop = false;
+		if(bStop === false && document.location.pathname.match(/\/sessions$/)){
+			bStop = true;
+			console.log("%cgestion des sessions", APP_DEBUG_STYLE);
+			Facturier._applyInjectionForSessionsToComplete();
+		}
+		if(bStop === false && document.location.pathname.match(/\/booked-mentorship-sessions$/)){
+			bStop = true;
+			console.log("%cgestion des sessions futures"), APP_DEBUG_STYLE;
+			Facturier._applyInjectionForSessionsBooked();
+			}
+		if(bStop === false && document.location.pathname.match(/\/mentorship-sessions-history$/)){
+			bStop = true;
+			console.log("%cgestion de l'historique des sessions", APP_DEBUG_STYLE);
+			//console.log("%cTODO: supprimer l'option de configuration alwaysaddcbox", APP_DEBUG_STYLE);
+			//if(GM_config.get("alwaysaddcbox") === true){
+					Facturier._applyInjectionForSessionsHistory();
+				//} // add checkbox to element in history
+			}
+		if (bStop === false){
+			console.log("%cUnknow Route so could't guess what to do", APP_ERROR_STYLE);
+		}
+	
+	},
+	
+	_applyInjectionForSessionsToComplete:function(){
+		// have to clean or hide the header
+		if(document.querySelector('table#sessions_2 thead') !== null){
+			document.querySelector('table#sessions_2 thead').style.display="none";
+		}
+		// have to monkey patch buttons
+		var btns = Array.from(document.querySelectorAll("table#sessions_2 tbody a[href*=sessions]"));
+		/*btns.forEach(btn => btn.onclick = function(event) {
+				console.log("click");
+				// ajout d'un element dans la table references
+				Ref.add(1,2,'sessionId_dateRefId');
+				event.stopPropagation();
+				event.preventDefault(); // sera important pour pouvoir traiter moi meme à la main apres le click https://medium.com/@jacobwarduk/how-to-correctly-use-preventdefault-stoppropagation-or-return-false-on-events-6c4e3f31aedb
+			});
+		}*/
+		var _handler;
+		// tester la mise en place d'un overlay qui permet de savoir si c'est patché ou pas
+		btns.forEach( function(btn){
+			//console.log("%cWill Patch Button %o",APP_DEBUG_STYLE, btn);  
+			let oBtnText = btn.querySelector('span span')
+			oBtnText.innerText = ".:"+oBtnText.innerText+":."; // show it was patched
+			//console.log('btns trapped');
+			btn.addEventListener('click', _handler = function(e){
+				e.stopPropagation();
+				e.preventDefault(); // must be as soon as possible
+				var oTr = btn.parentElement.parentElement.parentElement; // tjhe full row which contain data
+				var sWhen = oTr.children[1].querySelector('time').dateTime.trim();
+				var sWho = getKey(oTr.children[2], -2);
+				// extract the key
+				var sHref = oTr.children[3].querySelector("a").getAttribute("href-sav");
+				var _t1 = (sHref || "/").split("/");
+				var sSessionId = _t1[_t1.length-1];
+				sWhen = dayjs(sWhen).toISOString()
+				var iHash = Session.getHashId(sWhen,sWho);
+				let iSessionId = parseInt(sSessionId,10);
+				// Save Data to Db
+				// check if exist
+				let bExistsSessionId = Ref.exists(iSessionId, 1, Ref.TYPE.SESSIONID_DATEREFID);
+				let bExistsHashId    = Ref.exists(iHash, 2, Ref.TYPE.SESSIONID_DATEREFID);
+				
+				if(bExistsSessionId){
+					if(!bExistsHashId){
+						console.log(`[SESSIONID_DATEREFID] iSessionId ${iSessionId} est connu mais pas iHash${iHash}`);
+						Ref.updKey2(iSessionId, iHash, Ref.TYPE.SESSIONID_DATEREFID);
+					}
+					// nothing to do
+				} 
+				if(bExistsHashId){
+					if(!bExistsSessionId){
+						console.log(`[SESSIONID_DATEREFID] iHash${iHash} est connu mais pas iSessionId ${iSessionId}`);
+						Ref.updKey1(iSessionId, iHash, Ref.TYPE.SESSIONID_DATEREFID);
+					}
+					// nothing to do
+				}
+				if( !bExistsSessionId && !bExistsHashId ){
+					console.log(`[SESSIONID_DATEREFID] iHash${iHash} et iSessionId ${iSessionId} sont INconnus`);
+					Ref.add(iSessionId, iHash, Ref.TYPE.SESSIONID_DATEREFID);
+				}
+				// resend event to element for bubbling to href with a kind of trigger event ?
+				window.open(sHref, "blank").focus();
+			});
+			//ne semble pas nécessaire mais bon par sécurité je pourrais enlever cet attibut et créer le mien pour stocker la valeur
+			//
+			btn.setAttribute('href-sav' , btn.getAttribute("href"));
+			btn.removeAttribute("href");
+		});
+	},
+	
+	_applyInjectionForSessionsBooked:function(){
+		// have to clean or hide the header
+		if(document.querySelector('table#sessions_2 thead') !== null){
+			document.querySelector('table#sessions_2 thead').style.display="none";
+		}
+	},
+	
+	_applyInjectionForSessionsHistory:function(){
+		if(document.querySelector('table#sessions_2 thead') !== null){
+			document.querySelector('table#sessions_2 thead').style.display="block";
+		}
+		//if(GM_config.get("alwaysaddcbox") === true){ // cette option doit disparaitre
+		addCbox();
+		//} // add checkbox to element in history
+	},
+	
+	_addHeader: function(){
+		let sElement = `
+<a href="" class="dom-services-3-MuiButtonBase-root dom-services-3-MuiTab-root dom-services-3-dom-services73 dom-services-3-MuiTab-textColorInherit" style="
+    margin-left: auto;
+"><span class="dom-services-3-MuiTab-wrapper">En base de donnée (21/24)</span><span class="dom-services-3-MuiTouchRipple-root"></span></a>
+		`
+		let aDom = document.querySelector('#mainContent > :not(div:empty)').children;
+		
+		let oSpan_1 = document.createElement('span');
+		oSpan_1.innerText = "Facturier v."+GM.info.script.version;
+		oSpan_1.classList.add('dom-services-3-MuiTab-wrapper');
+		let _handler;
+		oSpan_1.addEventListener('click', _handler = function(e){
+			document.querySelectorAll("tbody input[type=checkbox]").forEach( e => e.checked = !e.checked );
+		});
+		let oSpan_2 = document.createElement('span');
+		oSpan_2.classList.add('dom-services-3-MuiTouchRipple-root');
+
+		let oRoot = document.createElement('a');
+		oRoot.alt = "tout séléctionner";
+		oRoot.appendChild(oSpan_1);
+		oRoot.appendChild(oSpan_2);
+		// copy from precedent ? need to detect unactive one
+		oRoot.classList.add('dom-services-3-MuiButtonBase-root');
+		oRoot.classList.add('dom-services-3-MuiTab-root');
+		// oRoot.classList.add('dom-services-3-dom-services73');
+		oRoot.classList.add('dom-services-3-MuiTab-textColorInherit');
+let sStyle=`
+font-size: 1rem;
+max-width: 280px;
+font-family: Montserrat;
+font-weight: 400;
+line-height: 1.625rem;
+text-transform: inherit;
+`
+		oRoot.style = sStyle+'margin-left: auto'; // magic property to pull it (flex element)right
+		//aDom[2].appendChild(oRoot);
+		aDom[2].querySelector('div:nth-child(2) > div').appendChild(oRoot);
+	},
+	
+	/*
+	 * 
+	 * 
+	 * autre option pour la partie facturation 
+<thead style="
+    display: block;
+"><tr style="
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #e0e0e0;
+    flex-direction: row;
+    background-color: #fff;
+"><td>Facturier 1.12</td><td style="
+    font-size: 1rem;
+    max-width: 280px;
+    font-family: Montserrat;
+    font-weight: 400;
+    line-height: 1.625rem;
+    text-transform: inherit;
+    margin-left: auto;
+">Fact.(o/n)</td></tr>
+</thead>
+	 * 
+	 */
+	
 	/*
 	 * 
 	 * name: inconnu
@@ -139,12 +416,19 @@ const Facturier = {
 	
 	_main : function(){
 		console.log('​​​%cMainLoaded​​​',APP_DEBUG_STYLE);
+		document.unbindArrive(Facturier._main);
+		
+		// Attention avec l'ordre des choses, ici on lance trop vite l'event monitor puisque la base est pas encore théoriquement connectée
+		
+		Facturier._eventMonitor();
+
 		Performance.paintTiming();
 		Performance.longTaskTiming();
 		let adapter = new LocalStorage('db');
 		var db = low(adapter);
-		db.defaults({ students: [], sessions: [], f_archives:[], history_session_cache:[], meta:[], students_history:[], }).write();
+		db.defaults({ students: [], sessions: [], f_archives:[], history_session_cache:[], meta:[], refs:[], students_history:[], }).write();
 		Facturier.Cfg.dbase = db;
+
 		/* dayjs extension */
 		dayjs.extend(dayjs_plugin_isSameOrAfter);
 		dayjs.extend(dayjs_plugin_isSameOrBefore);
@@ -152,38 +436,48 @@ const Facturier = {
 		dayjs.extend(dayjs_plugin_localeData);
 		dayjs.extend(dayjs_plugin_localeData);
 		dayjs.extend(dayjs_plugin_customParseFormat);
+		dayjs.locale('fr');
+		
+		// checks -- must be after db init
+		Ref.checkSupport();
+		Meta.checkSupport();
+		
+		//Monitor
+		
+		if(GM_config.get('userid') != 0){
+			Api.forge(GM_config.get('userid')); // pour le bien devrait sortir de la configuration
+			Api.getPendingSessionFrom(dayjs());
+		} else {
+			console.log("%cVotre numéro d'utilisateur openclassrooms n'a pas ete renseigné dans la configuration vous ne pourrez pas utiliser la collecte automatique d'information", APP_ERROR_STYLE);
+		}
+		
+		//Api.forge(7688561); // pour le bien devrait sortir de la configuration
+		//Api.getPendingSessionFrom(dayjs());
+		
+		
 		//dayjs.extend(dayjs_locale_fr);
 		// https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.28/plugin/localeData.min.js
 		if (document.querySelector(".panel.menuBar.flex.draggable") === null){
 			UI.init();
 		}
-	   if(GM_config.get("alwaysaddcbox") === true){
-		   addCbox();
-		} // add checkbox to element in history
-		dayjs.locale('fr');
+				
+		// patch current UI
+		// 1-
+		Facturier._addHeader();
+		// 2-
+		Facturier._applyInjectionOnPathNameMutation();
+		
 		//// Patch to add new tbl
+		/*
 		if( db.get("meta").value() === undefined) {
 			console.log("%cDb dont' contain meta table create it", APP_DEBUG_STYLE);
 			db.assign({meta:[]}).write();
 		}
+		*/
 		// DB Management
-		console.log("%cCheck DB version to find anyupdate to do", APP_DEBUG_STYLE);
-		//let oDbVersion = db.get('meta').find({'key':'dbVersion'}).value(); // coudl be undefined if not set
+		//check Database version (need corresponding app version)
+		//console.log("%cCheck DB version to find anyupdate to do", APP_DEBUG_STYLE);
 		let sDbVersion = Meta.getDbVersion();
-		//if(oDbVersion === undefined){
-		if(sDbVersion === -1){
-			//console.log(db.get("meta").value());
-			console.log("%cDb dont' contain dbVersion field in meta table create it with value 1.0.0", APP_DEBUG_STYLE);
-			db.get('meta').push({'key':'dbVersion','value':'1.0.0'}).write();
-			sDbVersion = Meta.getDbVersion();
-			//if(oDbVersion === undefined){
-			if(sDbVersion === -1){
-				console.log("%cERROR:Could'nt set version on DB", APP_ERROR_STYLE);
-				throw new Error("!!!! IRRECOVERABLE ERROR"); 
-			}
-		} 
-
-		//// check Database version (need corresponding app version)
 		if (semverCompare(GM.info.script.version, sDbVersion) == 1 ){ // version of script is superior of version of db
 			console.log(`%cDB is in version: ${Meta.getDbVersion()} need to go to version ${GM.info.script.version}`, APP_DEBUG_STYLE);
 			//// dbUpdate();
@@ -372,9 +666,13 @@ const Facturier = {
 		unsafeWindow.Facturier.klass.push({id:'Archive',ptr:Archive});
 		unsafeWindow.Facturier.klass.push({id:'History',ptr:History});
 		unsafeWindow.Facturier.klass.push({id:'StudentHistory',ptr:StudentHistory});
+		unsafeWindow.Facturier.klass.push({id:'Ref',ptr:Ref});
 		// -- not mentionned but needed for some functions in views
 		unsafeWindow.Facturier.klass.push({id:'Dbase',ptr:Dbase});
-		console.log("%cImportants values are exported in unsafeWindow.Facturier", APP_DEBUG_STYLE);   
+		unsafeWindow.Facturier.klass.push({id:'Meta',ptr:Meta});
+		unsafeWindow.Facturier.klass.push({id:'Ref',ptr:Ref});
+		unsafeWindow.Facturier.klass.push({id:'Api',ptr:Api});
+		//console.log("%cImportants values are exported in unsafeWindow.Facturier", APP_DEBUG_STYLE);   
 		 
 		// ici toute l'idée est de verifier que le fichier d'install contient src ou dist ... s'il contient source alors, on doit utiliser en sus les ressources locales
 		// sinon on est sur la version livrée et donc on a tout déjà dans le script de base qui a été build
@@ -415,6 +713,50 @@ const Facturier = {
 			Dbase.update('1.00.0006');
 		}
 	}, 
+	
+	// patch some xhr function to use openclassroomsapi
+	
+	patchxhr: function(){
+		var open = window.XMLHttpRequest.prototype.open,
+			send = window.XMLHttpRequest.prototype.send,
+			setRequestHeader = window.XMLHttpRequest.prototype.setRequestHeader;
+
+		var openReplacement = function(method, url, async, user, password) {
+			//console.log("%cmethod %o url:%o, async:%o, user %o, password:%o",'color:mediumseagreen',method,url,async,user,password);
+			this._url = url;
+			this._requestHeaders = {};
+			this._knox = [];
+			//console.log(this);
+			return open.apply(this, arguments);
+		};
+		var sendReplacement = function(data) {
+			if(this.onreadystatechange) {
+				this._onreadystatechange = this.onreadystatechange;
+			}
+			this.onreadystatechange = onReadyStateChangeReplacement;
+			return send.apply(this, arguments);
+		};
+		var setRequestHeaderReplacement = function(header, value){
+			//console.log('url is %s',this._url);
+			if(this._url.match(/^https:\/\/api.openclassrooms.com/g)){
+				//console.log('OPENCLASSROOMS');
+				this._knox.push( {key:header, value:value} );
+			}
+			this._requestHeaders[header] = value;
+			/*console.log('%csetRequestHeader key:%c%s%c, value:%c%s',
+						'color:mediumseagreen',
+						'color:darksalmon',header,
+						'color:mediumseagreen',
+						'color:darksalmon',value);
+			*/
+			//console.log('params are %o',arguments);
+			return setRequestHeader.apply(this, arguments);
+		};
+		window.XMLHttpRequest.prototype.open = openReplacement;
+		window.XMLHttpRequest.prototype.send = sendReplacement;
+		window.XMLHttpRequest.prototype.setRequestHeader = setRequestHeaderReplacement;
+	},
+	
 	// https://dmitripavlutin.com/catch-the-xmlhttp-request-in-plain-javascript/
 	overrideDebug : function(){
 		var open = window.XMLHttpRequest.prototype.open,

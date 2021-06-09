@@ -8,6 +8,14 @@ const appmenu = {
 	title: 'Configuration du module',
 	fields:
 	{
+		userid:{
+			section: ['Application', 'paramètres'],
+			label: "Id utilisateur",
+			title: "identifiant utilisateur oc",
+			labelPos: 'left',
+			type: 'input',
+			default: 0,
+		},
 		nbHrsAfM:{
 			section: ['Statistiques', 'paramètres'],
 			label: "Nombre de minutes pour une session d'étudiant auto financé",

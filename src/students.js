@@ -42,6 +42,16 @@ path: "81-expert-en-strategie-marketing-et-communication"
 	 * 
 	 */
 	
+	/*
+	 * Table
+	 * 	id(string) id of student as known at oc as Number, is a 64-bit floating point IEEE 754  in js so limited to 2^53 we could use them as key
+	 * 	fullname (string)
+	 *  path (string) is the slug-path of OC
+	 *  created date format YYYY-MM-DDTHH:mm:ssZ[Z]
+	 * 	who_id (string) id of student je ne me souviens pas à quoi ça sert vieux champs qui a disparu
+	 *  funding (string)
+	 * */
+	
 	static tbl_name = 'students'; // private field prefixed with # are not currently supported 
 	/*
 	 * 
@@ -53,11 +63,46 @@ path: "81-expert-en-strategie-marketing-et-communication"
     static add = function(sStudentId,sStudentFullName="noname",sStudentPath="nopath",sStudentFunding="unknown",created){
         let db=App.Cfg.dbase; 
         var now = dayjs().format('YYYY-MM-DDTHH:mm:ssZ[Z]');
-        let me = {id:sStudentId,fullname:sStudentFullName,path:sStudentPath,funding:sStudentFunding,created:now}
-        db.get(Student.tbl_name)
-        .push(JSON.parse(JSON.stringify(me)))
-        .write();
+        let me = {id:sStudentId,fullname:sStudentFullName,path:sStudentPath,funding:sStudentFunding,created:now};
+		Student._save(me);
     }
+    
+    static _checkObject = function(oStudent){
+		console.log("%cChecking object student:%o ", APP_DEBUG_STYLE, oStudent);
+		assert(
+			typeof oStudent.id === 'string',
+			'Student object id need to be a string.',
+			TypeError
+			);
+		assert(
+			typeof oStudent.fullname === 'string',
+			'Student object fullname need to be a number.',
+			TypeError
+			);
+		assert(
+			typeof oStudent.path === 'string',
+			'Student object path need to be a string.',
+			TypeError
+			);
+		assert(
+			typeof oStudent.funding === 'string',
+			'Student object funding need to be a string.',
+			TypeError
+			);
+		assert(
+			typeof oStudent.created === 'string',
+			'Student object created need to be a string.',
+			TypeError
+			);
+	}
+    
+	// save student in db
+	static _save = function(oStudent){
+		Student._checkObject(oStudent);
+		console.log("%cSaving student %o to DB", APP_DEBUG_STYLE, oStudent);
+		let db=App.Cfg.dbase;
+		db.get(Student.tbl_name).push(JSON.parse(JSON.stringify(oStudent))).write();
+	}
     
 	static exists = function(needle, dtFrom=null){
 		let _r = Student.findById(needle, dtFrom);
@@ -81,17 +126,28 @@ path: "81-expert-en-strategie-marketing-et-communication"
 	 * 
 	 */
     static findById = function(sNeedle, dtFrom=null){
+		//this option is used to desactivate cache so debugging is easier
+		let bUseCache = true;
+		
+		// provisoire avant conversion de base
+		if (typeof sNeedle === 'number'){
+			sNeedle = sNeedle.toString(10)
+		}
+		
 		assert(
 			typeof sNeedle === 'string',
 			'You must provide a string.',
 			TypeError
 			);
-		if (typeof dtFrom === 'string'){ dtFrom = dayjs(dtFrom)};
+		if (typeof dtFrom === 'string'){ dtFrom = dayjs(dtFrom);}
 		// because of caching i must use string so convert date to iso before calling function
 		if (dtFrom == null){
-			return Student.m_findById(sNeedle, dtFrom); // NOTE STT je me demande si ça ne crée pas de fausse entrée en cache
+			if (bUseCache === false){return Student._findById(sNeedle, dtFrom);}
+			return Student.m_findById(sNeedle, "null"); // stringify for safety 
 			}
-		return Student.m_findById(sNeedle, dtFrom.format('YYYY-MM-DDTHH:mm:ssZZ')); // use cached version of function
+		//return Student.m_findById(sNeedle, dtFrom.format('YYYY-MM-DDTHH:mm:ssZZ')); // use cached version of function
+		if (bUseCache === false){return Student._findById(sNeedle, dtFrom.toISOString());}
+		return Student.m_findById(sNeedle, dtFrom.toISOString()); // use cached version of function prefered string method
 	} 
 	/*
 	 * 
@@ -101,13 +157,14 @@ path: "81-expert-en-strategie-marketing-et-communication"
 	 */
 	static _findById = function(sNeedle, dtFrom=null){
 		let db=App.Cfg.dbase; 
-		if (typeof dtFrom === 'string'){dtFrom = dayjs(dtFrom)}
-		console.log(`%cSearching student with id:${sNeedle} in db`,APP_DEBUG_STYLE);
+		if (typeof dtFrom === 'string'){dtFrom = dayjs(dtFrom);}
+		console.log(`%cSearching student with id:(${typeof sNeedle})${sNeedle} in db`,APP_DEBUG_STYLE);
 		var _r = db.get(Student.tbl_name).find({id: sNeedle}).value();
+		console.log("student %o is found", _r);
 		 if (_r === undefined){
 			 return undefined;
 		 } else {
-			 if(dtFrom !== null){
+			if(dtFrom !== null){
 				 /* avoid manipulating ref to object .... doing so manipulate memory data which conduct to desynchronization between dbase and data */
 				var _rClone = {..._r}; // spread syntax cloning https://stackoverflow.com/questions/122102/what-is-the-most-efficient-way-to-deep-clone-an-object-in-javascript
 				 // check in history any change
@@ -117,10 +174,11 @@ path: "81-expert-en-strategie-marketing-et-communication"
 				}
 				var _rPath = StudentHistory.find(sNeedle, StudentHistory.getType('PATH'), dtFrom);
 				if (_rPath !== undefined){
-					_rClone.path = _rPath.value
+					_rClone.path = _rPath.value;
 				}
 				return _rClone;
 			}
+			console.log("student final %o is found", _r);
 			return _r;
 		 }
 	}
@@ -131,8 +189,9 @@ path: "81-expert-en-strategie-marketing-et-communication"
 		Student._findById,
 		{ 	maxAge: 600000,
 			isSerialized: true,
-			//onCacheAdd: function(c,o,m){console.log("%cAdd data to cache",APP_DEBUG_STYLE);/*console.dir(c.keys);console.dir(o);console.dir(m)*/;},
-			onCacheHit: function(){console.log("%cGet data from cache", APP_DEBUG_STYLE);}
+			//
+			onCacheAdd: function(c,o,m){console.log("%cAdd data to cache c.keys: %o, o:%o, m:%o",APP_DEBUG_STYLE,c.keys,o,m);},
+			onCacheHit: function(){console.log("%cGet Student data from cache", APP_DEBUG_STYLE);}
 		});
     /*
      * Return funding mode of student
@@ -156,7 +215,7 @@ path: "81-expert-en-strategie-marketing-et-communication"
 		//if (_r == undefined){
 		if (_r === undefined){
 			 //throw Error(`IRRECOVERABLE ERROR STUDENT WITH ID ${studentId} NOT IN DB:`);
-			 console.log(`%cStudent ${studentId} is not in db, fetchin data:'funded mode' from webpage`,APP_DEBUG_STYLE);
+			 console.log(`%cStudent ${studentId} is not in db, fetching data:'funded mode' from webpage`,APP_DEBUG_STYLE);
 			 return Student.getFundingFomDashboard(studentId).toLowerCase();
 		 }else {
 			 return _r.funding.toLowerCase();
@@ -239,11 +298,11 @@ path: "81-expert-en-strategie-marketing-et-communication"
 			return;
 		}
 		if(dtTo == null){
-			db.get(Student.tbl_name).remove( function(o){return dayjs(o.created,'YYYY-MM-DDTHH:mm:ssZ[Z]').isBefore(dtTo), 'day'} ).write();
+			db.get(Student.tbl_name).remove( function(o){return dayjs(o.created,'YYYY-MM-DDTHH:mm:ssZ[Z]').isBefore(dtTo, 'day');} ).write();
 			return;
 		}
 		if(dtFrom == null){
-			db.get(Student.tbl_name).remove( function(o){return dayjs(o.created,'YYYY-MM-DDTHH:mm:ssZ[Z]').isAfter(dtFrom, 'day')} ).write();
+			db.get(Student.tbl_name).remove( function(o){return dayjs(o.created,'YYYY-MM-DDTHH:mm:ssZ[Z]').isAfter(dtFrom, 'day');} ).write();
 			return;
 		}
 		//console.log(`%cWanna suppress Students from DB before/between ${dtFrom.format('DD/MM/YYYY')} and/or until ${dtTo.format('DD/MM/YYYY')}`, APP_DEBUG_STYLE);
@@ -309,9 +368,11 @@ path: "81-expert-en-strategie-marketing-et-communication"
 		
 		// update sessions list
 		if (dtFrom.isSameOrAfter(Core.getOldModeDate())){
-			var oListToUpdate = db.get("sessions").filter(v => v.who_id === sId && v => dayjs(v.when).isSameOrAfter(dtFrom,'day'));
+			//var oListToUpdate = db.get("sessions").filter(v => v.who_id === sId && v => dayjs(v.when).isSameOrAfter(dtFrom,'day'));
+			var oListToUpdate = db.get("sessions").filter( function(v){ return v.who_id === sId && dayjs(v.when).isSameOrAfter(dtFrom,'day')});
 		} else {
-			var oListToUpdate = db.get("sessions").filter(v => v.who_id === sId && v => dayjs(v.when).isSameOrAfter(Core.getOldModeDate(),'day'));
+			//var oListToUpdate = db.get("sessions").filter(v => v.who_id === sId && v => dayjs(v.when).isSameOrAfter(Core.getOldModeDate(),'day'));
+			var oListToUpdate = db.get("sessions").filter( function(v){v.who_id === sId && dayjs(v.when).isSameOrAfter(Core.getOldModeDate(),'day')});
 		}
 		for(var i = oListToUpdate.value().length; i-=1; ){
 			console.log(`There is ${i} elements left to update`,APP_DEBUG_STYLE);
@@ -321,36 +382,58 @@ path: "81-expert-en-strategie-marketing-et-communication"
 	/**
 	 * Update the list of student
 	 * 
+	 * changed since 202006
+	 * 	url is https://openclassrooms.com/fr/mentorship/dashboard/students
+	 * 
 	 */
 	static getAll = async (e,ctx) => { // mode JS2020
         var bForceUpdate = false; //TODO temporary
         let db=App.Cfg.dbase; 
         var sPath ="table.crud-list tbody";
-        var aStudents = document.querySelectorAll(sPath)[1]; //  get list of Attributed Students
+        // get full list of student
+        const oDom = await _fetch(`https://openclassrooms.com/fr/mentorship/dashboard/students`, 'script[id="mentorshipDashboardConfiguration"]');
+        
+        //console.log(JSON.parse(doc.querySelector('script[id="mentorshipDashboardConfiguration"]').innerText.trim()));
+        // renvoie un objet json
+        /*
+		mentorStudents: Array(30)
+			0:
+				followedLearningPathId: 150
+				followedLearningPathSlug: "chef-de-projet-digital"
+				followedLearningPathTitle: "Chef de projet digital"
+				followedProjectId: 519
+				followedProjectSlug: "participez-au-sprint-de-developpement-dun-site-e-commerce"
+				followedProjectTitle: "Participez au sprint de développement d'un site e-commerce"
+				studentDisplayableName: "Alex Bourgoin"
+				studentId: 6513434
+        */ 
+         
+        var _r = JSON.parse(oDom.innerText.trim())
+        //var aStudents = oDom.querySelectorAll('tr'); //  get list of Attributed Students
+        var aStudents = _r.mentorStudents;
         const now = dayjs().format('YYYY-MM-DDTHH:mm:ssZ[Z]'); // old format
         //const now = dayjs().format('YYYY-MM-DDTHH:mm:ssZZ'); //ISO A FAIRE POUR UN PROCHAINE MAJ BDD penser à verifier deleteById mais j'ai supprimé cette possibilité
         // POUR LE BIEN JE DEVRAIS AUSSI CHANGER le champs created, ou ajouter un champs updated
-        
-        // essai d'estimmer le temps nécessaire à la mise à jour des différentes fiches étudian
+        //var _r = aStudents.shift(); // remove first element (line header)
+        // essai d'estimmer le temps nécessaire à la mise à jour des différentes fiches étudiant
 		var t0 = performance.now();
-		var sFirstStudentId = getKey(aStudents.children[0].children[0], -2);
-		await Student.getFundingFomDashboard(sFirstStudentId)
-		console.log(`%cEstimated time for updating : ${(performance.now()-t0)* aStudents.children.length} ms`, APP_DEBUG_STYLE);
+		//var sFirstStudentId = getKey(aStudents[0].children[0].querySelector('a').href, -2); // first line, first column, a.href
+		await Student.getFundingFomDashboard(aStudents[0].studentId)
+		console.log(`%cEstimated time for updating : ${(performance.now()-t0)* aStudents.length} ms`, APP_DEBUG_STYLE);
 
         // --
         Swal.fire({
             position: 'top-end',
             icon: 'info',
             toast: true,
-            title: `mise à jour de la base de donnée des étudiants...\ncela peut prendre du temps ~ ${(performance.now()-t0)* aStudents.children.length/1000} s`,
+            title: `mise à jour de la base de donnée des étudiants...\ncela peut prendre du temps ~ ${(performance.now()-t0)* aStudents.length/1000} s`,
             showConfirmButton: false,
             timer: 1000
         })
         
         // ce timer est nécessaire uniquement si j'utilise Swal et donc toastok
         await sleep(1000);
-        
-        for (const el of aStudents.children) {
+        for (const oStudent of aStudents) {
             //console.log(el.children[0].innerText);
             //console.log(`Processing...${el.children[0].innerText}`);
             /*
@@ -364,21 +447,29 @@ path: "81-expert-en-strategie-marketing-et-communication"
                     }).showToast();
                 }, 300);
             */
-            toastOk(`Collecte les données de l'étudiant : ${el.children[0].innerText}`);
-            var sStudentId = getKey(el.children[0],-2);
-            var sStudentFullName = el.children[0].innerText;
-            var sStudentPath = "non défini";
-            if(el.children[1].firstElementChild){ // sometimes there is no info of path for a students in OC table
-                sStudentPath = el.children[1].firstElementChild.href.split("/").pop();
-            }
+            
+            var sStudentId = oStudent.studentId.toString(10); // sinon c'est un entier et toutes les insertions en bdd plantent
+            var sStudentFullName = oStudent.studentDisplayableName;
+            toastOk(`Collecte les données de l'étudiant : ${sStudentFullName}`);
+            //var sStudentPath = oStudent.followedLearningPathTitle;
+            var sStudentPath = oStudent.followedProjectSlug;
+            if (sStudentPath.length == 0){sStudentPath = "non défini";}
             let sStudentFunding = await Student.getFundingFomDashboard(sStudentId);
             //var res = db.get(Student.tbl_name).find({id: sStudentId}).value();
             //var _r = db.get(Student.tbl_name).find({id: sStudentId}).value();
+            
+			assert(
+				typeof sStudentId === 'string',
+				'sStudentId need to be a string.',
+				TypeError
+			);
+			
             var _r = Student.m_findById(sStudentId, null);
             
             if (_r === undefined ){
 				console.log(`%cStudent ${sStudentFullName}(id:${sStudentId}) not present in database will create it`, APP_DEBUG_STYLE);
-				return Student.add(sStudentId, sStudentFullName, sStudentPath, sStudentFunding, now); // addStudent
+				Student.add(sStudentId, sStudentFullName, sStudentPath, sStudentFunding, now); // addStudent
+				continue; // break iterator , so it goes to next iteration
 			}
 			/* i have found a student with this id check if it was updated*/
 
