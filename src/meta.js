@@ -45,7 +45,7 @@ var fMeta = function(){
 	
 	// Because update all student is a long process
 	
-	const setStudenListUpd = function(sValue){
+	const setStudentListUpd = function(sValue){
 		assert(
 			typeof sValue === 'string',
 			'You must provide a string.',
@@ -54,7 +54,7 @@ var fMeta = function(){
 		return App.Cfg.dbase.get(Meta.tbl_name).find({'key':'studentLstUpd'}).assign({value:sValue}).write().value;
 	}
 	
-	const getStudenListUpd = function(){
+	const getStudentListUpd = function(){
 		let _r = App.Cfg.dbase.get(Meta.tbl_name).find({'key':'studentLstUpd'}).value()
 		return typeof _r === "undefined" ? -1 : _r.value;
 	}
@@ -68,7 +68,7 @@ var fMeta = function(){
 			App.Cfg.dbase.get('meta').push({'key':'dbVersion','value':'1.0.0'})
 			.write();
 		}
-		if( getStudenListUpd() == -1){
+		if( getStudentListUpd() == -1){
 			App.Cfg.dbase.get('meta').push({'key':'studentLstUpd','value':dayjs('19701006').toISOString()})
 			.write();
 		}
@@ -80,8 +80,8 @@ var fMeta = function(){
 		getDbVersion,
 		setDbVersion,
 		delDbVersion,
-		setStudenListUpd,
-		getStudenListUpd,
+		setStudentListUpd,
+		getStudentListUpd,
 		tbl_name: TBL_NAME,
  	});
   

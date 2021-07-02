@@ -19,7 +19,7 @@ import {sleep} from './utils.js'
         sHtml+='form label {padding: 0.5em 0.5em 0.5em 0;}';
         sHtml+='form input {padding: 0.7em;margin-bottom: 0.5rem;}';
         sHtml+='form input:focus {outline: 3px solid gold;}';
-        sHtml+='@media (min-width: 400px) {form {grid-template-columns: 200px 1fr;grid-gap: 16px;}label {text-align: right;grid-column: 1 / 2;}input,button {grid-column: 2 / 3;}}';
+        sHtml+='@media (min-width: 400px) {form {grid-template-columns: 200px 1fr;grid-gap: 16px;}form label {text-align: right;grid-column: 1 / 2;}form input, form button {grid-column: 2 / 3;}}';
         sHtml+="</style>";
         sHtml+='<form class="form1" action="">';
         sHtml+='<label for="dtFrom" class="date">Date de début</label>';

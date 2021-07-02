@@ -54,7 +54,7 @@ var fStudentHistory = function(){
     };
 
     const add = function(sStudentId, iType, data, created=null){
-		
+		let bDebug = false;
 		// provisoire avant conversion de base student id pouvant etre un number ou une chaine
 		if (typeof sStudentId === 'number'){
 			sStudentId = sStudentId.toString(10)
@@ -67,7 +67,7 @@ var fStudentHistory = function(){
 			);
         const db=App.Cfg.dbase; 
         //if (typeof created === 'string'){ dtFrom = dayjs(created).format('YYYY-MM-DDTHH:mm:ssZZ')}
-        if (typeof created === 'string'){ created = dayjs(created);}
+        if (typeof created === 'string'){ created = dayjs(created); }
         if(created === null){
 			//created = dayjs().format('YYYY-MM-DDTHH:mm:ssZZ'); // FORMAT ISO 8601 for testing d_dayjs(d_dayjs().format('YYYY-MM-DDTHH:mm:ssZZ')) create date at today
 			// https://www.ionos.fr/digitalguide/sites-internet/developpement-web/iso-8601/
@@ -79,7 +79,7 @@ var fStudentHistory = function(){
 			TypeError
 			);
 		let me = {id:sStudentId,type: 0 | iType,value:data,date:created.valueOf(), humanDate: created.format('YYYY-MM-DDTHH:mm:ssZZ')}
-		console.log(`%cAdd in student history at date ${dayjs(me.date).format("YYYY-MM-DDTHH:mm:ssZZ")} data ${data} with type:${iType} cf const of object`,APP_DEBUG_STYLE);
+		if(bDebug===true)console.log(`%cAdd in student history at date ${dayjs(me.date).format("YYYY-MM-DDTHH:mm:ssZZ")} data ${data} with type:${iType} cf const of object`,APP_DEBUG_STYLE);
 		return db.get(TBL_NAME)
 		.push(JSON.parse(JSON.stringify(me)))
 		.write();
@@ -111,13 +111,15 @@ var fStudentHistory = function(){
     /* get Data for a specified type before a specified date */
     
     const find = function(sStudentId, iType, dtFrom=null){
+		const bDebug = false;
 		const db=App.Cfg.dbase;
 		//if (typeof dtFrom === 'string'){ dtFrom = dayjs(dtFrom);}
 		if (typeof dtFrom === 'string'){ dtFrom = dayjs(dtFrom);}
 		 if(dtFrom === null){
 			 dtFrom = dayjs();
 		}
-		console.log(`%cSearching in student history at date ${dtFrom.format("DD/MM/YYYY")} any data with type:${iType} cf const of object`,APP_DEBUG_STYLE);
+		if(bDebug===true)console.log('%cSearching in student history at date %o ', APP_DEBUG_STYLE, dtFrom);
+		if(bDebug===true)console.log(`%cSearching in student history at date ${dtFrom.format("DD/MM/YYYY")} any data with type:${iType} cf const of object`,APP_DEBUG_STYLE);
 		var _iBaseDay = +dtFrom.valueOf();
 
 /* si c'est négatif la date examinée (_iBaseDay) est postérieure à la date de l'enregistrement
@@ -139,7 +141,7 @@ var fStudentHistory = function(){
 		var _r = db.get(TBL_NAME).filter(o =>  o.id === sStudentId && o.type & iType).map( i =>  i.date - _iBaseDay ).filter( i => i>= 0).value();
 		//console.log(_r);
 		if (_r.length == 0){
-			console.log(`%cThere is no data in student history at date ${dtFrom.format("DD/MM/YYYY")} with type:${iType} cf const of object`, APP_DEBUG_STYLE);
+			if(bDebug===true) console.log(`%cThere is no data in student history at date ${dtFrom.format("DD/MM/YYYY")} with type:${iType} cf const of object`, APP_DEBUG_STYLE);
 			return undefined;
 		}
 		// tester la valeur 0 ?

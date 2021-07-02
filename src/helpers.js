@@ -1,33 +1,104 @@
 /**
  * 
  **/
+ 
+// vendor one
+
+//// https://github.com/ryangjchandler/spruce/blob/2.x/src/utils.js
+
+export const isNullOrUndefined = value => {
+    return value === null || value === undefined
+}
+
+//// NOTE STT 
+//// ATTENTION verifie que le prototype de l'objet est bien un objet neutre
+//// ça plante sur une instance d'objet type dayjs => utiliser instanceof
+export const isObject = _ => {
+    return Object.getPrototypeOf(_) === Object.prototype
+}
+
+
+export const isArray = _ => Array.isArray(_) 
+
+// Mix mine or other from stack
+
+/*
+ * check if function contain nothing 
+ * don't work with () => functions
+ * visiblement en cas concret ça ne fonctionne pas
+ * le nombre de caractere de la fonction vide en tout cas sous chromium n'est pas le meme
+ * la fonction semble passée sur plusieurs lignes 
+ */
+ 
+export const isEmptyFunction = _ => _.toString().trim().length <= 'function(){}'.length;
 
 /*
  * waitFor(() => window.waitForMe, () => console.log('got you'))
 */
 
+/*
+ * {function}
+ * {function}
+ * {int}
+ * {int}
+ */
+ 
+// nouvelle fonction sur la base de
+// https://www.bayanbennett.com/posts/retrying-and-exponential-backoff-with-promises/
+// https://tusharsharma.dev/posts/retry-design-pattern-with-js-promises
+// voir également la librairie : https://caolan.github.io/async/v3/docs.html#retry
+// https://stackoverflow.com/questions/53982040/retrying-a-failed-async-promise-function 
+//  --> on y fait mention de axios.retry a voir également
+
 export const waitForRetry = async function(
-	condition=true,
-	callback=()=>{console.log("waitForEnd")},
+	condition=()=>true,
+	callback=()=>{console.log("waitForRetry...default fn")},
 	ms=1000,
-	redo=0
+	redo = 1
 	){
-		console.log('waitForRetry typeof condition is',typeof condition,'condition is', condition);
-		retry(()=>{waitFor(condition, callback, ms)}, redo);
+	var bDebug = true;
+	if(bDebug) console.log('%cwaitForRetry() typeof condition:%o typeof callback:%o ms:%i redo:%i','color:darksalmon', typeof condition, typeof callback, ms, redo);
+	try {
+		await retryFn(
+			0,
+			null,
+			async()=>{await waitFor(condition, callback, ms)},
+			redo);
+	}catch(e){
+		console.log("%cwaitForRetry() Error : %o",'color:darksalmon',e);
 	}
+	if(bDebug) console.log('%cwaitForRetry() Waiting conditions are met','color:darksalmon');
+};
+
+const delay = retryCount =>
+	new Promise(resolve => setTimeout(resolve, 10 ** retryCount));
+	
+const retryFn = async (retryCount = 0, lastError = null, fn =()=>true, retryLimit ) => {
+	var bDebug = true;
+	if(bDebug) console.log('%retryFn() Start','color:darksalmon');
+  if (retryCount > retryLimit) throw new Error(lastError);
+	try {
+		return fn();
+	} catch (e) {
+		await delay(retryCount);
+		return retryFn(retryCount + 1, e, fn, retryLimit);
+	}
+};
+
 	
 export const waitFor = async function(
-	condition=true,
-	callback=()=>{console.log("waitForEnd")},
+	condition=()=>true,
+	callback=()=>{console.log("waitFor...default fn")},
 	ms=1000
 	){
-		console.log('waitFor typeof condition is',typeof condition,'condition is ',condition);
+		var bDebug = true;
+		if(bDebug) console.log('%cwaitFor() typeof condition:%o typeof callback:%o ms:%i','color:darksalmon', typeof condition, typeof callback, ms);
 		await until(condition, ms); // if debugging could say instead await until(condition, ms, 1e1, true);
-		console.log('Waiting conditions are met');
+		if(bDebug) console.log('%cwaitFor() Waiting conditions are met','color:darksalmon');
 		callback();
 	}
 export const wait= async function(ms){
-	console.log(`will sleep ${ms}ms`);
+	console.log(`%cwait() will wait ${ms}ms`, 'color:darksalmon');
 	sleep(ms);
 }
 
@@ -69,40 +140,59 @@ export var debounce = function (fn) {
 
 
 // ## Private functions
-
+// NOTE STT BUGGEE
 // https://lihautan.com/retry-async-function-with-callback-promise/
 // NOTESTT be carreful because catch are not send to console, sometimes we ignore the why system crash
 const retry = async function(fn, n) {
-  for (let i = 0; i < n; i++) {
-    try {
-      return await fn();
-    } catch(e) {/*console.log('error',e)// for debugging*/}
-  }
-
-  throw new Error(`Failed retrying ${n} times`);
+	var bDebug = true;
+	if(bDebug) console.log('%cretry() Start','color:darksalmon');
+	//if(bDebug) console.log('%cretry() type of fn:%o number of n:%o', 'color:darksalmon', typeof fn, n);
+	if(bDebug) console.log('%cretry() retry %o %i times', 'color:darksalmon', typeof fn, n);
+	for (let i = 0; i < n; i++) {
+		if(bDebug) console.log('%cretry() iteration:%i', 'color:darksalmon', i);
+		try {
+			return await fn();
+		} catch(e) {
+			/*console.log('error',e)// for debugging*/
+		}
+	}
+	if(bDebug) console.log('%cRetry End','color:darksalmon');
+	throw new Error(`Failed retrying ${n} times`);
 }
 
 /*
- * iMax   => max iteration of testing trueness of tes
+ * iMax   => max iteration of testing trueness of test
  * bError => when iteration are reached does we need to throw error
  */
 
 const until = async function (fn, ms=0, iMax=1000, bError=false) {
-	console.log('Waiting Start');
+	var bDebug = true;
+	if(bDebug) console.log('%cuntil() type of fn:%o ms:%i iMax:%i, bError:%o', 'color:darksalmon', typeof fn, ms, iMax, bError);
+	if(bDebug) console.log('%cuntil() Start', 'color:darksalmon');
 	var _iMax = iMax;
     while (iMax && !fn()) {
-		console.log(`waiting condition is:${fn}, result of condition is ${fn()}, iteration is:${_iMax-iMax}, waiting time is:${ms}`);
-		//console.log('Waiting conditions are NOT met');
+		if(bDebug) console.log(`%cuntil() waiting condition is NOT met, condition is:${fn}, result of condition is ${fn()}, iteration is:${_iMax-iMax}, waiting time is:${ms}`, 'color:darksalmon');
     	await sleep(ms);
-		iMax--;
+		iMax-=ms;
     }
+    
+	if(bDebug) console.log('%cuntil() End at iteration:%i', 'color:darksalmon', _iMax-iMax);
+    
 	if(bError && iMax == 0){
 		throw new Error(`Failed retrying ${_iMax} times`);
 	}
-    console.log('Waiting End');
+	
+	if(iMax == 0){
+		return false
+	}
+	
+	return true;
+	
+
 }
 
 const sleep = async function (ms) {
+	console.log('%csleep() will sleep %i ms ', 'color:darksalmon', ms);
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
 

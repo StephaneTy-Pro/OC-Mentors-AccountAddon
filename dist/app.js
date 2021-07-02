@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         Facturier
 // @namespace    http://tampermonkey.net/
-// @version      1.10.0005
+// @version      1.10.0006
 // @description  Un addon pour vous aider dans votre facturation
 // @author       Stéphane TORCHY
 // @updateURL    https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/dist/app.min.js
 // @downloadURL  https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/dist/app.min.js
+// @icon         https://mirrors.creativecommons.org/presskit/icons/heart.red.png
 // multiple usage
 // @match        https://openclassrooms.com/fr/mentorship/dashboard/mentorship-sessions-history*
 // @match        https://openclassrooms.com/fr/mentorship/dashboard/sessions
@@ -18,6 +19,7 @@
 // @grant        GM_addStyle
 // @grant        GM_getResourceText
 // @grant        GM_registerMenuCommand
+// @grant        GM_unregisterMenuCommand
 // @grant        GM_xmlhttpRequest
 // @grant        GM.xmlHttpRequest
 // @grant        GM_notification
@@ -38,42 +40,54 @@
 // require      https://openuserjs.org/src/libs/sizzle/GM_config.js (cassé ce jour 28/08/2020);
 // @require      https://raw.githubusercontent.com/sizzlemctwizzle/GM_config/master/gm_config.js
 
-// sweetalert 2
+//// sweetalert 2
 // require      https://cdn.jsdelivr.net/npm/sweetalert2@9/dist/sweetalert2.all.min.js
 // @require      https://cdn.jsdelivr.net/npm/sweetalert2@10
 
-// draggabilly
+//// draggabilly
 // @require      https://cdnjs.cloudflare.com/ajax/libs/draggabilly/2.2.0/draggabilly.pkgd.min.js
 
-// toastify
+//// toastify 
 // @require     https://cdn.jsdelivr.net/npm/toastify-js@1.8.0/src/toastify.min.js
 // @resource    toastifycss https://raw.githubusercontent.com/apvarun/toastify-js/master/src/toastify.css
 
 // https://github.com/uzairfarooq/arrive --> included manually
 // require     https://raw.githubusercontent.com/uzairfarooq/arrive/master/minified/arrive.min.js
 
-// simple-datatables
+////simple-datatables
+//// https://github.com/fiduswriter/Simple-DataTables
 // @require     https://cdn.jsdelivr.net/npm/simple-datatables@latest
 // @resource    simpledatatablecss https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css
 
-// require https://raw.githubusercontent.com/anywhichway/nano-memoize/master/dist/nano-memoize.min.js
-// @require https://cdn.jsdelivr.net/npm/moize@5.4.7/dist/moize.min.js
 
-// FETCH INJECT --> included manually
+//// MEMOIZATION
+//// TODO : check best function
+// require https://raw.githubusercontent.com/anywhichway/nano-memoize/master/dist/nano-memoize.min.js
+// https://github.com/planttheidea/moize#usage
+// @require https://cdn.jsdelivr.net/npm/moize@5.4.7/dist/moize.min.js
+// require https://cdn.jsdelivr.net/npm/moize@6.0.2/dist/moize.min.js -> probleme 20210701
+// require https://cdn.jsdelivr.net/npm/moize@6.0.3/dist/moize.min.js -> probleme 20210701
+// USAGE OF https://caolan.github.io/async/v3/docs.html
+// FONCTIONNE PAS require https://cdn.jsdelivr.net/npm/async@3.2.0/memoize.min.js probleme export
+// @require https://cdn.jsdelivr.net/npm/async@3.2.0/dist/async.min.js
+// TOTEST https://github.com/sindresorhus/p-memoize
+// Ne fonctionne pasrequire https://cdn.skypack.dev/p-memoize
+
+//// FETCH INJECT --> included manually
 // require https://cdn.jsdelivr.net/npm/fetch-inject
 
-// PARSER MKDOWN
+//// PARSER MKDOWN
 // @require 	 https://cdn.jsdelivr.net/npm/showdown@1.9.1/dist/showdown.min.js
 
-// PDF https://pdf-lib.js.org/docs/api/
+//// PDF https://pdf-lib.js.org/docs/api/
 // @require      https://unpkg.com/pdf-lib@1.9.0/dist/pdf-lib.min.js
 // @require      https://unpkg.com/downloadjs@1.4.7/download.js
 
-// HTMX https://htmx.org
-// @require https://unpkg.com/htmx.org@1.1.0/dist/htmx.min.js
+//// HTMX https://htmx.org --> included dynamically
+// require https://unpkg.com/htmx.org@1.1.0/dist/htmx.min.js
 
-// ALPINE JS
-// @require https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.js
+//// ALPINE JS --> included dynamically
+// require https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.js
 
 
 // ProgressBar 
@@ -90,6 +104,11 @@
 // https://pvdlg.github.io/uprogress/js-api/#UProgress+start
 // https://ricostacruz.com/nprogress
 
+
+// @require https://unpkg.com/nprogress@0.2.0/nprogress.js
+// @resource nprogress https://unpkg.com/nprogress@0.2.0/nprogress.css
+
+
 // semble cassé
 // https://github.com/webosorg/Process
 // https://unpkg.com/@webos/process@0.2.0/dist/process.js
@@ -97,9 +116,9 @@
 // bof ... je ne parviens pas à faire fonctionner l'exemple
 // https://cdn.jsdelivr.net/npm/worker-function@2.0.1/WorkerFunction.min.js
 // Threading 
-// @require  https://raw.githubusercontent.com/gkjohnson/threading-js/master/umd/Thread.js
-// @require   https://raw.githubusercontent.com/gkjohnson/threading-js/master/umd/ThreadPool.js
-// @require   https://raw.githubusercontent.com/gkjohnson/threading-js/master/umd/ThreadQueue.js
+// require  https://raw.githubusercontent.com/gkjohnson/threading-js/master/umd/Thread.js
+// require   https://raw.githubusercontent.com/gkjohnson/threading-js/master/umd/ThreadPool.js
+// require   https://raw.githubusercontent.com/gkjohnson/threading-js/master/umd/ThreadQueue.js
 // semble cassé
 // https://cdn.jsdelivr.net/npm/threads@1.6.3/dist/index.min.js
 // https://unpkg.com/paralleljs@1.0/lib/parallel.js
@@ -782,6 +801,11 @@
   var TYPE_DEFENSE = 1;
   var TYPE_COACHING = 2;
   var TYPE_MENTORAT = 0;
+  var OC_API_SESSION_STATUS_0 = "completed";
+  var OC_API_SESSION_STATUS_1 = "canceled";
+  var OC_API_SESSION_STATUS_2 = "late canceled";
+  var OC_API_SESSION_STATUS_3 = "marked student as absent";
+  var OC_DASHBOARDCSSMAINDATASELECTOR = "table";
 
   // src/utils.js
   var domReady = function() {
@@ -793,7 +817,7 @@
       }
     });
   };
-  var _fetch = async function(sUrl = "", sPath2 = "", bAll2 = false) {
+  var _fetch = async function(sUrl = "", sPath = "", bAll = false) {
     console.info(`%cfetch() waiting return from : ${sUrl}`, APP_DEBUG_STYLE);
     const response = await GMC.XHR({
       method: "GET",
@@ -815,10 +839,10 @@
       throw new Error("Must Respond to Cloudflare Captcha or waiting....");
     }
     var oDom = {};
-    if (bAll2 === true) {
-      oDom = doc.querySelectorAll(sPath2);
+    if (bAll === true) {
+      oDom = doc.querySelectorAll(sPath);
     } else {
-      oDom = doc.querySelector(sPath2);
+      oDom = doc.querySelector(sPath);
     }
     return oDom;
   };
@@ -838,15 +862,6 @@
       console.error(`%cError in extractDate${e.stack || e}`, APP_ERROR_STYLE);
     }
     return `${_t[2]}-${id}-${_t[0]}T${_t[4]}`;
-  };
-  var convertRowToDate = function(oDom, index = 0) {
-    if (index === -1) {
-      index = oDom.children.length - 1;
-    }
-    var sRowDate = oDom.children[index].children[0].innerText;
-    let f_sRowDate = extractDate(sRowDate);
-    var dtRowDate = dayjs(f_sRowDate);
-    return dtRowDate;
   };
   var sleep = function(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -957,6 +972,8 @@
   };
 
   // src/helpers.js
+  var isArray = (_2) => Array.isArray(_2);
+  var isEmptyFunction = (_2) => _2.toString().trim().length <= "function(){}".length;
   var debounce = function(fn) {
     var timeout;
     return function() {
@@ -997,7 +1014,7 @@
     sHtml += "form label {padding: 0.5em 0.5em 0.5em 0;}";
     sHtml += "form input {padding: 0.7em;margin-bottom: 0.5rem;}";
     sHtml += "form input:focus {outline: 3px solid gold;}";
-    sHtml += "@media (min-width: 400px) {form {grid-template-columns: 200px 1fr;grid-gap: 16px;}label {text-align: right;grid-column: 1 / 2;}input,button {grid-column: 2 / 3;}}";
+    sHtml += "@media (min-width: 400px) {form {grid-template-columns: 200px 1fr;grid-gap: 16px;}form label {text-align: right;grid-column: 1 / 2;}form input, form button {grid-column: 2 / 3;}}";
     sHtml += "</style>";
     sHtml += '<form class="form1" action="">';
     sHtml += '<label for="dtFrom" class="date">Date de d\xE9but</label>';
@@ -1169,6 +1186,7 @@
       return add(sStudentId, TYPE_PATH, data, created2);
     };
     const add = function(sStudentId, iType, data, created2 = null) {
+      let bDebug2 = false;
       if (typeof sStudentId === "number") {
         sStudentId = sStudentId.toString(10);
       }
@@ -1182,7 +1200,8 @@
       }
       assert(created2 instanceof dayjs, "created date must be a string, a dayjs instance or null.", TypeError);
       let me = { id: sStudentId, type: 0 | iType, value: data, date: created2.valueOf(), humanDate: created2.format("YYYY-MM-DDTHH:mm:ssZZ") };
-      console.log(`%cAdd in student history at date ${dayjs(me.date).format("YYYY-MM-DDTHH:mm:ssZZ")} data ${data} with type:${iType} cf const of object`, APP_DEBUG_STYLE);
+      if (bDebug2 === true)
+        console.log(`%cAdd in student history at date ${dayjs(me.date).format("YYYY-MM-DDTHH:mm:ssZZ")} data ${data} with type:${iType} cf const of object`, APP_DEBUG_STYLE);
       return db.get(TBL_NAME).push(JSON.parse(JSON.stringify(me))).write();
     };
     const remove = function(sStudentId, iType = null, dtFrom2 = null) {
@@ -1207,6 +1226,7 @@
       return db.get(TBL_NAME).remove({ id: sStudentId, type: iType, date: dtFrom2.valueOf() }).write();
     };
     const find = function(sStudentId, iType, dtFrom2 = null) {
+      const bDebug2 = false;
       const db = src_default.Cfg.dbase;
       if (typeof dtFrom2 === "string") {
         dtFrom2 = dayjs(dtFrom2);
@@ -1214,11 +1234,15 @@
       if (dtFrom2 === null) {
         dtFrom2 = dayjs();
       }
-      console.log(`%cSearching in student history at date ${dtFrom2.format("DD/MM/YYYY")} any data with type:${iType} cf const of object`, APP_DEBUG_STYLE);
+      if (bDebug2 === true)
+        console.log("%cSearching in student history at date %o ", APP_DEBUG_STYLE, dtFrom2);
+      if (bDebug2 === true)
+        console.log(`%cSearching in student history at date ${dtFrom2.format("DD/MM/YYYY")} any data with type:${iType} cf const of object`, APP_DEBUG_STYLE);
       var _iBaseDay = +dtFrom2.valueOf();
       var _r2 = db.get(TBL_NAME).filter((o) => o.id === sStudentId && o.type & iType).map((i) => i.date - _iBaseDay).filter((i) => i >= 0).value();
       if (_r2.length == 0) {
-        console.log(`%cThere is no data in student history at date ${dtFrom2.format("DD/MM/YYYY")} with type:${iType} cf const of object`, APP_DEBUG_STYLE);
+        if (bDebug2 === true)
+          console.log(`%cThere is no data in student history at date ${dtFrom2.format("DD/MM/YYYY")} with type:${iType} cf const of object`, APP_DEBUG_STYLE);
         return void 0;
       }
       const min = (arr) => Math.min(...arr);
@@ -1296,7 +1320,9 @@
     _Student._save(me);
   });
   __publicField(Student, "_checkObject", function(oStudent) {
-    console.log("%cChecking object student:%o ", APP_DEBUG_STYLE, oStudent);
+    let bDebug2 = false;
+    if (bDebug2 === true)
+      console.log("%cChecking object student:%o ", APP_DEBUG_STYLE, oStudent);
     assert(typeof oStudent.id === "string", "Student object id need to be a string.", TypeError);
     assert(typeof oStudent.fullname === "string", "Student object fullname need to be a number.", TypeError);
     assert(typeof oStudent.path === "string", "Student object path need to be a string.", TypeError);
@@ -1304,14 +1330,18 @@
     assert(typeof oStudent.created === "string", "Student object created need to be a string.", TypeError);
   });
   __publicField(Student, "_save", function(oStudent) {
+    let bDebug2 = false;
     _Student._checkObject(oStudent);
-    console.log("%cSaving student %o to DB", APP_DEBUG_STYLE, oStudent);
+    if (bDebug2 === true)
+      console.log("%cSaving student %o to DB", APP_DEBUG_STYLE, oStudent);
     let db = src_default.Cfg.dbase;
     db.get(_Student.tbl_name).push(JSON.parse(JSON.stringify(oStudent))).write();
   });
   __publicField(Student, "exists", function(needle, dtFrom2 = null) {
+    let bDebug2 = false;
     let _r2 = _Student.findById(needle, dtFrom2);
-    console.log(`%cStudent ${needle} exists in db ? ${_r2 === void 0 ? false : true}`, APP_DEBUG_STYLE);
+    if (bDebug2 === true)
+      console.log(`%cStudent ${needle} exists in db ? ${_r2 === void 0 ? false : true}`, APP_DEBUG_STYLE);
     return _r2 === void 0 ? false : true;
   });
   __publicField(Student, "findById", function(sNeedle, dtFrom2 = null) {
@@ -1335,13 +1365,16 @@
     return _Student.m_findById(sNeedle, dtFrom2.toISOString());
   });
   __publicField(Student, "_findById", function(sNeedle, dtFrom2 = null) {
+    let bDebug2 = false;
     let db = src_default.Cfg.dbase;
     if (typeof dtFrom2 === "string") {
       dtFrom2 = dayjs(dtFrom2);
     }
-    console.log(`%cSearching student with id:(${typeof sNeedle})${sNeedle} in db`, APP_DEBUG_STYLE);
+    if (bDebug2 === true)
+      console.log(`%c_findById() searching student with id:(${typeof sNeedle})${sNeedle} in db`, APP_DEBUG_STYLE);
     var _r2 = db.get(_Student.tbl_name).find({ id: sNeedle }).value();
-    console.log("student %o is found", _r2);
+    if (bDebug2 === true)
+      console.log("%c_findById() student %o is found", APP_DEBUG_STYLE, _r2);
     if (_r2 === void 0) {
       return void 0;
     } else {
@@ -1357,39 +1390,37 @@
         }
         return _rClone;
       }
-      console.log("student final %o is found", _r2);
+      if (bDebug2 === true)
+        console.log("%c_findById() student final %o is found", APP_DEBUG_STYLE, _r2);
       return _r2;
     }
   });
   __publicField(Student, "m_findById", moize.default(_Student._findById, {
     maxAge: 6e5,
-    isSerialized: true,
-    onCacheAdd: function(c, o, m) {
-      console.log("%cAdd data to cache c.keys: %o, o:%o, m:%o", APP_DEBUG_STYLE, c.keys, o, m);
-    },
-    onCacheHit: function() {
-      console.log("%cGet Student data from cache", APP_DEBUG_STYLE);
-    }
+    isSerialized: true
   }));
-  __publicField(Student, "getFunding", function(sId, dtFrom2 = null) {
+  __publicField(Student, "getFunding", async function(sId, dtFrom2 = null) {
     if (typeof dtFrom2 === "string") {
       dtFrom2 = dayjs(dtFrom2);
     }
     ;
-    return _Student.m_getFunding(sId, dtFrom2);
+    return await _Student.m_getFunding(sId, dtFrom2);
   });
-  __publicField(Student, "_getFunding", function(sId, dtFrom2 = null) {
+  __publicField(Student, "_getFunding", async function(sId, dtFrom2 = null) {
     let _r2 = _Student.findById(sId, dtFrom2);
     if (_r2 === void 0) {
-      console.log(`%cStudent ${studentId} is not in db, fetching data:'funded mode' from webpage`, APP_DEBUG_STYLE);
-      return _Student.getFundingFomDashboard(studentId).toLowerCase();
+      console.log('%c[Student._getFunding()]Student %s is not in db, fetching data:"funded mode" from webpage', APP_DEBUG_STYLE, sId);
+      _r2 = await _Student.getFundingFomDashboard(sId);
+      console.log("%c[Student._getFunding()]Student %s funding is %o", APP_DEBUG_STYLE, sId, _r2);
+      return _r2.toLowerCase();
     } else {
       return _r2.funding.toLowerCase();
     }
   });
   __publicField(Student, "m_getFunding", moize.default(_Student._getFunding, {
     maxAge: 6e5,
-    isSerialized: true
+    isSerialized: true,
+    isPromise: true
   }));
   __publicField(Student, "isAutoFunded", function(iStudentId) {
     console.log(`%cFUNCTION DEPRECATED !!!!!!!!!!!!!!!!!!!!!! `, APP_ERROR_STYLE);
@@ -1447,16 +1478,22 @@
     console.log(`%cAll students with id:${sId} are removed from DataBase`, APP_DEBUG_STYLE);
   });
   __publicField(Student, "getAll", async (e, ctx) => {
+    let dDebug = true;
     var bForceUpdate = false;
     let db = src_default.Cfg.dbase;
-    var sPath2 = "table.crud-list tbody";
+    var sPath = "table.crud-list tbody";
+    if (bDebug === true)
+      console.log("%cgetAll() Enter function", APP_DEBUG_STYLE);
     const oDom = await _fetch(`https://openclassrooms.com/fr/mentorship/dashboard/students`, 'script[id="mentorshipDashboardConfiguration"]');
     var _r2 = JSON.parse(oDom.innerText.trim());
     var aStudents = _r2.mentorStudents;
+    if (bDebug === true)
+      console.log("%cgetAll() collect this array of stundent %o", APP_DEBUG_STYLE, aStudents);
     const now = dayjs().format("YYYY-MM-DDTHH:mm:ssZ[Z]");
     var t0 = performance.now();
     await _Student.getFundingFomDashboard(aStudents[0].studentId);
-    console.log(`%cEstimated time for updating : ${(performance.now() - t0) * aStudents.length} ms`, APP_DEBUG_STYLE);
+    if (bDebug === true)
+      console.log(`%cEstimated time for updating : ${(performance.now() - t0) * aStudents.length} ms`, APP_DEBUG_STYLE);
     Swal.fire({
       position: "top-end",
       icon: "info",
@@ -1467,31 +1504,38 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       timer: 1e3
     });
     await sleep(1e3);
+    if (bDebug === true)
+      console.log("%cWill process all students of board", APP_DEBUG_STYLE);
     for (const oStudent of aStudents) {
       var sStudentId = oStudent.studentId.toString(10);
       var sStudentFullName = oStudent.studentDisplayableName;
+      if (bDebug === true)
+        console.log('%c Working on student "%s"', APP_DEBUG_STYLE, sStudentFullName);
       toastOk(`Collecte les donn\xE9es de l'\xE9tudiant : ${sStudentFullName}`);
       var sStudentPath = oStudent.followedProjectSlug;
       if (sStudentPath.length == 0) {
         sStudentPath = "non d\xE9fini";
       }
+      if (bDebug === true)
+        console.log('%cWill collect student "%s" funding', APP_DEBUG_STYLE, sStudentFullName);
       let sStudentFunding = await _Student.getFundingFomDashboard(sStudentId);
       assert(typeof sStudentId === "string", "sStudentId need to be a string.", TypeError);
       var _r2 = _Student.m_findById(sStudentId, null);
       if (_r2 === void 0) {
-        console.log(`%cStudent ${sStudentFullName}(id:${sStudentId}) not present in database will create it`, APP_DEBUG_STYLE);
+        if (bDebug === true)
+          console.log(`%cStudent ${sStudentFullName} (id:${sStudentId}) not present in student database will create it`, APP_DEBUG_STYLE);
         _Student.add(sStudentId, sStudentFullName, sStudentPath, sStudentFunding, now);
         continue;
       }
       if (sStudentFunding.toLowerCase() !== _r2.funding.toLowerCase()) {
         db.get(_Student.tbl_name).find({ id: sStudentId }).assign({ funding: sStudentFunding.toLowerCase() }).write();
-        students_history_default.add(sStudentId, students_history_default.getType("FUNDING"), _r2.funding.toLowerCase(), dayjs());
-        console.log(`%cStudent ${sStudentFullName}(id:${sStudentId}) was already present in database but change of funding was detected (from ${_r2.funding.toLowerCase()} to ${sStudentFunding.toLowerCase()})`, APP_DEBUG_STYLE);
+        students_history_default.addFunding(sStudentId, _r2.funding.toLowerCase(), dayjs());
+        console.log(`%c[Student.getAll]Student ${sStudentFullName}(id:${sStudentId}) was already present in database but change of funding was detected (from ${_r2.funding.toLowerCase()} to ${sStudentFunding.toLowerCase()})`, APP_DEBUG_STYLE);
       }
       if (sStudentPath !== _r2.path) {
         db.get(_Student.tbl_name).find({ id: sStudentId }).assign({ path: sStudentPath }).write();
-        students_history_default.add(sStudentId, students_history_default.getType("PATH"), _r2.path, dayjs());
-        console.log(`%cStudent ${sStudentFullName}(id:${sStudentId}) was already present in database but change of path was detected (from ${_r2.path} to ${sStudentPath})`, APP_DEBUG_STYLE);
+        students_history_default.addPath(sStudentId, _r2.path, dayjs());
+        console.log(`%c[Student.getAll]Student ${sStudentFullName}(id:${sStudentId}) was already present in database but change of path was detected (from ${_r2.path} to ${sStudentPath})`, APP_DEBUG_STYLE);
       }
     }
   });
@@ -1688,11 +1732,11 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       console.log("%c resetDbVersion NE FONCTIONNE PAS", APP_ERROR_STYLE);
       return src_default.Cfg.dbase.get("meta").find({ key: "dbVersion" }).remove((item) => true).write();
     };
-    const setStudenListUpd = function(sValue) {
+    const setStudentListUpd = function(sValue) {
       assert(typeof sValue === "string", "You must provide a string.", TypeError);
       return src_default.Cfg.dbase.get(Meta.tbl_name).find({ "key": "studentLstUpd" }).assign({ value: sValue }).write().value;
     };
-    const getStudenListUpd = function() {
+    const getStudentListUpd = function() {
       let _r2 = src_default.Cfg.dbase.get(Meta.tbl_name).find({ "key": "studentLstUpd" }).value();
       return typeof _r2 === "undefined" ? -1 : _r2.value;
     };
@@ -1704,7 +1748,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       if (getDbVersion() == -1) {
         src_default.Cfg.dbase.get("meta").push({ "key": "dbVersion", "value": "1.0.0" }).write();
       }
-      if (getStudenListUpd() == -1) {
+      if (getStudentListUpd() == -1) {
         src_default.Cfg.dbase.get("meta").push({ "key": "studentLstUpd", "value": dayjs("19701006").toISOString() }).write();
       }
     };
@@ -1713,13 +1757,466 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       getDbVersion,
       setDbVersion,
       delDbVersion,
-      setStudenListUpd,
-      getStudenListUpd,
+      setStudentListUpd,
+      getStudentListUpd,
       tbl_name: TBL_NAME
     });
   };
   var Meta = fMeta();
   var meta_default = Meta;
+
+  // src/api.openclassrooms.js
+  var fApi = function() {
+    let _header = {};
+    let _user = "0";
+    const VERBOSE = true;
+    const API_BASE_URL = "https://api.openclassrooms.com";
+    const LIFE_CYCLE_STATUS_PENDING = "pending";
+    const LIFE_CYCLE_STATUS_CANCELED = "canceled";
+    const LIFE_CYCLE_STATUS_COMPLETED = "completed";
+    const LIFE_CYCLE_STATUS_LATE_CANCELED = "late canceled";
+    const LIFE_CYCLE_STATUS_ABSENT = "marked student as absent";
+    const _setUser = async function() {
+      let _r2 = await getMe();
+      _r2 = JSON.parse(_r2);
+      _user = _r2.id;
+      return _user;
+    };
+    const _checkSupport = async function() {
+      if (_header.length == 0) {
+        throw new Error("_header is empty, no xhr have been trapped so could't do some api request");
+      }
+    };
+    const getMe = async function() {
+      const API_ME_URL = API_BASE_URL + "/me";
+      let _r2 = await _fetchGet(API_ME_URL);
+      return _r2;
+    };
+    const _getLimit = function(iFrom, iTo) {
+      return { "Range": `items=${iFrom}-${iTo}` };
+    };
+    const getPendingSessionAfter = async (dtDate = dayjs(), iFrom = 0, iTo = 19) => await _getSessionOnDate("AFTER", dtDate, [LIFE_CYCLE_STATUS_PENDING], iFrom, iTo);
+    const getPendingSessionBefore = async (dtDate = dayjs(), iFrom = 0, iTo = 19) => await _getSessionOnDate("BEFORE", dtDate, [LIFE_CYCLE_STATUS_PENDING], iFrom, iTo);
+    const getHistorySession = async (aFilter, iFrom = 0, iTo = 19) => await _getSession(aFilter, iFrom, iTo);
+    const _getSessionOnDate = async function(sPeriod = "BEFORE", dtDate, aFilter = [
+      LIFE_CYCLE_STATUS_CANCELED,
+      LIFE_CYCLE_STATUS_COMPLETED,
+      LIFE_CYCLE_STATUS_LATE_CANCELED,
+      LIFE_CYCLE_STATUS_ABSENT
+    ], iFrom = 0, iTo = 19) {
+      bDebug = true;
+      if (typeof dtDate === "string") {
+        dtDate = dayjs(dtDate);
+      }
+      assert(isArray(aFilter) === true, "You must provide an array as param aFilter.", TypeError);
+      assert(dtDate instanceof dayjs === true, "date must be a string or a dayjs object.", TypeError);
+      let sFilter = aFilter.join(",");
+      let sDate = encodeURIComponent(dtDate.format("YYYY-MM-DDTHH:MM:ss[Z]"));
+      sFilter = encodeURIComponent(sFilter);
+      let API_URL = "";
+      if (_user == 0) {
+        await _setUser();
+      }
+      if (sPeriod === "AFTER") {
+        API_URL = `${API_BASE_URL}/users/${_user}/sessions?actor=expert&after=${sDate}&life-cycle-status=${sFilter}`;
+        console.log("URL IS %s", API_URL);
+      } else {
+        API_URL = `${API_BASE_URL}/users/${_user}/sessions?actor=expert&before=${sDate}&life-cycle-status=${sFilter}`;
+        console.log("URL IS %s", API_URL);
+      }
+      let oLimit = _getLimit(iFrom, iTo);
+      if (bDebug) {
+        console.log("%c_getSessionOnDate url to call is:%s , params are %o", APP_DEBUG_STYLE, API_URL, oLimit);
+      }
+      let _r2 = await xGet(API_URL, _getLimit(iFrom, iTo));
+      return _r2;
+    };
+    const _getSession = async function(aFilter = [], iFrom = 0, iTo = 19) {
+      bDebug = true;
+      assert(isArray(aFilter) === true, "You must provide an array as param aFilter.", TypeError);
+      if (aFilter.length == 0) {
+        aFilter = [
+          LIFE_CYCLE_STATUS_CANCELED,
+          LIFE_CYCLE_STATUS_COMPLETED,
+          LIFE_CYCLE_STATUS_LATE_CANCELED,
+          LIFE_CYCLE_STATUS_ABSENT
+        ];
+      }
+      let sFilter = aFilter.join(",");
+      sFilter = encodeURIComponent(sFilter);
+      if (_user == 0) {
+        await _setUser();
+      }
+      const API_URL = `${API_BASE_URL}/users/${_user}/sessions?actor=expert&life-cycle-status=${sFilter}`;
+      let oLimit = _getLimit(iFrom, iTo);
+      if (bDebug) {
+        console.log("%cUrl to call is:%o , params are %o", APP_DEBUG_STYLE, API_URL, oLimit);
+      }
+      let _r2 = await xGet(API_URL, oLimit);
+      if (_r2 === null || _r2 === void 0) {
+        console.error("%cAPI have a problem returned value %o is null|undefined", APP_ERROR_STYLE, _r2);
+        throw new Error(`Request:${API_BASE_URL}/users/${_user}/sessions?actor=expert&life-cycle-status=${sFilter} have a problem`);
+      }
+      if (_r2.errors) {
+        console.log("%cAPI return an error %s", APP_ERROR_STYLE, _r2.errors.message);
+      }
+      return _r2;
+    };
+    const getUser = async function(iUser) {
+      const API_USER = `${API_BASE_URL}/users/${iUser}`;
+      let _r2 = await xGet(API_USER);
+      return _r2;
+    };
+    const getUserFollowedPath = async function(iUser) {
+      await _checkSupport();
+      const API_URL = `${API_BASE_URL}/users/${iUser}/paths/followed-path`;
+      let _r2 = await xGet(API_URL);
+      return _r2;
+    };
+    const getUserPath = async function(iUser) {
+      const API_USER_PATHS = `${API_BASE_URL}/users/${iUser}/paths`;
+      let _r2 = await xGet(API_USER_PATHS);
+      return _r2;
+    };
+    const xGet = async function(sUrl, oHeader = {}) {
+      await _checkSupport();
+      let _r2 = await _fetchGet(sUrl, oHeader);
+      return _r2;
+    };
+    const xPost = async function(sUrl) {
+      await _checkSupport();
+      let _r2 = await _fetchPost(sUrl, mData);
+      return _r2;
+    };
+    const forge = function(idUser) {
+      _user = idUser;
+    };
+    const _containsEncodedComponents = function(x) {
+      return decodeURI(x) !== decodeURIComponent(x);
+    };
+    const _fetchGet = async function(sUrl = "", oHeader = {}, sFormat = "json", sPath = "", bAll = true) {
+      let mHeader = Object.assign({ "User-Agent": "Mozilla/5.0" }, _header, oHeader);
+      if (sFormat.toLowerCase() === "json") {
+        const response = await GMC.XHR({
+          method: "GET",
+          url: sUrl,
+          responseType: "application/json",
+          headers: mHeader
+        }).catch((error) => {
+          console.error("%c[Api_fetchGer()]Error is %o", APP_ERROR_STYLE, error);
+        });
+        return response.responseText;
+      }
+      if (sFormat.toLowerCase === "html") {
+        const response = await GMC.XHR({
+          method: "GET",
+          url: sUrl,
+          responseType: "application/json",
+          headers: mHeader
+        }).catch((error) => {
+          console.error("%c[Api_fetchGer()]Error is %o", APP_ERROR_STYLE, error);
+        });
+        let domparser = new DOMParser();
+        let doc = domparser.parseFromString(response.responseText.replace(/\n/mg, ""), "text/html");
+        var oDom = {};
+        if (bAll === true) {
+          oDom = doc.querySelectorAll(sPath);
+        } else {
+          oDom = doc.querySelector(sPath);
+        }
+        return oDom;
+      }
+    };
+    const _fetchPost = async function(sUrl = "", oHeader = {}, oData = {}) {
+    };
+    const _bootstrap = function() {
+      const VERBOSE2 = false;
+      const FN_VERBOSE_STYLE = "color:DarkSalmon;background-color:AliceBlue;";
+      var open = window.XMLHttpRequest.prototype.open, send = window.XMLHttpRequest.prototype.send, setRequestHeader = window.XMLHttpRequest.prototype.setRequestHeader;
+      var openReplacement = function(method, url, async, user, password) {
+        if (VERBOSE2 === true)
+          console.log("%cmethod %o url:%o, async:%o, user %o, password:%o", FN_VERBOSE_STYLE, method, url, async, user, password);
+        this._url = url;
+        this._requestHeaders = {};
+        this._knox = [];
+        return open.apply(this, arguments);
+      };
+      var onReadyStateChangeReplacement = function() {
+        if (VERBOSE2 === true)
+          console.log("%cReady state changed to: %o", FN_VERBOSE_STYLE, this.readyState);
+        if (this.readyState === 4 && this.status && this.status >= 200 && this.status < 300) {
+          if (this._url.match(/^https:\/\/api.openclassrooms.com/g)) {
+            if (VERBOSE2 === true)
+              console.log("%cOPENCLASSROOMS API", FN_VERBOSE_STYLE);
+            for (var i in this._knox) {
+              _header[this._knox[i].key] = this._knox[i].value;
+            }
+            if (VERBOSE2 === true)
+              console.log("%c _header is %o", FN_VERBOSE_STYLE, _header);
+            if (VERBOSE2 === true) {
+              if (_containsEncodedComponents(this._url)) {
+                console.log("%cDECODED URL:%s", FN_VERBOSE_STYLE, decodeURIComponent(this._url));
+              } else {
+                console.log("%c DECODED URL:%s", FN_VERBOSE_STYLE, decodeURI(this._url));
+              }
+            }
+          }
+          if (VERBOSE2 === true)
+            console.log("%cResponse is :%o", FN_VERBOSE_STYLE, this.response);
+        }
+        if (this._onreadystatechange) {
+          return this._onreadystatechange.apply(this, arguments);
+        }
+      };
+      var sendReplacement = function(data) {
+        if (VERBOSE2 === true)
+          console.log("%csendReplacement(%o)", FN_VERBOSE_STYLE, data);
+        if (this.onreadystatechange) {
+          this._onreadystatechange = this.onreadystatechange;
+        }
+        this.onreadystatechange = onReadyStateChangeReplacement;
+        return send.apply(this, arguments);
+      };
+      var setRequestHeaderReplacement = function(header, value) {
+        if (this._url.match(/^https:\/\/api.openclassrooms.com/g)) {
+          this._knox.push({ key: header, value });
+        }
+        this._requestHeaders[header] = value;
+        return setRequestHeader.apply(this, arguments);
+      };
+      window.XMLHttpRequest.prototype.open = openReplacement;
+      window.XMLHttpRequest.prototype.send = sendReplacement;
+      window.XMLHttpRequest.prototype.setRequestHeader = setRequestHeaderReplacement;
+    };
+    _bootstrap();
+    return Object.freeze({
+      forge,
+      getPendingSessionAfter,
+      getPendingSessionBefore,
+      getHistorySession,
+      getUser,
+      getUserFollowedPath,
+      getUserPath,
+      getMe,
+      xGet,
+      xPost
+    });
+  };
+  var Api = fApi();
+  var api_openclassrooms_default = Api;
+
+  // src/history.js
+  var _HistoryDb = function fHistoryDb() {
+    const TBL_NAME = "history_session_cache";
+    const VERBOSE = false;
+    const DBCreateTable = function() {
+      if (VERBOSE === true)
+        console.log("%cDb dont' contain table history_session_cache table, will create it", APP_DEBUG_STYLE);
+      src_default.Cfg.dbase.assign({ history_session_cache: [] }).write();
+    };
+    const DBTableExists = function() {
+      if (src_default.Cfg.dbase.get(TBL_NAME).value() === void 0) {
+        return false;
+      }
+      return true;
+    };
+    const DBFindInTable = function(oValue) {
+      if (DBTableExists === false) {
+        throw new Error("%c_HistoryDb:DBFindInTable() failed reason : table is not defined", APP_DEBUG_STYLE);
+      }
+      if (VERBOSE === true)
+        console.log('%c_HistoryDb:DBFindInTable()  Request is App.Cfg.dbase.get("%s").find(%o).value()', APP_DEBUG_STYLE, TBL_NAME, oValue);
+      let _r2 = src_default.Cfg.dbase.get(TBL_NAME).find(oValue).value();
+      return _r2;
+    };
+    const DBGetAll = function() {
+      if (DBTableExists === false) {
+        throw new Error("%c_HistoryDb:DBGetAll() failed reason : table is not defined", APP_DEBUG_STYLE);
+      }
+      if (VERBOSE === true)
+        console.log('%c_HistoryDb:DBGetAll()  Request is App.Cfg.dbase.get("%s").value()', APP_DEBUG_STYLE, TBL_NAME);
+      let _r2 = src_default.Cfg.dbase.get(TBL_NAME).value();
+      return _r2;
+    };
+    const DBInsertInTable = function(oValue) {
+      if (DBTableExists === false) {
+        DBCreateTable();
+      }
+      if (VERBOSE === true)
+        console.log("%c_HistoryDb:DBInsertInTable table:%s data:%o)", APP_DEBUG_STYLE, TBL_NAME, oValue);
+      let _r2 = src_default.Cfg.dbase.get(TBL_NAME).push(oValue).write();
+      return _r2;
+    };
+    const DBUpdateInTable = function(oFind, oAssign) {
+      if (DBTableExists === false) {
+        throw new Error("%c_HistoryDb:DBUpdateInTable() failed reason : table is not defined", APP_DEBUG_STYLE);
+      }
+      let _r2 = src_default.Cfg.dbase.get(TBL_NAME).find(oFind).assign(oAssign).write();
+      return _r2;
+    };
+    const DBRemoveInTable = function(fn_filter = {}) {
+      if (DBTableExists === false) {
+        throw new Error("%c_HistoryDb:DBRemove() failed reason : table is not defined", APP_DEBUG_STYLE);
+      }
+      if (VERBOSE === true)
+        console.log("%c_HistoryDb:DBRemove with filter", APP_DEBUG_STYLE);
+      if (isEmptyFunction(fn_filter) === true)
+        console.log("%c_HistoryDb:DBRemove /! filter is empty", APP_DEBUG_STYLE);
+      let _r2 = src_default.Cfg.dbase.get(TBL_NAME).remove(fn_filter).write();
+      return _r2;
+    };
+    const DBResetTable = function() {
+      if (VERBOSE === true)
+        console.log("%c_History:DBResetTable", APP_DEBUG_STYLE);
+      let _r2 = src_default.Cfg.dbase.get(TBL_NAME).remove().write();
+      return _r2;
+    };
+    return {
+      find: DBFindInTable,
+      getAll: DBGetAll,
+      insert: DBInsertInTable,
+      remove: DBRemoveInTable,
+      reset: DBResetTable,
+      update: DBUpdateInTable
+    };
+  }();
+  var fHistory = function() {
+    const TBL_NAME = "history_session_cache";
+    const checkSupport = function() {
+      let bDebug2 = true;
+      if (src_default.Cfg.dbase.get("history_session_cache").value() === void 0) {
+        if (bDebug2)
+          console.log("%cDb dont' contain history_session_cache table create it", APP_DEBUG_STYLE);
+        src_default.Cfg.dbase.assign({ history_session_cache: [] }).write();
+      }
+    };
+    const _exists = function(dtDate) {
+      let bDebug2 = true;
+      if (typeof dtDate === "string") {
+        dtDate = dayjs(dtDate);
+      }
+      assert(dtDate instanceof dayjs === true, "date must be a string or a dayjs object.", TypeError);
+      let _r2 = _HistoryDb.find({ id: +dtDate.format("YYYYMMDD") });
+      if (bDebug2)
+        console.log(`%cHistory:_exists ${dtDate.format("YYYYMMDD")} in db ? ${_r2 === void 0 ? false : true}`, APP_DEBUG_STYLE);
+      return _r2 === void 0 ? false : true;
+    };
+    const _getSessionIndex = function(dtDate) {
+      let bDebug2 = true;
+      if (typeof dtDate === "string") {
+        dtDate = dayjs(dtDate);
+      }
+      assert(dtDate instanceof dayjs === true, "date must be a string or a dayjs object.", TypeError);
+      if (dtDate.get("day") < dtDate.daysInMonth()) {
+        dtDate = dtDate.endOf("month");
+      }
+      if (bDebug2 === true)
+        console.log(`%cSearch in history session cache data for id: ${dtDate.format("DD/MM/YYYY")}`, APP_DEBUG_STYLE);
+      if (_exists(dtDate) === true) {
+        _r = _HistoryDb.find({ id: +dtDate.format("YYYYMMDD") });
+        if (typeof _r.index !== void 0) {
+          return _r.index;
+        }
+        throw new Error("_getSessionIndex() failed reason : property index is unknown");
+      }
+      return -1;
+    };
+    const _getNearestSessionIndex = function(dtDate) {
+      let bDebug2 = false;
+      if (typeof dtDate === "string") {
+        dtDate = dayjs(dtDate);
+      }
+      assert(dtDate instanceof dayjs === true, "date must be a string or a dayjs object.", TypeError);
+      if (bDebug2 === true)
+        console.log(`%cSearch in history session cache NEAREST cached data for id: ${dtDate.format("DD/MM/YYYY")}`, APP_DEBUG_STYLE);
+      let _iBaseDay = +dtDate.format("YYYYMMDD");
+      let _r2 = _HistoryDb.getAll();
+      if (_r2.length === 0) {
+        if (bDebug2 === true)
+          console.log("%cHistory session cache is empty", APP_DEBUG_STYLE);
+        return -1;
+      }
+      _r2 = _r2.map((i) => +i.id - _iBaseDay).filter((i) => i > 0);
+      const min = (arr) => Math.min(...arr);
+      if (_r2.length == 0) {
+        if (bDebug2 === true)
+          console.log("%cAll indexes  %o are later than your date:%s", APP_DEBUG_STYLE, _HistoryDb.getAll(), dtDate.format("DD/MM/YYYY"));
+        return -1;
+      }
+      let _needle = min(_r2) + _iBaseDay;
+      if (bDebug2 === true)
+        console.log("%cNearest data in history session cache is data with id: %o", APP_DEBUG_STYLE, _needle);
+      if (_exists(_needle) === true) {
+        _r2 = _HistoryDb.find({ id: +_needle.format("YYYYMMDD") });
+        if (typeof _r2.index !== void 0) {
+          return _r2.index;
+        }
+        throw new Error("[History._getNearestSessionIndex()] failed reason : property index is unknown");
+      }
+      return -1;
+    };
+    const getSameOrNearestSessionIndex = function(dtDate) {
+      let _r2 = _getSessionIndex(dtDate);
+      if (_r2 === -1) {
+        _r2 = _getNearestSessionIndex(dtDate);
+      }
+      return _r2;
+    };
+    const remove = function(dtFrom2 = null, dtTo2 = null) {
+      if (typeof dtFrom2 === "string") {
+        dtFrom2 = dayjs(dtFrom2);
+      }
+      if (typeof dtTo2 === "string") {
+        dtTo2 = dayjs(dtTo2);
+      }
+      let fn_filter = function() {
+      };
+      if (dtFrom2 !== null && dtTo2 !== null) {
+        fn_filter = function(o) {
+          return dayjs(o.id.toString(10)).isBetween(dtFrom2, dtTo2, "day", "[]");
+        };
+      }
+      if (dtFrom2 == null && dtTo2 !== null) {
+        fn_filter = function(o) {
+          return dayjs(o.id.toString(10)).isBefore(dtTo2, "day");
+        };
+      }
+      if (dtFrom2 != null && dtTo2 == null) {
+        fn_filter = function(o) {
+          return dayjs(o.id.toString(10)).isAfter(dtFrom2, "day");
+        };
+      }
+      return _HistoryDb.remove(fn_filter);
+    };
+    const reset = function() {
+      return _HistoryDb.reset();
+    };
+    const setSessionIndex = function(dtDate, index = 0) {
+      if (typeof dtDate === "string") {
+        dtDate = dayjs(dtDate);
+      }
+      assert(dtDate instanceof dayjs === true, "date must be a string or a dayjs object.", TypeError);
+      if (dtDate.get("day") < dtDate.daysInMonth()) {
+        dtDate = dtDate.endOf("month");
+      }
+      let _r2 = _getSessionIndex(dtDate);
+      if (_r2 == -1) {
+        _r2 = _HistoryDb.insert({ id: +dtDate.format("YYYYMMDD"), index });
+      } else {
+        _r2 = _HistoryDb.update({ id: +dtDate.format("YYYYMMDD") }, { index });
+      }
+      return _r2;
+    };
+    return Object.freeze({
+      tbl_name: TBL_NAME,
+      getSameOrNearestSessionIndex,
+      remove,
+      reset,
+      setSessionIndex
+    });
+  };
+  var History = fHistory();
+  var history_default = History;
 
   // src/sessions.js
   var _Session = class {
@@ -1739,73 +2236,122 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
   };
   var Session = _Session;
   __publicField(Session, "tbl_name", "sessions");
-  __publicField(Session, "add", async function(oSession) {
+  __publicField(Session, "_checkObject", function(oSession2) {
+    let bDebug2 = false;
+    if (bDebug2 === true)
+      console.log("%cChecking object session:%o ", APP_DEBUG_STYLE, oSession2);
+    assert(typeof oSession2.id === "string", "Session object id need to be a string.", TypeError);
+    assert(typeof oSession2.cid === "number", "Session object cid need to be a number.", TypeError);
+    assert(typeof oSession2.who_id === "string", "Session object who_id need to be a string.", TypeError);
+    assert(typeof oSession2.who_name === "string", "Session object who_name need to be a string.", TypeError);
+    assert(typeof oSession2.status === "string", "Session object status need to be a string.", TypeError);
+    assert(typeof oSession2.type === "string", "Session object type need to be a string.", TypeError);
+    assert(typeof oSession2.lvl === "string", "Session object lvl need to be a string.", TypeError);
+    assert(typeof oSession2.when === "string", "Session object when need to be a string.", TypeError);
+    assert(typeof oSession2.path === "string", "Session object path need to be a string.", TypeError);
+    assert(typeof oSession2.funding === "string", "Session object funding need to be a string.", TypeError);
+  });
+  __publicField(Session, "add", async function(oSession2) {
+    const iRefreshStudentDataBaseTreshold = 30;
+    let bDebug2 = false;
+    if (bDebug2 === true)
+      console.log("%cSession.add() so you wanna add a session %o to database", APP_DEBUG_STYLE, oSession2);
     let db = src_default.Cfg.dbase;
     if (GM_config.get("checksessionalreadyexists") === true) {
       var bCheckExistsBeforAdd = true;
     }
-    if (oSession.id.length > 0) {
-      if (bCheckExistsBeforAdd === true && _Session.exists(oSession.id) === true) {
+    if (bDebug2 === true)
+      console.log("%cSession.add() will search if session %o is already in database", APP_DEBUG_STYLE, oSession2);
+    if (oSession2.id.length > 0) {
+      if (bCheckExistsBeforAdd === true && _Session.exists(oSession2.id) === true) {
+        if (bDebug2 === true)
+          console.info(`%cSession.add() session id:${oSession2.id} already present in database table sessions, skip it!`, APP_DEBUG_STYLE);
         return;
       }
     } else {
-      if (bCheckExistsBeforAdd === true && _Session.exists(oSession.cid) === true) {
+      if (bCheckExistsBeforAdd === true && _Session.exists(oSession2.cid) === true) {
+        if (bDebug2 === true)
+          console.info(`%cSession.add() session cid:${oSession2.cid} already present in database table sessions, skip it!`, APP_DEBUG_STYLE);
         return;
       }
     }
-    if (core_default.isInOldMode(dayjs(oSession.when))) {
-      oSession.funding = OC_FUNDED;
-      if (oSession.type.toLowerCase() === "soutenance") {
-        oSession.path = "n/a (defense)";
+    if (oSession2.type.toLowerCase() === "presentation") {
+      oSession2.type = "soutenance";
+    }
+    if (core_default.isInOldMode(dayjs(oSession2.when))) {
+      oSession2.funding = OC_FUNDED;
+      if (oSession2.type.toLowerCase() === "soutenance") {
+        oSession2.path = "n/a (defense)";
       } else {
-        oSession.path = "n/a (old mode)";
+        oSession2.path = "n/a (old mode)";
       }
     } else {
-      if (oSession.type.toLowerCase() === "soutenance") {
-        oSession.funding = OC_FUNDED;
-        oSession.path = "n/a (defense)";
+      if (oSession2.type.toLowerCase() === "soutenance") {
+        oSession2.funding = OC_FUNDED;
+        oSession2.path = "n/a (defense)";
       } else {
-        if (students_default.exists(oSession.who_id) === false) {
-          if (dayjs(meta_default.getStudenListUpd()).diff(dayjs(), "m") < -30) {
+        if (students_default.exists(oSession2.who_id) === false) {
+          console.warn("%cStudent %s not in Db, will updating student db by fetching students list from dashboard", APP_WARN_STYLE, oSession2.who_id);
+          if (bDebug2 === true)
+            console.log("%cLast Update of Student BDD was %i min ago", APP_DEBUG_STYLE, dayjs(meta_default.getStudentListUpd()).diff(dayjs(), "m"));
+          if (dayjs(meta_default.getStudentListUpd()).diff(dayjs(), "m") < -iRefreshStudentDataBaseTreshold) {
             await students_default.getAll();
-            meta_default.setStudenListUpd(dayjs().toISOString());
+            meta_default.setStudentListUpd(dayjs().toISOString());
+          } else {
+            console.log("%c[Session.add()]last Update of database DB was less than %i min ago", APP_DEBUG_STYLE, iRefreshStudentDataBaseTreshold);
+            await students_default.createManually(oSession2.who_id, oSession2.who_name, oSession2.when);
+            if (moize.default.isMoized(students_default.m_findById) && students_default.m_findById.has([oSession2.who_id, null])) {
+              students_default.m_findById.remove([oSession2.who_id, null]);
+              if (bDebug2 === true)
+                console.log("%c[Session.add()]student %s removed from the m_findById function cache", APP_DEBUG_STYLE, oSession2.who_id);
+            }
           }
-          if (students_default.exists(oSession.who_id, oSession.when) == false) {
-            console.warn(`%cStudent ${oSession.who_id} which exists at ${oSession.when} still not exit in Db, have to manually create him/her`, APP_DEBUG_STYLE);
-            return students_default.createManually(oSession.who_id, oSession.who_name, oSession.when);
+          if (students_default.exists(oSession2.who_id, oSession2.when) == false) {
+            console.warn(`%c[Session.add()] Student ${oSession2.who_id} which exists at ${oSession2.when} still not exit in Db, have to manually create him/her`, APP_WARN_STYLE);
+            await students_default.createManually(oSession2.who_id, oSession2.who_name, oSession2.when);
+            if (moize.default.isMoized(students_default.m_findById) && students_default.m_findById.has([oSession2.who_id, oSession2.when])) {
+              students_default.m_findById.remove([oSession2.who_id, oSession2.when]);
+              if (bDebug2 === true)
+                console.log("%c[Session.add()]student %s removed from the m_findById function cache", APP_DEBUG_STYLE, oSession2.who_id);
+            }
           }
         }
-        oSession.funding = await students_default.getFunding(oSession.who_id, oSession.when);
-        oSession.path = await students_default.getPath(oSession.who_id, oSession.when);
+        oSession2.funding = await students_default.getFunding(oSession2.who_id, oSession2.when);
+        oSession2.path = await students_default.getPath(oSession2.who_id, oSession2.when);
       }
     }
-    oSession.cid = _Session.getHashId(oSession.when, oSession.who_id);
-    _r = refs_default.getByKey(oSession.cid, 2, refs_default.TYPE.SESSIONID_DATEREFID);
+    if (oSession2.cid === void 0) {
+      if (bDebug2 === true)
+        console.log("%c[Session.add()] need to calculate a cid]", APP_DEBUG_STYLE);
+      oSession2.cid = _Session.getHashId(oSession2.when, oSession2.who_id);
+    }
+    if (bDebug2 === true)
+      console.log("%cSession.add() calculated id:%s", APP_DEBUG_STYLE, oSession2.cid);
+    _r = refs_default.getByKey(oSession2.cid, 2, refs_default.TYPE.SESSIONID_DATEREFID);
     if (_r !== void 0) {
-      oSession.id = _r.key1.toString();
+      if (bDebug2 === true)
+        console.log("%cSession.add() I've found a ref %d by using key (%s)%d", APP_DEBUG_STYLE, _r.key1, typeof oSession2.cid, oSession2.cid);
+      oSession2.id = _r.key1.toString();
     }
-    _Session._save(oSession);
+    _Session._save(oSession2);
   });
-  __publicField(Session, "_save", function(oSession) {
-    assert(typeof oSession.id === "string", "Session object id need to be a string.", TypeError);
-    assert(typeof oSession.cid === "number", "Session object cid need to be a number.", TypeError);
-    assert(typeof oSession.who_id === "string", "Session object who_id need to be a string.", TypeError);
-    assert(typeof oSession.who_name === "string", "Session object who_name need to be a string.", TypeError);
-    assert(typeof oSession.status === "string", "Session object status need to be a string.", TypeError);
-    assert(typeof oSession.type === "string", "Session object type need to be a string.", TypeError);
-    assert(typeof oSession.lvl === "string", "Session object lvl need to be a string.", TypeError);
-    assert(typeof oSession.when === "string", "Session object when need to be a string.", TypeError);
-    assert(typeof oSession.path === "string", "Session object path need to be a string.", TypeError);
-    assert(typeof oSession.funding === "string", "Session object funding need to be a string.", TypeError);
-    if (oSession.lvl == "") {
-      oSession.lvl = "2";
+  __publicField(Session, "_save", function(oSession2) {
+    var dDebug = false;
+    _Session._checkObject(oSession2);
+    if (oSession2.lvl == "") {
+      oSession2.lvl = "2";
     }
-    oSession.lvl.lvl = parseInt(oSession.lvl.lvl, 10);
+    oSession2.lvl.lvl = parseInt(oSession2.lvl.lvl, 10);
+    if (bDebug === true)
+      console.log(`%c[Session._save()] saving session id:${oSession2.id} of ${oSession2.who_name}[cid:${oSession2.cid}](${oSession2.who_id}) at ${oSession2.when} to DB`, APP_DEBUG_STYLE);
     let db = src_default.Cfg.dbase;
-    db.get(_Session.tbl_name).push(JSON.parse(JSON.stringify(oSession))).write();
+    db.get(_Session.tbl_name).push(JSON.parse(JSON.stringify(oSession2))).write();
   });
   __publicField(Session, "exists", function(sessionId) {
     let db = src_default.Cfg.dbase;
+    var bDebug2 = false;
+    if (bDebug2 === true)
+      console.log(`%c[Session.exist()] will search existence of session id:(${typeof sessionId})${sessionId} in database`, APP_DEBUG_STYLE);
     var _r2 = _Session.findById(sessionId);
     if (_r2 === void 0) {
       return false;
@@ -1872,6 +2418,12 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     return me;
   });
   __publicField(Session, "getHashId", function(sDate, sId) {
+    if (sDate instanceof dayjs) {
+      sDate = sDate.toISOString();
+    }
+    if (typeof sId === "number") {
+      sId = sId.toString(10);
+    }
     assert(typeof sDate === "string" && typeof sId === "string", "getId need two string", TypeError);
     return cyrb53(sDate + sId);
   });
@@ -1887,6 +2439,108 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     sLvl = sLvl.replace(/[^\d]/gmis, "");
     var me = { id: "", cid: iId, when: sWhen, who_id: iWho, who_name: sWho, status: sStatus, type: sType2, lvl: sLvl };
     return me;
+  });
+  __publicField(Session, "getSessionsFromAPI", async function(dtFrom2, dtTo2) {
+    let bDebug2 = false;
+    let iMaxLoop = 999;
+    let iLoop = 0;
+    let bBrowse = true;
+    let iIndexStart = 0;
+    let iMaxOfItems = 20;
+    if (typeof dtFrom2 === "string") {
+      dtFrom2 = dayjs(dtFrom2);
+    }
+    assert(dtFrom2 instanceof dayjs === true, "dtFrom must be a string or a dayjs object.", TypeError);
+    if (typeof dtTo2 === "string") {
+      dtTo2 = dayjs(dtTo2);
+    }
+    assert(dtTo2 instanceof dayjs === true, "dtTo must be a string or a dayjs object.", TypeError);
+    let _r2 = history_default.getSameOrNearestSessionIndex(dtTo2);
+    if (_r2 !== void 0 && typeof _r2 === "number" && _r2 > iIndexStart) {
+      iIndexStart = _r2;
+    }
+    NProgress.start();
+    while (bBrowse === true) {
+      if (iLoop > iMaxLoop) {
+        console.error("%c[Session.getSessionsFromAPI()] EMERGENCY EXIT LOOP", APP_ERROR_STYLE);
+        break;
+      }
+      iLoop += 1;
+      var iIndexEnd = iIndexStart + (iMaxOfItems - 1);
+      var aSessions = await api_openclassrooms_default.getHistorySession([], iIndexStart, iIndexEnd);
+      if (aSessions === null) {
+        throw new Error("Api.getHistorySession is null");
+      }
+      var oSessions = JSON.parse(aSessions);
+      if (oSessions.errors) {
+        Object.entries(oSession.errors).forEach((i) => console.log("%cApi.getHistorySession send us some errors : %s", APP_WARN_STYLE, i[1].message));
+        throw new Error("Api.getHistorySession send us some errors ");
+      }
+      if (bDebug2 === true)
+        console.log("%cgetSessionsFromAPI() Sessions are %o", APP_DEBUG_STYLE, oSessions);
+      iIndexStart = iIndexEnd + 1;
+      oSession = _Session.parseRowFromApi(oSessions[oSessions.length - 1]);
+      console.log("%c[Session.getSessionsFromAPI()]La derni\xE8re session r\xE9cuper\xE9e par api date de:%s et nous collectons les sessions entre %s et %s", APP_DEBUG_STYLE, dayjs(oSession.when).format("DD/MM/YYYY"), dayjs(dtFrom2).format("DD/MM/YYYY"), dayjs(dtTo2).format("DD/MM/YYYY"));
+      if (bDebug2 === true)
+        console.log("%cgetSessionsFromAPI() last session of loaded page is %o", APP_DEBUG_STYLE, oSession);
+      console.log("%c[Session.getSessionsFromAPI()] compare last session date %s avec la date de d\xE9but %s est ce ant\xE9rieur  %o", APP_DEBUG_STYLE, dayjs(oSession.when).format("DD/MM/YYYY"), dayjs(dtFrom2).format("DD/MM/YYYY"), dayjs(oSession.when).isBefore(dtFrom2));
+      if (dayjs(oSession.when).isBefore(dtFrom2) === true) {
+        bBrowse = false;
+        if (bDebug2 === true)
+          console.log("%cgetSessionsFromAPI() last session is before start date of parsing %s STOP browsing....", APP_DEBUG_STYLE, dayjs(oSession.dtFrom).format("DD/MM/YYYY"));
+        history_default.setSessionIndex(oSession.when, iIndexStart);
+      }
+      let oSessionsFinal = oSessions.filter((o) => dayjs(o.sessionDate).isBetween(dtFrom2, dtTo2, "day", "[]"));
+      if (bDebug2 === true)
+        console.log("%cgetSessionsFromAPI() Filtered on date Sessions are %o", APP_DEBUG_STYLE, oSessionsFinal);
+      for (const o of oSessionsFinal) {
+        oSession = _Session.parseRowFromApi(o);
+        if (bDebug2 === true)
+          console.log("%cgetSessionsFromAPI()  will call Session.add() on %o", APP_DEBUG_STYLE, oSession);
+        const _r3 = await _Session.add(oSession);
+      }
+      iIndexStart = iIndexEnd + 1;
+      NProgress.set(0.4);
+    }
+    NProgress.remove();
+  });
+  __publicField(Session, "parseRowFromApi", function(oSession2) {
+    bDebug = false;
+    if (bDebug === true)
+      console.log("%cparseRowFromApi() oSession is %o", APP_DEBUG_STYLE, oSession2);
+    let oDBSession = {};
+    oDBSession.id = "";
+    oDBSession.who_id = oSession2.recipient.id;
+    if (typeof oDBSession.who_id == "number") {
+      oDBSession.who_id = oDBSession.who_id.toString(10);
+    }
+    oDBSession.who_name = oSession2.recipient.displayableName;
+    if (oSession2.status === OC_API_SESSION_STATUS_0) {
+      oDBSession.status = OC_STATUS_0;
+    }
+    if (oSession2.status === OC_API_SESSION_STATUS_1) {
+      oDBSession.status = OC_STATUS_1;
+    }
+    if (oSession2.status === OC_API_SESSION_STATUS_2) {
+      oDBSession.status = OC_STATUS_2;
+    }
+    if (oSession2.status === OC_API_SESSION_STATUS_3) {
+      oDBSession.status = OC_STATUS_3_M;
+    }
+    if (oDBSession.status === void 0)
+      oDBSession.status = oSession2.status;
+    oDBSession.type = oSession2.type;
+    if (oDBSession.type.toLowerCase() === "mentoring")
+      oDBSession.type = "mentorat";
+    oDBSession.lvl = oSession2.projectLevel;
+    if (oDBSession.lvl == null) {
+      oDBSession.lvl = "";
+    }
+    oDBSession.when = dayjs(oSession2.sessionDate).toISOString();
+    oDBSession.path = null;
+    oDBSession.funding = null;
+    oDBSession.cid = _Session.getHashId(oDBSession.when, oDBSession.who_id);
+    return oDBSession;
   });
   var sessions_default = Session;
 
@@ -2027,14 +2681,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
   });
   __publicField(Accounting, "m_calculateBill", moize.default(_Accounting._calculateBill, {
     maxAge: 12e4,
-    isSerialized: true,
-    onCacheAdd: function(c, o, m) {
-      console.log("%cAdd data to cache", APP_DEBUG_STYLE);
-      ;
-    },
-    onCacheHit: function() {
-      console.log("%cGet data from cache", APP_DEBUG_STYLE);
-    }
+    isSerialized: true
   }));
   __publicField(Accounting, "getPriceList", function(dtFrom2) {
     if (typeof dtFrom2 === "string") {
@@ -2159,108 +2806,6 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     return aPu;
   });
   var accounting_default = Accounting;
-
-  // src/history.js
-  var _History = class {
-  };
-  var History = _History;
-  __publicField(History, "tbl_name", "history_session_cache");
-  __publicField(History, "getSessionPage", function(dtTo2) {
-    if (dtTo2.get("day") < dtTo2.daysInMonth()) {
-      dtTo2 = dtTo2.endOf("month");
-    }
-    console.log(`%cSearch in history session cache data for id: ${dtTo2.format("DD/MM/YYYY")}`, APP_DEBUG_STYLE);
-    let db = src_default.Cfg.dbase;
-    if (!db.has(_History.tbl_name).value()) {
-      throw Error(`DB ${_History.db_name} NOT FOUND`);
-      return -1;
-    }
-    let _r2 = db.get(_History.tbl_name).find({ id: +dtTo2.format("YYYYMMDD") }).value();
-    if (_r2 === void 0) {
-      return -1;
-    } else {
-      return _r2;
-    }
-  });
-  __publicField(History, "getNearestSessionPage", function(dtTo2) {
-    if (dtTo2.get("day") < dtTo2.daysInMonth()) {
-      dtTo2 = dtTo2.endOf("month");
-    }
-    console.log(`%cSearch in history session cache NEAREST cached data for id: ${dtTo2.format("DD/MM/YYYY")}`, APP_DEBUG_STYLE);
-    let db = src_default.Cfg.dbase;
-    if (!db.has(_History.tbl_name).value()) {
-      throw Error(`DB ${_History.db_name} NOT FOUND`);
-      return -1;
-    }
-    let _iBaseDay = +dtTo2.format("YYYYMMDD");
-    let _r2 = db.get(_History.tbl_name).value().map((i) => +i.id - _iBaseDay).filter((i) => i > 0);
-    const min = (arr) => Math.min(...arr);
-    let _needle = min(_r2) + _iBaseDay;
-    console.log(`%cNearest data in history session cache is data with id: ${dtTo2.format("DD/MM/YYYY")}`, APP_DEBUG_STYLE);
-    _r2 = db.get(_History.tbl_name).find({ id: _needle }).value();
-    if (_r2 === void 0) {
-      return -1;
-    } else {
-      return _r2;
-    }
-  });
-  __publicField(History, "getSameOrNearestSessionPage", function(dtTo2) {
-    let _r2 = _History.getSessionPage(dtTo2);
-    if (_r2 === -1) {
-      _r2 = _History.getNearestSessionPage(dtTo2);
-    }
-    return _r2;
-  });
-  __publicField(History, "delete", function(dtFrom2 = null, dtTo2 = null) {
-    let db = src_default.Cfg.dbase;
-    if (typeof dtFrom2 === "string") {
-      dtFrom2 = dtFrom2.format("YYYY-MM-DD");
-    }
-    if (typeof dtTo2 === "string") {
-      dtTo2 = dtTo2.format("YYYY-MM-DD");
-    }
-    if (dtFrom2 === null && dtTo2 == null) {
-      db.get(_History.tbl_name).remove().write();
-      console.log(`%cWanna suppress ALL History from DB`, APP_DEBUG_STYLE);
-      return;
-    }
-    if (dtTo2 == null) {
-      db.get(_History.tbl_name).remove(function(o) {
-        return dayjs(o.id, "YYYYMMDD").isBefore(dtTo2), "day";
-      }).write();
-      return;
-    }
-    if (dtFrom2 == null) {
-      db.get(_History.tbl_name).remove(function(o) {
-        return dayjs(o.id, "YYYYMMDD").isAfter(dtFrom2, "day");
-      }).write();
-      return;
-    }
-    db.get(_History.tbl_name).remove(function(o) {
-      return dayjs(o.id, "YYYYMMDD").isBetween(dtFrom2, dtTo2, "day", "[]");
-    }).write();
-  });
-  __publicField(History, "addOrUpdateSessionPage", function(page = 1, dtTo2 = dayjs("1970-10-06")) {
-    if (_History.getSessionPage(dtTo2) == -1) {
-      _History.addSessionPage(page, dtTo2);
-    } else {
-      _History.updateSessionPage(page, dtTo2);
-    }
-  });
-  __publicField(History, "updateSessionPage", function(page = 1, dtTo2 = dayjs("1970-10-06")) {
-    let db = src_default.Cfg.dbase;
-    let _r2 = _History.getSessionPage(dtTo2);
-    if (_r2 == -1) {
-      throw Error("session page not found in history");
-      return -1;
-    }
-    db.get(_History.tbl_name).find({ id: +dtTo2.format("YYYYMMDD") }).assign({ page }).write();
-  });
-  __publicField(History, "addSessionPage", function(page = 1, dtTo2 = dayjs("1970-10-06")) {
-    let db = src_default.Cfg.dbase;
-    db.get(_History.tbl_name).push(JSON.parse(JSON.stringify({ id: +dtTo2.format("YYYYMMDD"), page }))).write();
-  });
-  var history_default = History;
 
   // src/date.lib.js
   var workday_count = function(start, end) {
@@ -3072,18 +3617,19 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     });
   };
   var addCbox = function() {
-    console.log("%c ADDCBOX WAS CALLED", APP_DEBUG_STYLE);
-    var sPath2 = "table#sessions_2";
-    var sessions = document.querySelector(sPath2);
+    var sPath = OC_DASHBOARDCSSMAINDATASELECTOR;
+    var sessions = document.querySelector(sPath);
     var bChecked = false;
     if (sessions === null) {
       console.log(`%cERROR:Could'nt find the table which display sessions : ${sessions}`, APP_ERROR_STYLE);
       throw new Error("!!!! IRRECOVERABLE ERROR NO TABLE OF SESSIONS FOUNDED");
     }
     if (sessions.querySelector("[type=checkbox]") === null) {
-      var sPath2 = "table#sessions_2 tbody";
-      var sessions = document.querySelector(sPath2);
+      var sessions = document.querySelector(`${sPath} tbody`);
       for (const oTr2 of sessions.children) {
+        if (oTr2.querySelector("a") === null) {
+          continue;
+        }
         var sWho_id = getKey(oTr2.children[2], -2);
         var inputElem = document.createElement("input");
         inputElem.type = "checkbox";
@@ -3103,11 +3649,11 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
         td.appendChild(inputElem);
         oTr2.appendChild(td);
       }
-      if (document.querySelector("table#sessions_2 thead") === null) {
+      if (document.querySelector(`${sPath} thead`) === null) {
         const insertBefore = (ele, anotherEle) => anotherEle.insertAdjacentElement("beforebegin", ele);
-        sPath2 = "table#sessions_2 tbody";
-        var el = document.querySelector(sPath2);
-        inputElem = document.createElement("input");
+        sPath = `${sPath} tbody`;
+        var el = document.querySelector(sPath);
+        var inputElem = document.createElement("input");
         inputElem.type = "checkbox";
         inputElem.name = "name";
         inputElem.value = "value";
@@ -3131,7 +3677,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     line-height: 1.625rem;
     text-transform: inherit;
 `;
-        oTd1.innerText = "&nbsp;" + GM.info.script.version;
+        oTd1.innerText = " ";
         var oTd2 = document.createElement("td");
         oTd2.style = `
     font-size: 1rem;
@@ -3159,7 +3705,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
         var oTh = document.createElement("thead");
         oTh.style = "display: block;";
         oTh.appendChild(oTr);
-        insertBefore(oTh, document.querySelector(sPath2));
+        insertBefore(oTh, document.querySelector(sPath));
       }
     } else {
       var _t = sessions.querySelectorAll("[type=checkbox]");
@@ -3216,77 +3762,17 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     });
   };
   var collectAuto = async function() {
+    var bDebug2 = true;
     var [dtFrom2, dtTo2] = await popupDateSelector(dayjs().startOf("month"), dayjs().endOf("month"));
-    let iRecurse = 0;
-    let iMaxRecurse = GM_config.get("maxfetchpg");
-    let bBrowse = true;
-    var res = {};
-    let data = [];
-    let pg = 1;
-    let _r2 = history_default.getSameOrNearestSessionPage(dtTo2);
-    if (_r2 !== void 0 && _r2.page > pg) {
-      pg = _r2.page;
-    }
-    while (bBrowse) {
-      if (iRecurse > iMaxRecurse) {
-        console.warn("%cEMERGENCY EXIT LOOP", APP_WARN_STYLE);
-        break;
-      }
-      try {
-        res = await _historyFetch(dtFrom2, dtTo2, pg, data);
-      } catch (e) {
-        console.error(`%c IRRECOVERABLE ERROR ... ${e}, will exit !!!! `, APP_ERROR_STYLE);
-        throw new Error();
-      }
-      if (res.length > 0 && dayjs(res[res.length - 1].when).isSameOrBefore(dtFrom2) === true) {
-        bBrowse = false;
-      }
-      pg += 1;
-      iRecurse += 1;
-    }
-    GM_addStyle(".ldBar path.mainline{stroke-width:10;stroke:#09f;stroke-linecap:round}");
-    GM_addStyle(".ldBar path.baseline{stroke-width:14;stroke:#f1f2f3;stroke-linecap:round;filter:url(#custom-shadow)}");
-    let sHtml = '<div id="pbar" class="ldBar label-center" data-value="0" data-path="M0 0 L200 0 L200 1"></div>';
-    var cb = res.length;
-    Swal.fire({
-      title: "Traitement en cours!",
-      html: sHtml,
-      confirmButtonText: "Lovely!",
-      onBeforeOpen: function(modal) {
-        var bar = new ldBar("#pbar");
-      },
-      onRender: function(modal) {
-      },
-      onOpen: async function(modal) {
-        var bar = document.getElementById("pbar").ldBar;
-        for (var i in res) {
-          if (dayjs(res[i].when).isBefore(dtFrom2, "day") === true) {
-            break;
-          }
-          if (dayjs(res[i].when).isAfter(dtTo2, "day") === true) {
-            bar.set(i / cb * 100, false);
-            continue;
-          }
-          if (dayjs(res[i].when).isBetween(dtFrom2, dtTo2, "day", "[]")) {
-            await sessions_default.add(res[i]);
-            bar.set(i / cb * 100, false);
-          }
-        }
-        bar.set(100, false);
-        Swal.getTitle().innerText = "Traitement termin\xE9 !";
-      },
-      onClose: function(modal) {
-      },
-      onAfterClose: function(modal) {
-      },
-      onDestroy: function(modal) {
-      }
-    });
-    addCbox();
+    if (bDebug2 == true)
+      console.log("%ccollectAuto() Wanna collect from %s to %s", APP_DEBUG_STYLE, dtFrom2.format("DD/MM/YYYY"), dtTo2.format("DD/MM/YYYY"));
+    var _r2 = await sessions_default.getSessionsFromAPI(dtFrom2, dtTo2);
+    if (bDebug2 == true)
+      console.log("%ccollectAuto() Sessions are is %o", APP_DEBUG_STYLE, _r2);
   };
   var collectChecked = async function() {
-    var sPath2 = "table#sessions_2 tbody input:checked";
-    var cb = document.querySelectorAll(sPath2);
+    var sPath = OC_DASHBOARDCSSMAINDATASELECTOR;
+    var cb = document.querySelectorAll(sPath);
     GM_addStyle(".ldBar path.mainline{stroke-width:10;stroke:#09f;stroke-linecap:round}");
     GM_addStyle(".ldBar path.baseline{stroke-width:14;stroke:#f1f2f3;stroke-linecap:round;filter:url(#custom-shadow)}");
     let sHtml = '<div id="pbar" class="ldBar label-center" data-value="0" data-path="M0 0 L200 0 L200 1"></div>';
@@ -3356,41 +3842,6 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     console.log("Find all session between 01/08/2020 and 31/08/2020 :  d_dbase.get(d_Session.tbl_name).filter( v => d_dayjs(v.when).isSameOrBefore('20200831', 'day') && d_dayjs(v.when).isSameOrAfter('20200801', 'day')).value(); ");
     console.groupEnd();
     debugger;
-  };
-  var _historyFetch = async function(dtFrom2, dtTo2, pg = 1, data = []) {
-    Swal.fire({
-      position: "top-end",
-      icon: "info",
-      toast: true,
-      title: "Collecte des sessions de l'historique\ndu " + dtFrom2.format("DD/MM/YYYY") + " au " + dtTo2.format("DD/MM/YYYY") + " \npage : " + pg + "\ncela peut prendre du temps...",
-      showConfirmButton: false,
-      timer: 3e3
-    });
-    let oDom = null;
-    try {
-      oDom = await _fetch(`https://openclassrooms.com/fr/mentorship/dashboard/mentorship-sessions-history?page=${pg}`, "table.crud-list tbody");
-    } catch (e) {
-      console.error(`%c _historyFetch : ${e}`, APP_ERROR_STYLE);
-    }
-    if (oDom === null) {
-      throw new Error(`Something went wrong could'nt collect anything from ${dtFrom2.format("DD/MM/YYYY")} to ${dtTo2.format("DD/MM/YYYY")} working on history page:${pg}.... try to navigate forward and backward or click some buttons to change url`);
-    }
-    let _from = convertRowToDate(oDom);
-    let _to = convertRowToDate(oDom, -1);
-    if (_from.get("month") != _to.get("month")) {
-      let _z = _to.endOf("month");
-      history_default.addOrUpdateSessionPage(pg, _z);
-    }
-    if (_to.isAfter(dtTo2, "day") === true) {
-      console.log(`%cOptimization: oldest (last) data from page are at :${_to.format("DD/MM/YYYY")}, don't analyze what was before end date of extraction ${dtTo2.format("DD/MM/YYYY")}`, APP_DEBUG_STYLE);
-      return data;
-    }
-    for (var i = 0; i < oDom.children.length; i += 1) {
-      var row = oDom.children[i];
-      var me = sessions_default.parseTable(row);
-      data.push(me);
-    }
-    return data;
   };
   var pdf = function() {
     const { degrees, PDFDocument, rgb, StandardFonts } = PDFLib;
@@ -3736,7 +4187,13 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
   };
   var mgtDbase = async function() {
     GM_addStyle('.formgrid{font-family: "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", Helvetica, Arial, sans-serif;}');
-    GM_addStyle(".swal2-styled[type=button]{background-color:#3085d6;border-radius:.75em;color:#fff;font-size:1.0625em;border-left-color:#3085d6;border-right-color:#3085d6;display:inline-block}.formgrid{display:grid;grid-template-columns:1fr 1em 1fr;grid-gap:.3em .6em;grid-auto-flow:dense;align-items:center}input,output,textarea,select,button{grid-column:2 / 4;width:auto;margin:0}legend{font-size:1.2em;width:100%;border-bottom:1px dotted #99c}fieldset{max-width:40em;padding:4px;margin:2em auto;border:0 none}");
+    GM_addStyle(`
+.swal2-styled[type=button]{background-color:#3085d6;border-radius:.75em;color:#fff;font-size:1.0625em;border-left-color:#3085d6;border-right-color:#3085d6;display:inline-block}
+.formgrid{display:grid;grid-template-columns:1fr 1em 1fr;grid-gap:.3em .6em;grid-auto-flow:dense;align-items:center}
+.formgrid input,.formgrid output,.formgrid textarea,.formgrid select,.formgrid button{grid-column:2 / 4;width:auto;margin:0}
+.formgrid legend{font-size:1.2em;width:100%;border-bottom:1px dotted #99c}
+.formgrid fieldset{max-width:40em;padding:4px;margin:2em auto;border:0 none}
+`);
     let sHtml = "";
     sHtml += "<legend>Que voulez vous faire ?</legend>";
     sHtml += "<fieldset>";
@@ -3750,7 +4207,15 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     	hx-get="http://127.0.0.1:8000/views/test-swal-sauvegarde.html"
         hx-target="#sttPlaceHolder"
         hx-include="[name='email']"
-        hx-swap="innerHTML"> Exporter
+        hx-swap="innerHTML"> Exporter (local)
+    </button>
+		`;
+      sHtml += `Exporter les tables
+    <button class="swal2-styled" type="button"
+    	hx-get="http://127.0.0.1:8000/views/test-swal-sauvegarde.html"
+        hx-target="#sttPlaceHolder"
+        hx-include="[name='email']"
+        hx-swap="innerHTML"> Importer (local)
     </button>
 		`;
     }
@@ -5045,52 +5510,60 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     console.log("%cin initUI", APP_DEBUG_STYLE);
     _UI.build();
     var draggie = new Draggabilly(".draggable", { handle: ".handle" });
-    if (GM_config.get("hackheaderzindex") === true) {
-      FpsTracker.start("animation-target");
-    }
   });
   __publicField(UI, "build", function() {
     console.log("%c in buildUI", "background-color:green;color:white");
-    GM_addStyle(".flex > * { margin: 2px 1px; }");
-    GM_addStyle(".flex > :first-child { margin-left: 0; }");
-    GM_addStyle(".flex > :last-child { margin-right: 0; }");
-    GM_addStyle(".panel {display: flex; justify-content: center;z-index:999}");
-    GM_addStyle(".menuBar {border-top: 1px solid; padding: 10px; font-size: 1rem; pointer-events: inherit;position: relative;top:0px;  flex-flow: row wrap;/*align-content: space-between;justify-content: space-between;*/}");
+    GM_addStyle(`
+.flow > * + * {
+  margin-top: var(--flow-space, 1em);
+}
+		`);
+    GM_addStyle(".panel {/* because of stacking context : https://stackoverflow.com/questions/5218927/z-index-not-working-with-fixed-positioning */position: relative;z-index: 666; /*seems that 4 is good*/}");
+    GM_addStyle(".menuBar {padding:7px;/*for handler*/font-size: 1rem; pointer-events: inherit;}");
     GM_addStyle(".draggable {background: transparent;border-radius: 10px;padding: 20px;}");
     GM_addStyle(".draggable.is-pointer-down {background: #09F;}");
     GM_addStyle(".draggable.is-dragging { opacity: 0.7; }");
-    GM_addStyle(".handle {background: #555;background: hsla(0, 0%, 0%, 0.4);width: 20px;height: 20px; border-radius: 10px;}");
-    GM_addStyle(".flex > :nth-last-child(2) {page-break-after: always; /* CSS 2.1 syntax */break-after: always; /* New syntax */}");
-    GM_addStyle("#animation-target {width: 10px;height: 5px;background-color:coral;border-radius: 25%;}");
-    var div = document.createElement("div");
-    var subDiv = document.createElement("div");
-    subDiv.classList.add("handle");
-    div.appendChild(subDiv);
-    div.classList.add("panel", "menuBar", "flex", "draggable");
-    document.body.appendFirst(div);
-    _UI.addButton("collectChecked", collectChecked, {}, div);
-    _UI.addButton("CollectAuto", collectAuto, {}, div);
-    _UI.addButton("showBill", showBill, {}, div);
-    _UI.addButton("billInDetails", billInDetails, {}, div);
-    _UI.addButton("PDF", pdf, {}, div);
-    _UI.addButton("SList", students_default.showList, {}, div);
-    _UI.addButton("DbgMode", debugMode, {}, div);
-    _UI.addButton("statistics", statistics, {}, div);
-    _UI.addButton("Database", mgtDbase, {}, div);
+    GM_addStyle(".handle {background: #555;background: hsla(0, 0%, 0%, 0.4);width: 20px;height: 20px; border-radius: 10px; position: relative; top:10px; left:-10px;}");
+    GM_addStyle(`
+.menuBar{
+/*Smol Responsive CSS Grid*/
+--min: 15ch;
+--gap: 1rem;
+display: grid;
+grid-gap: var(--gap);
+/* min() with 100% prevents overflow
+in extra narrow spaces */
+grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 20 px is size of handle*/ 
+}
+		`);
+    var elMenu = document.createElement("div");
+    var elHandle = document.createElement("div");
+    elHandle.classList.add("handle");
+    elMenu.appendChild(elHandle);
+    elMenu.classList.add("panel", "draggable");
+    document.body.insertAdjacentElement("beforeend", elMenu);
+    elMenu.setAttribute("style", `top:-${document.body.offsetHeight - elMenu.offsetHeight}px`);
+    var elMenuContent = document.createElement("div");
+    elMenuContent.classList.add("menuBar");
+    elMenu.appendChild(elMenuContent);
+    _UI.addButton("collectChecked", collectChecked, {}, elMenuContent);
+    _UI.addButton("CollectAuto", collectAuto, {}, elMenuContent);
+    _UI.addButton("showBill", showBill, {}, elMenuContent);
+    _UI.addButton("billInDetails", billInDetails, {}, elMenuContent);
+    _UI.addButton("PDF", pdf, {}, elMenuContent);
+    _UI.addButton("SList", students_default.showList, {}, elMenuContent);
+    _UI.addButton("DbgMode", debugMode, {}, elMenuContent);
+    _UI.addButton("statistics", statistics, {}, elMenuContent);
+    _UI.addButton("Database", mgtDbase, {}, elMenuContent);
     if (false) {
-      _UI.addButton("Sandbox", sandbox, {}, div);
+      _UI.addButton("Sandbox", sandbox, {}, elMenuContent);
     }
-    _UI.addButton("about", about, {}, div);
+    _UI.addButton("about", about, {}, elMenuContent);
     let el = document.createElement("div"), elStyle = el.style;
     el.id = "sttPlaceHolder";
     let cssObj = { position: "absolute", bottom: "7%", left: "4%", "z-index": 999, "display": "hidden" };
     document.body.insertAdjacentElement("beforeend", el);
     Object.keys(cssObj).forEach((key) => elStyle[key] = cssObj[key]);
-    if (GM_config.get("hackheaderzindex") === true) {
-      var fpstracker = document.createElement("div");
-      fpstracker.id = "animation-target";
-      div.appendChild(fpstracker);
-    }
   });
   __publicField(UI, "addButton", function(text, onclick, cssObj, el) {
     el = el || document.body;
@@ -5142,14 +5615,6 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     id: "OCAddonsCfg",
     title: "Configuration du module",
     fields: {
-      userid: {
-        section: ["Application", "param\xE8tres"],
-        label: "Id utilisateur",
-        title: "identifiant utilisateur oc",
-        labelPos: "left",
-        type: "input",
-        default: 0
-      },
       nbHrsAfM: {
         section: ["Statistiques", "param\xE8tres"],
         label: "Nombre de minutes pour une session d'\xE9tudiant auto financ\xE9",
@@ -6158,146 +6623,13 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
   var View = fView();
   var views_default = View;
 
-  // src/api.openclassrooms.js
-  var fApi = function() {
-    let _header = {};
-    let _user = "0";
-    const LIFE_CYCLE_STATUS_PENDING = "life-cycle-status=pending";
-    const _getBase = function() {
-      return `https://api.openclassrooms.com/users/${_user}`;
-    };
-    const _setUser = async function() {
-      return;
-      let _r2 = null;
-      _r2 = await fetch("https://api.openclassrooms.com/me");
-      console.log(_r2);
-      _r2 = JSON.parse(_r2);
-      console.log(_r2);
-      _user = _r2.id;
-    };
-    const _checkSupport = async function() {
-      if (_header.length == 0) {
-        throw new Error("_header is empty, no xhr have been trapped");
-      }
-      if (_user == 0) {
-        await _setUser();
-      }
-    };
-    const getPendingSessionFrom = async function(dtFrom2, iFrom = 0, iTo = 19) {
-      await _checkSupport();
-      if (typeof dtFrom2 === "string") {
-        dtFrom2 = dayjs(dtFrom2);
-      }
-      let sUrl = `${_getBase()}/sessions?actor=expert&after=${encodeURIComponent(dtFrom2.format("YYYY-MM-DDTHH:MM:ss[Z]"))}&life-cycle-status=pending`;
-      let _r2 = await _fetch2(sUrl, { "range": `items=${iFrom}-${iTo}` });
-      return _r2;
-    };
-    const getUser = async function(iUser) {
-      await _checkSupport();
-      let sUrl = `https://api.openclassrooms.com/users/${iUser}`;
-      let _r2 = await _fetch2(sUrl);
-      return _r2;
-    };
-    const getUserFollowedPath = async function(iUser) {
-      await _checkSupport();
-      let sUrl = `${_getBase()}/paths/followed-path`;
-      let _r2 = await _fetch2(sUrl);
-      return _r2;
-    };
-    const getUserPath = async function(iUser) {
-      await _checkSupport();
-      let sUrl = `${_getBase()}/paths`;
-      let _r2 = await _fetch2(sUrl);
-      return _r2;
-    };
-    const forge = function(idUser) {
-      _user = idUser;
-    };
-    const _containsEncodedComponents = function(x) {
-      return decodeURI(x) !== decodeURIComponent(x);
-    };
-    const _fetch2 = async function(sUrl = "", header = {}) {
-      let mHeader = Object.assign({ "User-Agent": "Mozilla/5.0" }, _header, header);
-      const response = await GMC.XHR({
-        method: "GET",
-        url: sUrl,
-        responseType: "application/json",
-        headers: mHeader
-      }).catch((error) => {
-        console.error(`%cError ${error}`, APP_ERROR_STYLE);
-      });
-      return response.responseText;
-      let domparser = new DOMParser();
-      let doc = domparser.parseFromString(response.responseText.replace(/\n/mg, ""), "text/html");
-      let sCaptcha = doc.querySelector("meta[id=captcha-bypass]");
-      if (sCaptcha !== null) {
-        console.error(`%cError CloudFlare CAPTCHA : ${doc.querySelector("title").innerText}`, APP_DEBUG_STYLE);
-        throw new Error("Must Respond to Cloudflare Captcha or waiting....");
-      }
-      var oDom = {};
-      if (bAll === true) {
-        oDom = doc.querySelectorAll(sPath);
-      } else {
-        oDom = doc.querySelector(sPath);
-      }
-      return oDom;
-    };
-    const _bootstrap = function() {
-      var open = window.XMLHttpRequest.prototype.open, send = window.XMLHttpRequest.prototype.send, setRequestHeader = window.XMLHttpRequest.prototype.setRequestHeader;
-      var openReplacement = function(method, url, async, user, password) {
-        this._url = url;
-        this._requestHeaders = {};
-        this._knox = [];
-        return open.apply(this, arguments);
-      };
-      var sendReplacement = function(data) {
-        if (this.onreadystatechange) {
-          this._onreadystatechange = this.onreadystatechange;
-        }
-        this.onreadystatechange = onReadyStateChangeReplacement2;
-        return send.apply(this, arguments);
-      };
-      var onReadyStateChangeReplacement2 = function() {
-        if (this.readyState === 4 && this.status && this.status >= 200 && this.status < 300) {
-          if (this._url.match(/^https:\/\/api.openclassrooms.com/g)) {
-            for (var i in this._knox) {
-              _header[this._knox[i].key] = this._knox[i].value;
-            }
-          }
-        }
-        if (this._onreadystatechange) {
-          return this._onreadystatechange.apply(this, arguments);
-        }
-      };
-      var setRequestHeaderReplacement = function(header, value) {
-        if (this._url.match(/^https:\/\/api.openclassrooms.com/g)) {
-          this._knox.push({ key: header, value });
-        }
-        this._requestHeaders[header] = value;
-        return setRequestHeader.apply(this, arguments);
-      };
-      window.XMLHttpRequest.prototype.open = openReplacement;
-      window.XMLHttpRequest.prototype.send = sendReplacement;
-      window.XMLHttpRequest.prototype.setRequestHeader = setRequestHeaderReplacement;
-    };
-    _bootstrap();
-    return Object.freeze({
-      forge,
-      getPendingSessionFrom,
-      getUser,
-      getUserFollowedPath,
-      getUserPath
-    });
-  };
-  var Api = fApi();
-  var api_openclassrooms_default = Api;
-
   // src/index.js
   var Facturier = {
     Cfg: {
       dbase: null
     },
     raf: null,
+    cssMainDataSelector: OC_DASHBOARDCSSMAINDATASELECTOR,
     start: async function() {
       await domReady();
       const bSupport = Facturier.checkSupport();
@@ -6306,6 +6638,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       if (document.querySelector(sCSSObserved) === null) {
         console.log(`%c All condition not met, waiting element '${sCSSObserved}' `, APP_DEBUG_STYLE);
         document.arrive(sCSSObserved, Facturier._warmup);
+        GM_registerMenuCommand("force - loading", Facturier._warmup);
       } else {
         console.log(`%c All condition already met go`, APP_DEBUG_STYLE);
         Facturier._warmup();
@@ -6317,6 +6650,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     _warmup: function() {
       console.log("%c in _warmup", APP_DEBUG_STYLE);
       document.unbindArrive(Facturier._warmup);
+      GM_unregisterMenuCommand("force - loading");
       if (GM === void 0) {
         console.log("%cI am not in a tamper env", APP_DEBUG_STYLE);
         Facturier._userscriptless();
@@ -6328,12 +6662,13 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       GM_addStyle(GM_getResourceText("simpledatatablecss"));
       GM_addStyle(GM_getResourceText("loading_barcss"));
       GM_config.init(appmenu);
-      GM_registerMenuCommand("OC Facturier - configure", opencfg);
+      GM_registerMenuCommand("configure", opencfg);
+      GM_registerMenuCommand("force - cbox", Facturier._forceCbox);
       if (GM_config.get("hackheaderzindex") === true) {
         document.getElementById("header").style.zIndex = 0;
       }
       GM_addStyle(".swal2-title{font-size:1.275em)");
-      var sCSSObserved = "table#sessions_2 tbody tr > td > div > div+p";
+      var sCSSObserved = Facturier.cssMainDataSelector;
       if (document.querySelector(sCSSObserved) === null) {
         console.log(`%c All condition not met, waiting element '${sCSSObserved}' `, APP_DEBUG_STYLE);
         document.arrive(sCSSObserved, Facturier._main);
@@ -6342,13 +6677,36 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
         Facturier._main();
       }
     },
+    _forceCbox: function() {
+      Facturier._applyInjectionForSessionsHistory();
+    },
     pathname: document.location.pathname,
+    _getOCMainClass: function() {
+      try {
+        const _sOCMainCntClass = document.querySelector(Facturier.cssMainDataSelector).classList.value;
+        const _aOCMainSrvId = _sOCMainCntClass.match(/dom-services-(\d)/);
+        if (_aOCMainSrvId.length == 2)
+          return `dom-services-${_aOCMainSrvId[1]}`;
+        throw new Error("_aOCMainSrvId.length must be 2");
+      } catch (error) {
+        console.error("%cError in _getOCMainClass():%s", APP_ERROR_STYLE, error);
+        return "";
+      }
+    },
+    _sOCMainSrvClassName: "",
     _eventMonitor: function() {
       var bodyList = document.querySelector("body"), observer = new MutationObserver(function(mutations) {
         mutations.forEach(function(mutation) {
-          if (mutation.target.classList.contains("dom-services-3-MuiTouchRipple-root")) {
+          if (mutation.target.classList.contains(`${Facturier._sOCMainSrvClassName}-MuiTouchRipple-root`)) {
           }
           if (mutation.target.nodeName === "TBODY" && mutation.target.parentElement.nodeName === "TABLE") {
+            console.log("%cTable data changed (TBODy,TABLE)", APP_DEBUG_STYLE);
+            console.log("%c=============> Changed data : %o", APP_DEBUG_STYLE, mutation);
+            debounce(Facturier._applyInjectionOnPathNameMutation());
+          }
+          if (mutation.target.nodeName === "BUTTON" && mutation.target.parentElement.parentElement.parentElement.firstElementChild.nodeName === "TABLE") {
+            console.log("%cTable data changed (BUTTON, TABLE)", APP_DEBUG_STYLE);
+            console.log("%c=============> Changed data : %o", APP_DEBUG_STYLE, mutation);
             debounce(Facturier._applyInjectionOnPathNameMutation());
           }
           if (mutation.target.ariaLabel === "Page pr\xE9c\xE9dente") {
@@ -6369,28 +6727,26 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       let bStop = false;
       if (bStop === false && document.location.pathname.match(/\/sessions$/)) {
         bStop = true;
-        console.log("%cgestion des sessions", APP_DEBUG_STYLE);
         Facturier._applyInjectionForSessionsToComplete();
       }
       if (bStop === false && document.location.pathname.match(/\/booked-mentorship-sessions$/)) {
         bStop = true;
-        console.log("%cgestion des sessions futures"), APP_DEBUG_STYLE;
         Facturier._applyInjectionForSessionsBooked();
       }
       if (bStop === false && document.location.pathname.match(/\/mentorship-sessions-history$/)) {
         bStop = true;
-        console.log("%cgestion de l'historique des sessions", APP_DEBUG_STYLE);
         Facturier._applyInjectionForSessionsHistory();
       }
       if (bStop === false) {
         console.log("%cUnknow Route so could't guess what to do", APP_ERROR_STYLE);
       }
     },
+    _lastMutation: 0,
     _applyInjectionForSessionsToComplete: function() {
-      if (document.querySelector("table#sessions_2 thead") !== null) {
-        document.querySelector("table#sessions_2 thead").style.display = "none";
+      if (document.querySelector(Facturier.cssMainDataSelector + " thead") !== null) {
+        document.querySelector(Facturier.cssMainDataSelector + " thead").style.display = "none";
       }
-      var btns = Array.from(document.querySelectorAll("table#sessions_2 tbody a[href*=sessions]"));
+      var btns = Array.from(document.querySelectorAll(Facturier.cssMainDataSelector + " tbody a[href*=sessions]"));
       var _handler2;
       btns.forEach(function(btn) {
         let oBtnText = btn.querySelector("span span");
@@ -6432,39 +6788,56 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       });
     },
     _applyInjectionForSessionsBooked: function() {
-      if (document.querySelector("table#sessions_2 thead") !== null) {
-        document.querySelector("table#sessions_2 thead").style.display = "none";
+      if (document.querySelector(Facturier.cssMainDataSelector + " thead") !== null) {
+        document.querySelector(Facturier.cssMainDataSelector + " thead").style.display = "none";
       }
     },
-    _applyInjectionForSessionsHistory: function() {
-      if (document.querySelector("table#sessions_2 thead") !== null) {
-        document.querySelector("table#sessions_2 thead").style.display = "block";
+    _applyInjectionForSessionsHistory: function(iDelayBetweenTwoMutations = 100) {
+      console.log("%c[index._applyInjectionForSessionsHistory()] Le panel de gestion des sessions en historique a \xE9t\xE9 activ\xE9, la derni\xE8re mutation date de %i", APP_DEBUG_STYLE, Facturier._lastMutation);
+      if (document.querySelector(Facturier.cssMainDataSelector + " thead") !== null) {
+        document.querySelector(Facturier.cssMainDataSelector + " thead").style.display = "block";
+      }
+      if (dayjs().valueOf() - Facturier._lastMutation < iDelayBetweenTwoMutations) {
+        console.log("%c[index._applyInjectionForSessionsHistory()] Traitement abandonn\xE9e le dernier refresh date de %o limite:%o ms", APP_DEBUG_STYLE, Facturier._lastMutation, iDelayBetweenTwoMutations);
+        Facturier._lastMutation = dayjs.valueOf();
+        return;
       }
       addCbox();
     },
     _addHeader: function() {
+      if (Facturier._sOCMainSrvClassName.length === 0) {
+        Facturier._sOCMainSrvClassName = Facturier._getOCMainClass();
+      }
+      if (Facturier._sOCMainSrvClassName.length === 0) {
+        console.error("%c[index._addHeader()] _sOCMainSrvClassName is still unknow", APP_ERROR_STYLE);
+        console.log("[index._addHeader()]check this %o", document.querySelector(Facturier.cssMainDataSelector));
+      }
       let sElement = `
-<a href="" class="dom-services-3-MuiButtonBase-root dom-services-3-MuiTab-root dom-services-3-dom-services73 dom-services-3-MuiTab-textColorInherit" style="
-    margin-left: auto;
-"><span class="dom-services-3-MuiTab-wrapper">En base de donn\xE9e (21/24)</span><span class="dom-services-3-MuiTouchRipple-root"></span></a>
-		`;
+<a href="" class="${Facturier._sOCMainSrvClassName}-MuiButtonBase-root
+ ${Facturier._sOCMainSrvClassName}-MuiTab-root
+ ${Facturier._sOCMainSrvClassName}-dom-services73
+ ${Facturier._sOCMainSrvClassName}-MuiTab-textColorInherit"
+ style="margin-left: auto;">
+ <span class="${Facturier._sOCMainSrvClassName}-MuiTab-wrapper">En base de donn\xE9e (21/24)</span>
+ <span class="${Facturier._sOCMainSrvClassName}-MuiTouchRipple-root"></span></a>
+`;
       let aDom = document.querySelector("#mainContent > :not(div:empty)").children;
       let oSpan_1 = document.createElement("span");
       oSpan_1.innerText = "Facturier v." + GM.info.script.version;
-      oSpan_1.classList.add("dom-services-3-MuiTab-wrapper");
+      oSpan_1.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTab-wrapper`);
       let _handler2;
       oSpan_1.addEventListener("click", _handler2 = function(e) {
         document.querySelectorAll("tbody input[type=checkbox]").forEach((e2) => e2.checked = !e2.checked);
       });
       let oSpan_2 = document.createElement("span");
-      oSpan_2.classList.add("dom-services-3-MuiTouchRipple-root");
+      oSpan_2.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTouchRipple-root`);
       let oRoot = document.createElement("a");
       oRoot.alt = "tout s\xE9l\xE9ctionner";
       oRoot.appendChild(oSpan_1);
       oRoot.appendChild(oSpan_2);
-      oRoot.classList.add("dom-services-3-MuiButtonBase-root");
-      oRoot.classList.add("dom-services-3-MuiTab-root");
-      oRoot.classList.add("dom-services-3-MuiTab-textColorInherit");
+      oRoot.classList.add(`${Facturier._sOCMainSrvClassName}-MuiButtonBase-root`);
+      oRoot.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTab-root`);
+      oRoot.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTab-textColorInherit`);
       let sStyle = `
 font-size: 1rem;
 max-width: 280px;
@@ -6480,7 +6853,7 @@ text-transform: inherit;
       console.log(`%cIm'not in a Tamper environment so i need to load js scripts`, APP_DEBUG_STYLE);
     },
     _main: function() {
-      console.log("\u200B\u200B\u200B%cMainLoaded\u200B\u200B\u200B", APP_DEBUG_STYLE);
+      console.log("\u200B\u200B\u200B%c[index._main()]MainLoaded\u200B\u200B\u200B", APP_DEBUG_STYLE);
       document.unbindArrive(Facturier._main);
       Facturier._eventMonitor();
       gm_perf_default.paintTiming();
@@ -6498,12 +6871,6 @@ text-transform: inherit;
       dayjs.locale("fr");
       refs_default.checkSupport();
       meta_default.checkSupport();
-      if (GM_config.get("userid") != 0) {
-        api_openclassrooms_default.forge(GM_config.get("userid"));
-        api_openclassrooms_default.getPendingSessionFrom(dayjs());
-      } else {
-        console.log("%cVotre num\xE9ro d'utilisateur openclassrooms n'a pas ete renseign\xE9 dans la configuration vous ne pourrez pas utiliser la collecte automatique d'information", APP_ERROR_STYLE);
-      }
       if (document.querySelector(".panel.menuBar.flex.draggable") === null) {
         ui_default.init();
       }
@@ -6619,55 +6986,6 @@ text-transform: inherit;
         console.log("%c Need to update DB to version '1.00.0006'", APP_DEBUG_STYLE);
         dbase_default.update("1.00.0006");
       }
-    },
-    patchxhr: function() {
-      var open = window.XMLHttpRequest.prototype.open, send = window.XMLHttpRequest.prototype.send, setRequestHeader = window.XMLHttpRequest.prototype.setRequestHeader;
-      var openReplacement = function(method, url, async, user, password) {
-        this._url = url;
-        this._requestHeaders = {};
-        this._knox = [];
-        return open.apply(this, arguments);
-      };
-      var sendReplacement = function(data) {
-        if (this.onreadystatechange) {
-          this._onreadystatechange = this.onreadystatechange;
-        }
-        this.onreadystatechange = onReadyStateChangeReplacement;
-        return send.apply(this, arguments);
-      };
-      var setRequestHeaderReplacement = function(header, value) {
-        if (this._url.match(/^https:\/\/api.openclassrooms.com/g)) {
-          this._knox.push({ key: header, value });
-        }
-        this._requestHeaders[header] = value;
-        return setRequestHeader.apply(this, arguments);
-      };
-      window.XMLHttpRequest.prototype.open = openReplacement;
-      window.XMLHttpRequest.prototype.send = sendReplacement;
-      window.XMLHttpRequest.prototype.setRequestHeader = setRequestHeaderReplacement;
-    },
-    overrideDebug: function() {
-      var open = window.XMLHttpRequest.prototype.open, send = window.XMLHttpRequest.prototype.send;
-      function openReplacement(method, url, async, user, password) {
-        this._url = url;
-        return open.apply(this, arguments);
-      }
-      function sendReplacement(data) {
-        if (this.onreadystatechange) {
-          this._onreadystatechange = this.onreadystatechange;
-        }
-        console.log(`%c Request sent : ${data}`, APP_DEBUG_STYLE);
-        this.onreadystatechange = onReadyStateChangeReplacement2;
-        return send.apply(this, arguments);
-      }
-      function onReadyStateChangeReplacement2() {
-        console.log(`%c Ready state changed to: ${this.readyState}`, APP_DEBUG_STYLE);
-        if (this._onreadystatechange) {
-          return this._onreadystatechange.apply(this, arguments);
-        }
-      }
-      window.XMLHttpRequest.prototype.open = openReplacement;
-      window.XMLHttpRequest.prototype.send = sendReplacement;
     }
   };
   if (window.Facturier !== void 0) {

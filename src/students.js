@@ -68,7 +68,8 @@ path: "81-expert-en-strategie-marketing-et-communication"
     }
     
     static _checkObject = function(oStudent){
-		console.log("%cChecking object student:%o ", APP_DEBUG_STYLE, oStudent);
+		let bDebug = false;
+		if(bDebug===true)console.log("%cChecking object student:%o ", APP_DEBUG_STYLE, oStudent);
 		assert(
 			typeof oStudent.id === 'string',
 			'Student object id need to be a string.',
@@ -98,15 +99,17 @@ path: "81-expert-en-strategie-marketing-et-communication"
     
 	// save student in db
 	static _save = function(oStudent){
+		let bDebug = false;
 		Student._checkObject(oStudent);
-		console.log("%cSaving student %o to DB", APP_DEBUG_STYLE, oStudent);
+		if(bDebug===true)console.log("%cSaving student %o to DB", APP_DEBUG_STYLE, oStudent);
 		let db=App.Cfg.dbase;
 		db.get(Student.tbl_name).push(JSON.parse(JSON.stringify(oStudent))).write();
 	}
     
 	static exists = function(needle, dtFrom=null){
+		let bDebug = false;
 		let _r = Student.findById(needle, dtFrom);
-		console.log(`%cStudent ${needle} exists in db ? ${_r === undefined ? false : true}`,APP_DEBUG_STYLE);
+		if(bDebug===true)console.log(`%cStudent ${needle} exists in db ? ${_r === undefined ? false : true}`,APP_DEBUG_STYLE);
 		return _r === undefined ? false : true;
 	}
 	
@@ -115,6 +118,7 @@ path: "81-expert-en-strategie-marketing-et-communication"
 	 * name: find
 	 * @param needle the id of student
 	 * @param dtFrom the date of the session
+	 * @param cache true or false, used because in some function like check forinsertion in must remove cache
 	 * @return
 	 * 
 	 *  Reflexion
@@ -156,11 +160,12 @@ path: "81-expert-en-strategie-marketing-et-communication"
 	 * NOTE STT correct it (giving today) or not ???
 	 */
 	static _findById = function(sNeedle, dtFrom=null){
+		let bDebug = false;
 		let db=App.Cfg.dbase; 
 		if (typeof dtFrom === 'string'){dtFrom = dayjs(dtFrom);}
-		console.log(`%cSearching student with id:(${typeof sNeedle})${sNeedle} in db`,APP_DEBUG_STYLE);
+		if(bDebug===true)console.log(`%c_findById() searching student with id:(${typeof sNeedle})${sNeedle} in db`,APP_DEBUG_STYLE);
 		var _r = db.get(Student.tbl_name).find({id: sNeedle}).value();
-		console.log("student %o is found", _r);
+		if(bDebug===true)console.log("%c_findById() student %o is found", APP_DEBUG_STYLE, _r);
 		 if (_r === undefined){
 			 return undefined;
 		 } else {
@@ -178,7 +183,7 @@ path: "81-expert-en-strategie-marketing-et-communication"
 				}
 				return _rClone;
 			}
-			console.log("student final %o is found", _r);
+			if(bDebug===true)console.log("%c_findById() student final %o is found", APP_DEBUG_STYLE, _r);
 			return _r;
 		 }
 	}
@@ -189,34 +194,37 @@ path: "81-expert-en-strategie-marketing-et-communication"
 		Student._findById,
 		{ 	maxAge: 600000,
 			isSerialized: true,
-			//
-			onCacheAdd: function(c,o,m){console.log("%cAdd data to cache c.keys: %o, o:%o, m:%o",APP_DEBUG_STYLE,c.keys,o,m);},
-			onCacheHit: function(){console.log("%cGet Student data from cache", APP_DEBUG_STYLE);}
+			//onCacheAdd: function(c,o,m){console.log("%c[m_findById]Add data to cache",APP_DEBUG_STYLE);/*console.dir(c.keys);console.dir(o);console.dir(m)*/;},
+			//onCacheHit: function(){console.log("%c[m_findById]Get data from cache", APP_DEBUG_STYLE);},
+			//onCacheChange: function(c,o,m){console.log("%c[m_findById]Change data from cache", APP_DEBUG_STYLE);/**/console.dir(c.keys);console.dir(o);console.dir(m);}
 		});
     /*
      * Return funding mode of student
      * 
      * need to search by id if more than an id, use date if any to filter
      */
-    static getFunding = function(sId, dtFrom = null){
+    static getFunding = async function(sId, dtFrom = null){
 		// use cached version of function
 		if (typeof dtFrom === 'string'){ dtFrom = dayjs(dtFrom)};
-		return Student.m_getFunding(sId, dtFrom);
+		return await Student.m_getFunding(sId, dtFrom); // problem with memoized one ?
+		//return await Student._getFunding(sId, dtFrom);
 	} 
 	/*
 	 * Private function
 	 */
-	static _getFunding = function(sId, dtFrom = null){
+	static _getFunding = async function(sId, dtFrom = null){
 		let _r = Student.findById(sId, dtFrom);
 		//let db=App.Cfg.dbase; 
-		//console.log("Searching ....",iStudentId);
-		//let _r = db.get(Student.tbl_name).find({id: studentId}).value()
+		//console.log("Searching ....",sId);
+		//let _r = db.get(Student.tbl_name).find({id: sId}).value()
 		//console.log(`when searching ${studentId}, found those student ${_r}`);
 		//if (_r == undefined){
 		if (_r === undefined){
-			 //throw Error(`IRRECOVERABLE ERROR STUDENT WITH ID ${studentId} NOT IN DB:`);
-			 console.log(`%cStudent ${studentId} is not in db, fetching data:'funded mode' from webpage`,APP_DEBUG_STYLE);
-			 return Student.getFundingFomDashboard(studentId).toLowerCase();
+			//throw Error(`IRRECOVERABLE ERROR STUDENT WITH ID ${sId} NOT IN DB:`);
+			console.log('%c[Student._getFunding()]Student %s is not in db, fetching data:"funded mode" from webpage', APP_DEBUG_STYLE, sId);
+			_r =  await Student.getFundingFomDashboard(sId);
+			console.log('%c[Student._getFunding()]Student %s funding is %o',APP_DEBUG_STYLE, sId, _r);
+			return _r.toLowerCase();
 		 }else {
 			 return _r.funding.toLowerCase();
 		 }
@@ -228,10 +236,14 @@ path: "81-expert-en-strategie-marketing-et-communication"
 		Student._getFunding,
 		{ 	maxAge: 600000,
 			isSerialized: true,
-			//onCacheAdd: function(c,o,m){console.log("%cAdd data to cache",APP_DEBUG_STYLE);/*console.dir(c.keys);console.dir(o);console.dir(m)*/;},
-			//onCacheHit: function(){console.log("%cGet data from cache", APP_DEBUG_STYLE);}
+			isPromise: true,
+			//onCacheAdd: function(c,o,m){console.log("%c[m_getFunding]Add data to cache",APP_DEBUG_STYLE);/*console.dir(c.keys);console.dir(o);console.dir(m)*/;},
+			//onCacheHit: function(){console.log("%c[m_getFunding]Get data from cache", APP_DEBUG_STYLE);},
+			//onCacheChange: function(c,o,m){console.log("%c[m_getFunding]Change data from cache", APP_DEBUG_STYLE);/**/console.dir(c.keys);console.dir(o);console.dir(m);}
 		});
 	
+	// https://caolan.github.io/async/v3/docs.html ....
+	//static m_getFunding =  async.memoize(Student._getFunding);
 	/*
 	 * return true if student is "autofinancé"
 	 */
@@ -387,10 +399,12 @@ path: "81-expert-en-strategie-marketing-et-communication"
 	 * 
 	 */
 	static getAll = async (e,ctx) => { // mode JS2020
+		let dDebug = true;
         var bForceUpdate = false; //TODO temporary
         let db=App.Cfg.dbase; 
         var sPath ="table.crud-list tbody";
         // get full list of student
+        if(bDebug===true)console.log('%cgetAll() Enter function', APP_DEBUG_STYLE);
         const oDom = await _fetch(`https://openclassrooms.com/fr/mentorship/dashboard/students`, 'script[id="mentorshipDashboardConfiguration"]');
         
         //console.log(JSON.parse(doc.querySelector('script[id="mentorshipDashboardConfiguration"]').innerText.trim()));
@@ -411,6 +425,7 @@ path: "81-expert-en-strategie-marketing-et-communication"
         var _r = JSON.parse(oDom.innerText.trim())
         //var aStudents = oDom.querySelectorAll('tr'); //  get list of Attributed Students
         var aStudents = _r.mentorStudents;
+        if(bDebug===true)console.log('%cgetAll() collect this array of stundent %o', APP_DEBUG_STYLE, aStudents);
         const now = dayjs().format('YYYY-MM-DDTHH:mm:ssZ[Z]'); // old format
         //const now = dayjs().format('YYYY-MM-DDTHH:mm:ssZZ'); //ISO A FAIRE POUR UN PROCHAINE MAJ BDD penser à verifier deleteById mais j'ai supprimé cette possibilité
         // POUR LE BIEN JE DEVRAIS AUSSI CHANGER le champs created, ou ajouter un champs updated
@@ -419,7 +434,7 @@ path: "81-expert-en-strategie-marketing-et-communication"
 		var t0 = performance.now();
 		//var sFirstStudentId = getKey(aStudents[0].children[0].querySelector('a').href, -2); // first line, first column, a.href
 		await Student.getFundingFomDashboard(aStudents[0].studentId)
-		console.log(`%cEstimated time for updating : ${(performance.now()-t0)* aStudents.length} ms`, APP_DEBUG_STYLE);
+		if(bDebug===true)console.log(`%cEstimated time for updating : ${(performance.now()-t0)* aStudents.length} ms`, APP_DEBUG_STYLE);
 
         // --
         Swal.fire({
@@ -433,6 +448,7 @@ path: "81-expert-en-strategie-marketing-et-communication"
         
         // ce timer est nécessaire uniquement si j'utilise Swal et donc toastok
         await sleep(1000);
+        if(bDebug===true)console.log('%cWill process all students of board', APP_DEBUG_STYLE);
         for (const oStudent of aStudents) {
             //console.log(el.children[0].innerText);
             //console.log(`Processing...${el.children[0].innerText}`);
@@ -450,10 +466,12 @@ path: "81-expert-en-strategie-marketing-et-communication"
             
             var sStudentId = oStudent.studentId.toString(10); // sinon c'est un entier et toutes les insertions en bdd plantent
             var sStudentFullName = oStudent.studentDisplayableName;
+            if(bDebug===true)console.log('%c Working on student "%s"', APP_DEBUG_STYLE, sStudentFullName);
             toastOk(`Collecte les données de l'étudiant : ${sStudentFullName}`);
             //var sStudentPath = oStudent.followedLearningPathTitle;
             var sStudentPath = oStudent.followedProjectSlug;
             if (sStudentPath.length == 0){sStudentPath = "non défini";}
+            if(bDebug===true)console.log('%cWill collect student "%s" funding', APP_DEBUG_STYLE, sStudentFullName);
             let sStudentFunding = await Student.getFundingFomDashboard(sStudentId);
             //var res = db.get(Student.tbl_name).find({id: sStudentId}).value();
             //var _r = db.get(Student.tbl_name).find({id: sStudentId}).value();
@@ -467,7 +485,7 @@ path: "81-expert-en-strategie-marketing-et-communication"
             var _r = Student.m_findById(sStudentId, null);
             
             if (_r === undefined ){
-				console.log(`%cStudent ${sStudentFullName}(id:${sStudentId}) not present in database will create it`, APP_DEBUG_STYLE);
+				if(bDebug===true)console.log(`%cStudent ${sStudentFullName} (id:${sStudentId}) not present in student database will create it`, APP_DEBUG_STYLE);
 				Student.add(sStudentId, sStudentFullName, sStudentPath, sStudentFunding, now); // addStudent
 				continue; // break iterator , so it goes to next iteration
 			}
@@ -479,8 +497,8 @@ path: "81-expert-en-strategie-marketing-et-communication"
 				.assign({ funding: sStudentFunding.toLowerCase()})
 				.write();
 				
-				StudentHistory.add( sStudentId, StudentHistory.getType('FUNDING'), _r.funding.toLowerCase(), dayjs());
-				console.log(`%cStudent ${sStudentFullName}(id:${sStudentId}) was already present in database but change of funding was detected (from ${_r.funding.toLowerCase()} to ${sStudentFunding.toLowerCase()})`, APP_DEBUG_STYLE);
+				StudentHistory.addFunding( sStudentId, _r.funding.toLowerCase(), dayjs());
+				console.log(`%c[Student.getAll]Student ${sStudentFullName}(id:${sStudentId}) was already present in database but change of funding was detected (from ${_r.funding.toLowerCase()} to ${sStudentFunding.toLowerCase()})`, APP_DEBUG_STYLE);
 			}
 			if(sStudentPath !== _r.path){// update value and history
 				db.get(Student.tbl_name)
@@ -488,8 +506,8 @@ path: "81-expert-en-strategie-marketing-et-communication"
 				.assign({ path: sStudentPath})
 				.write();
 				
-				StudentHistory.add( sStudentId, StudentHistory.getType('PATH'), _r.path, dayjs());
-				console.log(`%cStudent ${sStudentFullName}(id:${sStudentId}) was already present in database but change of path was detected (from ${_r.path} to ${sStudentPath})`, APP_DEBUG_STYLE);
+				StudentHistory.addPath( sStudentId, _r.path, dayjs());
+				console.log(`%c[Student.getAll]Student ${sStudentFullName}(id:${sStudentId}) was already present in database but change of path was detected (from ${_r.path} to ${sStudentPath})`, APP_DEBUG_STYLE);
 			}
 			
 

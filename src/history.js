@@ -1,156 +1,312 @@
 /**
- *
+ * Ceci est la seconde version de cette librairie post 202106
  */
   
-import {APP_DEBUG_STYLE } from './constants.js';
+import {
+	APP_DEBUG_STYLE, APP_WARN_STYLE, APP_ERROR_STYLE,
+	} from './constants.js';
 import App from './index.js';
+import { assert } from './utils.js';
+import { isEmptyFunction } from './helpers';
 
-
-class History {
-
-	static tbl_name = 'history_session_cache'; // private field prefixed with # are not currently supported 
-
-	/**
-	 * ID IS INTEGER !!!!!! 
-	 */
-	static getSessionPage = function(dtTo){
-		if(dtTo.get('day') < dtTo.daysInMonth()){ dtTo = dtTo.endOf('month');}
-		console.log(`%cSearch in history session cache data for id: ${dtTo.format('DD/MM/YYYY')}`, APP_DEBUG_STYLE);
-		let db=App.Cfg.dbase; 
-		if(!db.has(History.tbl_name).value()){
-			throw Error(`DB ${History.db_name} NOT FOUND`);
-			return -1;
+/* Singleton Proxy for db function*/
+const _HistoryDb = (function fHistoryDb() {
+    const TBL_NAME = 'history_session_cache'; 
+    const VERBOSE = false;
+    const DBCreateTable = function() {
+		if(VERBOSE === true) console.log("%cDb dont' contain table history_session_cache table, will create it", APP_DEBUG_STYLE);
+        App.Cfg.dbase.assign({history_session_cache:[]}).write();
+    };
+    const DBTableExists = function() {
+		if( App.Cfg.dbase.get(TBL_NAME).value() === undefined){
+			return false;
 		}
-		let _r = db.get(History.tbl_name).find({id: +dtTo.format('YYYYMMDD')}).value(); // NOTESTT ID IS INTEGER
-		 if (_r === undefined){
-			 return -1;
-		 }else {
-			 return _r;
-		 }		
+		return true;
+    };
+    
+    const DBFindInTable = function(oValue){
+		if(DBTableExists === false){
+			throw new Error("%c_HistoryDb:DBFindInTable() failed reason : table is not defined", APP_DEBUG_STYLE); 
+		}
+		if(VERBOSE === true) console.log('%c_HistoryDb:DBFindInTable()  Request is App.Cfg.dbase.get("%s").find(%o).value()',APP_DEBUG_STYLE, TBL_NAME, oValue) ;
+		let _r = App.Cfg.dbase.get(TBL_NAME)
+		.find(oValue)
+		.value();
+		return _r
+	};
+	
+	const DBGetAll = function(){
+		if(DBTableExists === false){
+			throw new Error("%c_HistoryDb:DBGetAll() failed reason : table is not defined", APP_DEBUG_STYLE); 
+		}
+		if(VERBOSE === true) console.log('%c_HistoryDb:DBGetAll()  Request is App.Cfg.dbase.get("%s").value()',APP_DEBUG_STYLE, TBL_NAME) ;
+		let _r = App.Cfg.dbase.get(TBL_NAME)
+		.value();
+		return _r
+	}
+    
+    const DBInsertInTable = function(oValue){
+		if(DBTableExists === false){
+			DBCreateTable();
+		}
+		if(VERBOSE === true) console.log("%c_HistoryDb:DBInsertInTable table:%s data:%o)", APP_DEBUG_STYLE, TBL_NAME, oValue);
+		let _r = App.Cfg.dbase.get(TBL_NAME)
+		.push(oValue)
+		.write();
+		return _r;
+    };
+    /*
+     * oFind : what to find
+     * oAssign : what is the new value
+     */
+    const DBUpdateInTable = function(oFind, oAssign) {
+		if(DBTableExists === false){
+			throw new Error("%c_HistoryDb:DBUpdateInTable() failed reason : table is not defined", APP_DEBUG_STYLE);
+		}
+		let _r = App.Cfg.dbase.get(TBL_NAME)
+		.find(oFind)
+		.assign(oAssign)
+		.write();
+		return _r;
+    };
+    // if filter === empty -> remove all
+    const DBRemoveInTable = function(fn_filter = {} ) {
+		if(DBTableExists === false){
+			throw new Error("%c_HistoryDb:DBRemove() failed reason : table is not defined", APP_DEBUG_STYLE);
+		}
+		if(VERBOSE === true) console.log("%c_HistoryDb:DBRemove with filter", APP_DEBUG_STYLE);
+		if(isEmptyFunction(fn_filter)===true) console.log("%c_HistoryDb:DBRemove /!\ filter is empty", APP_DEBUG_STYLE);
+		
+		//console.log(fn_filter.toString().length);
+		//console.log(isEmptyFunction(fn_filter));
+		
+		/* just for simulate delete 
+		let _res = App.Cfg.dbase.get(TBL_NAME)
+		.filter( fn_filter )
+		.value();
+		console.log("%cSimulate REMOVE result in deletion of: %o", APP_DEBUG_STYLE, _res);
+		*/
+		
+		
+		let _r = App.Cfg.dbase.get(TBL_NAME)
+		.remove( fn_filter )
+		.write();
+		return _r;
+    };
+    /* deprecated ... use DBRemove () without params instead ; */
+    const DBResetTable = function() {
+		if(VERBOSE === true) console.log("%c_History:DBResetTable", APP_DEBUG_STYLE);
+		let _r = App.Cfg.dbase.get(TBL_NAME).remove().write();
+		return _r;
+	};
+    return {
+
+		find:    DBFindInTable,
+		getAll:  DBGetAll,
+        insert:  DBInsertInTable,
+		remove:  DBRemoveInTable,
+        reset:   DBResetTable,
+        update:  DBUpdateInTable
+    };
+})();
+/*
+_HistoryDb.delete();
+ * /
+
+/*
+ * Factory function
+ */
+var fHistory = function(){
+	
+	const TBL_NAME = 'history_session_cache'; // be careful to user either exported property (min) or constant (maj)
+
+	const checkSupport = function(){
+		let bDebug = true;
+		if( App.Cfg.dbase.get("history_session_cache").value() === undefined) {
+			if(bDebug) console.log("%cDb dont' contain history_session_cache table create it", APP_DEBUG_STYLE);
+			App.Cfg.dbase.assign({history_session_cache:[]}).write();
+		}
+	}
+	
+	const _exists = function(dtDate){
+		let bDebug = true;
+		if(typeof dtDate === 'string'){
+			dtDate = dayjs(dtDate);
+		}
+		assert(
+			dtDate instanceof dayjs === true,
+			'date must be a string or a dayjs object.',
+			TypeError
+		);
+		let _r = _HistoryDb.find({id: +dtDate.format('YYYYMMDD')});
+		if(bDebug) console.log(`%cHistory:_exists ${dtDate.format('YYYYMMDD')} in db ? ${_r === undefined ? false : true}`,APP_DEBUG_STYLE);
+		return _r === undefined ? false : true;
+	}
+
+	/*
+	 *  Get the session index (number in list of data returned by api)
+	 *  for a date of session
+	 */
+	
+	const _getSessionIndex = function(dtDate){
+		let bDebug = true;
+		if(typeof dtDate === 'string'){
+			dtDate = dayjs(dtDate);
+		}
+		assert(
+			dtDate instanceof dayjs === true,
+			'date must be a string or a dayjs object.',
+			TypeError
+		);
+		if(dtDate.get('day') < dtDate.daysInMonth()){ dtDate = dtDate.endOf('month'); }
+		if(bDebug === true) console.log(`%cSearch in history session cache data for id: ${dtDate.format('DD/MM/YYYY')}`, APP_DEBUG_STYLE);
+		if ( _exists(dtDate) === true){
+			_r = _HistoryDb.find({id: +dtDate.format('YYYYMMDD')});
+			if (typeof _r.index !== undefined){
+				return _r.index;
+			} 
+			throw new Error("_getSessionIndex() failed reason : property index is unknown"); 
+		}
+		return -1;
 	};
 	/*
-	 * 
-	 * name: inconnu
-	 * @param
-	 * @return
-	 * 
+	 *  Because we don't store all page, i must have a function to guess
+	 * by default the nearest page
 	 */
-
-	static getNearestSessionPage = function(dtTo){
-		if(dtTo.get('day') < dtTo.daysInMonth()){ dtTo = dtTo.endOf('month');}
-		console.log(`%cSearch in history session cache NEAREST cached data for id: ${dtTo.format('DD/MM/YYYY')}`, APP_DEBUG_STYLE);
-		let db=App.Cfg.dbase; 
-		if(!db.has(History.tbl_name).value()){
-			throw Error(`DB ${History.db_name} NOT FOUND`);
+	const _getNearestSessionIndex = function(dtDate){
+		let bDebug = false;
+		if(typeof dtDate === 'string'){
+			dtDate = dayjs(dtDate);
+		}
+		assert(
+			dtDate instanceof dayjs === true,
+			'date must be a string or a dayjs object.',
+			TypeError
+		);
+		//if(dtDate.get('day') < dtDate.daysInMonth()){ dtDate = dtDate.endOf('month');}
+		if(bDebug === true)console.log(`%cSearch in history session cache NEAREST cached data for id: ${dtDate.format('DD/MM/YYYY')}`, APP_DEBUG_STYLE);
+		/* merci à https://1loc.dev/ for max , j'aurais pu aussi prendre la version reduce*/
+		let _iBaseDay = +dtDate.format('YYYYMMDD'); // + => convert to integer
+		let _r = _HistoryDb.getAll();
+		if(_r.length === 0){
+			if(bDebug === true)  console.log('%cHistory session cache is empty', APP_DEBUG_STYLE);
 			return -1;
 		}
-		/* merci à https://1loc.dev/ for max , j'aurais pu aussi prendre la version reduce*/
-		let _iBaseDay = +dtTo.format('YYYYMMDD'); // + => convert to integer
-		//let _r = db.get(History.tbl_name).value().map( i =>  +i.id - _iBaseDay); // renvoie la difference en jour entre la date stockée et la date recherchée
-		let _r = db.get(History.tbl_name).value().map( i =>  +i.id - _iBaseDay).filter( i => i> 0); // renvoie la difference en jour entre la date stockée et la date recherchée supérieurs à 0
+		_r = _r.map( i =>  +i.id - _iBaseDay).filter( i => i > 0); // renvoie la difference en jour entre la date stockée et la date recherchée supérieurs à 0
 		/* si 0 alors min va me sortir le plus éloigné */
 		const min = arr => Math.min(...arr); // clone de la fonction min qui prend désormais en charge un array et plus une liste
+		if(_r.length == 0){
+			if(bDebug === true)  console.log('%cAll indexes  %o are later than your date:%s', APP_DEBUG_STYLE, _HistoryDb.getAll(), dtDate.format('DD/MM/YYYY'));
+			return -1
+		}
 		let _needle = min(_r) + _iBaseDay;
-		console.log(`%cNearest data in history session cache is data with id: ${dtTo.format('DD/MM/YYYY')}`, APP_DEBUG_STYLE);
-		_r = db.get(History.tbl_name).find({id: _needle}).value()
-		 if (_r === undefined){
-			 return -1;
-		 }else {
-			 return _r;
-		 }		
+		if(bDebug === true)  console.log('%cNearest data in history session cache is data with id: %o', APP_DEBUG_STYLE, _needle);
+		if ( _exists(_needle) === true){
+			_r = _HistoryDb.find({id: +_needle.format('YYYYMMDD')});
+			if (typeof _r.index !== undefined){
+				return _r.index;
+			} 
+			throw new Error("[History._getNearestSessionIndex()] failed reason : property index is unknown"); 
+		}
+		return -1;
+	};
+	
+	/*
+	 * Either i could found the index of data 
+	 * 	or the nearest index to start
+	 * 		{@datetime} dtDate
+	 * 		return (int) 
+	 */ 
+	const getSameOrNearestSessionIndex = function(dtDate){
+		let _r = _getSessionIndex(dtDate);
+		if (_r === -1){
+			_r = _getNearestSessionIndex(dtDate);
+		}
+		return _r;
 	};
 	/*
 	 * 
-	 * name: inconnu
-	 * @param
-	 * @return
-	 * 
-	 */
-	
-	static getSameOrNearestSessionPage = function(dtTo){
-		let _r = History.getSessionPage(dtTo);
-		if (_r === -1){
-			_r = History.getNearestSessionPage(dtTo);
-		}
-		return _r;
-	}	
-	
-	/*
-	 * 
-	 * name: delete
+	 * name: remove
 	 * @param dtFrom dayjs format date from
 	 * @param dtTo dayjs format date to
 	 * @return
 	 * 
 	 * Delete elements form DB
 	 * 
-	 * dayjs could be string, the will be translated to dayjs bu be carreful with format entry
+	 * dayjs could be string, the will be translated to dayjs but be carreful with format entry
 	 */
-	static delete = function(dtFrom=null, dtTo=null){
-		let db=App.Cfg.dbase; 
-		if (typeof dtFrom === 'string'){ dtFrom = dtFrom.format("YYYY-MM-DD"); }
-		if (typeof dtTo === 'string'){ dtTo = dtTo.format("YYYY-MM-DD"); }
+	const remove = function(dtFrom=null, dtTo=null){
+		if (typeof dtFrom === 'string'){ dtFrom = dayjs(dtFrom); }
+		if (typeof dtTo === 'string'){ dtTo = dayjs(dtTo); }
 		
-		if(dtFrom === null && dtTo == null){
-			db.get(History.tbl_name).remove().write(); // suppress all from history
-			console.log(`%cWanna suppress ALL History from DB`, APP_DEBUG_STYLE);
-			return;
+		let fn_filter = function(){}
+		/*dayjs must parse string for conversion , as id are int
+		 * must convert them
+		 */
+		if(dtFrom !== null && dtTo !== null){
+			fn_filter =  function(o){return dayjs((o.id).toString(10)).isBetween(dtFrom, dtTo, 'day','[]')};
 		}
-		if(dtTo == null){
-			db.get(History.tbl_name).remove( function(o){return dayjs(o.id,'YYYYMMDD').isBefore(dtTo), 'day'} ).write();
-			return;
+		if(dtFrom == null && dtTo !== null ){
+			fn_filter = function(o){return dayjs((o.id).toString(10)).isBefore(dtTo, 'day')};
 		}
-		if(dtFrom == null){
-			db.get(History.tbl_name).remove( function(o){return dayjs(o.id,'YYYYMMDD').isAfter(dtFrom, 'day')} ).write();
-			return;
+		if(dtFrom != null && dtTo == null){
+			fn_filter = function(o){return dayjs((o.id).toString(10)).isAfter(dtFrom, 'day')};
 		}
-		db.get(History.tbl_name).remove( function(o){return dayjs(o.id,'YYYYMMDD').isBetween(dtFrom, dtTo, 'day','[]')} ).write();
-	} 	
+		
+		/* just for simulate delete 
+		let _res = App.Cfg.dbase.get(TBL_NAME)
+		.filter( fn_filter )
+		.value();
+		console.log("%cSimulate REMOVE result in deletion of: %o", APP_DEBUG_STYLE, _res);
+		*/
+		
+		// a verifier mais sans paramètre ça semble ne pas fonctionner (il ne supprime pas tout, c'estpour ça que le reset existe encore)
+		
+		return _HistoryDb.remove( fn_filter );
+	}
 	
-	static addOrUpdateSessionPage = function(page=1,dtTo=dayjs('1970-10-06')){
-		if(History.getSessionPage(dtTo) == -1){
-			History.addSessionPage(page, dtTo);
-		} else {
-			History.updateSessionPage(page, dtTo);
-		}
-	};
-	
+	const reset = function(){
+		return _HistoryDb.reset();
+	}
 	/*
 	 * 
-	 * name: inconnu
-	 * @param
+	 * name: setSessionIndex
+	 * @param {date} dtDate the date of the index to store
+	 * @param {int}  index the index of data to browse
 	 * @return
 	 *  BE CARREFUL date is a STRING after conversion and i nee an int
 	 */
-	static updateSessionPage = function(page=1,dtTo=dayjs('1970-10-06')){
-		let db=App.Cfg.dbase; 
-		//console.log(`updateSessionPage page ${page} for date ${dtTo.format('DD/MM/YYYY')}`);
-		let _r = History.getSessionPage(dtTo);
-		if( _r == -1 ){
-			throw Error('session page not found in history');
-			return -1;
+	const setSessionIndex = function(dtDate, index=0){
+		if(typeof dtDate === 'string'){
+			dtDate = dayjs(dtDate);
 		}
-		db.get(History.tbl_name)
-		.find({id: +dtTo.format('YYYYMMDD')})
-		.assign({ page: page})
-		.write();
-	};
-	
-	/*
-	 * 
-	 * name: inconnu
-	 * @param
-	 * @return
-	 *  BE CARREFUL date is a STRING after conversion and i nee an int
-	 */
-	static addSessionPage = function(page=1,dtTo=dayjs('1970-10-06')){
-		let db=App.Cfg.dbase; 
-		//console.log(`addSessionPage page ${page} for date ${dtTo.format('DD/MM/YYYY')}`);
-		db.get(History.tbl_name)
-		.push(JSON.parse(JSON.stringify({id: +dtTo.format('YYYYMMDD'),page:page})))
-		.write();
-	};
+		assert(
+			dtDate instanceof dayjs === true,
+			'date must be a string or a dayjs object.',
+			TypeError
+		);
+		if(dtDate.get('day') < dtDate.daysInMonth()){ dtDate = dtDate.endOf('month'); }
+		let _r = _getSessionIndex(dtDate)
+		if(_r == -1){
+			_r = _HistoryDb.insert({id: +dtDate.format('YYYYMMDD'),index:index});
+		}else{
+			_r = _HistoryDb.update({id: +dtDate.format('YYYYMMDD')},{index:index});
+		} 
+		
+		return _r;
+	}; 
+
+	return Object.freeze({
+		tbl_name: TBL_NAME,
+		//getSessionIndex: getSessionIndex,
+		getSameOrNearestSessionIndex: getSameOrNearestSessionIndex,
+		remove: remove,
+		reset: reset,
+		setSessionIndex: setSessionIndex,
+ 	});
+  
 };
 
-
+const History = fHistory();
 export default History;
+

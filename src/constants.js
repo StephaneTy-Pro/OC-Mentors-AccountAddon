@@ -16,7 +16,7 @@ export const APP_PERF_STYLE 	= "background-color:blue;color:white"; // style for
 // OC
 export const OC_AUTOFUNDED 	= "auto-financé"; // in oc -> need to check uncapitalized
 export const OC_FUNDED 		= "financé par un tiers" ; // in oc
-export const OC_OTHER 		= "autre"; // ça peut être financé par coupon pour remise d'un mois gratuit par exemple, mais pour le moment je n'ai pas cet info
+export const OC_OTHER 		= "autre"; // ça peut être financé par coupon pour remise d'un mois gratuit par exemple, mais pour le moment je n'ai pas cette info
 export const OC_STATUS_0 	= "réalisée";
 export const OC_STATUS_1 	= "annulée";
 export const OC_STATUS_2 	= "annulée tardivement";
@@ -48,3 +48,12 @@ export const TYPE_SESSION = 0;
 export const TYPE_DEFENSE = 1;
 export const TYPE_COACHING = 2;
 export const TYPE_MENTORAT = 0; // new since 202106 --> same as old sessions 
+
+// SESSION API
+export const OC_API_SESSION_STATUS_0 	= "completed";
+export const OC_API_SESSION_STATUS_1 	= "canceled";
+export const OC_API_SESSION_STATUS_2 	= "late canceled";
+export const OC_API_SESSION_STATUS_3 	= "marked student as absent";
+
+// SELECTOR
+export const OC_DASHBOARDCSSMAINDATASELECTOR = 'table'; // before 'table[id*="session"]

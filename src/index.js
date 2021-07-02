@@ -47,7 +47,9 @@
 
 import { domReady, readFile, getKey } from './utils.js';
 import { debounce } from './helpers.js';
-import { APP_DEBUG_STYLE, APP_WARN_STYLE, APP_ERROR_STYLE } from './constants.js';
+import { APP_DEBUG_STYLE, APP_WARN_STYLE, APP_ERROR_STYLE, 
+	OC_DASHBOARDCSSMAINDATASELECTOR
+	} from './constants.js';
 import UI from './ui.js';
 import { 
 	appmenu,
@@ -90,6 +92,10 @@ const Facturier = {
 	},
 	// request animation frame id
 	raf:null,
+	
+	// SINCE 20210630
+	
+	 cssMainDataSelector: OC_DASHBOARDCSSMAINDATASELECTOR, // before 'table[id*="session"]
 
 	/*
 	 * 
@@ -108,11 +114,14 @@ const Facturier = {
 		if (document.querySelector(sCSSObserved) === null){ 
 			console.log(`%c All condition not met, waiting element '${sCSSObserved}' `, APP_DEBUG_STYLE); 
 			document.arrive(sCSSObserved, Facturier._warmup); 
+			/* hack */
+			GM_registerMenuCommand('force - loading', Facturier._warmup);
 		} else { 
 			console.log(`%c All condition already met go`, APP_DEBUG_STYLE);
 			Facturier._warmup(); 
 		}
 	},
+	
 	/*
 	 * 
 	 * name: inconnu
@@ -136,6 +145,8 @@ const Facturier = {
 		// 'this' refers to the newly created element
 		console.log("%c in _warmup",APP_DEBUG_STYLE);
 		document.unbindArrive(Facturier._warmup);
+		GM_unregisterMenuCommand('force - loading');
+		// -- seem not to be used GM_disableMenuCommand('force - loading');
 		if(GM === undefined){
 			console.log("%cI am not in a tamper env", APP_DEBUG_STYLE);
 			Facturier._userscriptless();
@@ -150,7 +161,8 @@ const Facturier = {
 		/* SPECTRE CSS */
 		// fonctionne mal avec le thème oc GM_addStyle( GM_getResourceText("spectrecss") );
 		GM_config.init(appmenu);
-		GM_registerMenuCommand('OC Facturier - configure', opencfg);
+		GM_registerMenuCommand('configure', opencfg);
+		GM_registerMenuCommand('force - cbox', Facturier._forceCbox);
 		/* hacks */
 		if(GM_config.get('hackheaderzindex') === true){
 			document.getElementById('header').style.zIndex = 0; // because z index is 1000 in oc rules
@@ -158,14 +170,15 @@ const Facturier = {
 		/* set size of content */
 		//GM_addStyle('.swal2-content{font-size:'+GM_config.get('sizeofcontentlist')+'}');
 		GM_addStyle('.swal2-title{font-size:1.275em)'); // set by default to 1.875em by CSS of SWAL
-		
 		/* 
 		 * solution de contournement depuis le 01/06/2021 attente du 
 		 * chargement de l'historique sinon le tableau de l'historique
 		 * des sessions n'est pas disponible
 		 */
 		//var sCSSObserved = 'table#sessions_2'; // was .dom-services-4-MuiAvatar-img before
-		var sCSSObserved = 'table#sessions_2 tbody tr > td > div > div+p'; // was .dom-services-4-MuiAvatar-img before
+		//var sCSSObserved = 'table#sessions_2 tbody tr > td > div > div+p'; // was .dom-services-4-MuiAvatar-img before
+		//var sCSSObserved = 'table[id*="sessions"] tbody tr > td > div > div+p';
+		var sCSSObserved = Facturier.cssMainDataSelector;
 		if (document.querySelector(sCSSObserved) === null){ 
 			console.log(`%c All condition not met, waiting element '${sCSSObserved}' `, APP_DEBUG_STYLE); 
 			document.arrive(sCSSObserved, Facturier._main); 
@@ -177,6 +190,10 @@ const Facturier = {
 		
 		//Facturier._main();
 	},
+	// this fonction force the
+	_forceCbox: function(){
+		Facturier._applyInjectionForSessionsHistory()
+	},
 	
 	/** 
 	 * on href change detection
@@ -185,30 +202,74 @@ const Facturier = {
 	 * NOTESTT changed to pathname change because of #param which sometimes follow href
 	 */
 	pathname: document.location.pathname,
-	_eventMonitor : function(){
+	
+	/*
+	 * must return STRING else detection will failed
+	 */
+	_getOCMainClass: function(){
+		try {
+			//const _sOCMainCntClass = document.querySelector('#mainContentWithHeader')[0].firstChild.classList.value; // fonctionne mal
+			//const _sOCMainCntClass = document.querySelector('table[id*="session"]').classList.value; 
+			const _sOCMainCntClass = document.querySelector(Facturier.cssMainDataSelector).classList.value; 
+			const _aOCMainSrvId = _sOCMainCntClass.match(/dom-services-(\d)/);
+			if(_aOCMainSrvId.length == 2)
+				return `dom-services-${_aOCMainSrvId[1]}`;
+			throw new Error("_aOCMainSrvId.length must be 2");
+		} catch (error) {
+			console.error("%cError in _getOCMainClass():%s", APP_ERROR_STYLE, error);
+			return '';
+		}
+	},
+	/** Hack for OC **/
+	_sOCMainSrvClassName: '',
+	_eventMonitor: function(){
 		//unsafeWindow.onload = function() {
 			var
 				bodyList = document.querySelector("body")
 				,observer = new MutationObserver(function(mutations) {
 					mutations.forEach(function(mutation) {
-						//console.log("%c mutation is %o", APP_DEBUG_STYLE, mutation);
-						//console.log("%c target mutation is on %o", APP_DEBUG_STYLE, mutation.target);
-						//console.log("%c target mutation class is %o", APP_DEBUG_STYLE, mutation.target.class);
+						/*
+						console.group("%cMutation Observer", APP_DEBUG_STYLE);
+						console.log("%c mutation is %o", APP_DEBUG_STYLE, mutation);
+						console.log("%c mutation type ...........: %s", APP_DEBUG_STYLE, mutation);
+						console.log("%c target mutation nodeName.: %o", APP_DEBUG_STYLE, mutation.target.nodeName);
+						console.log("%c target mutation id.......: %o", APP_DEBUG_STYLE, mutation.target.id);
+						console.log("%c target mutation class....: %o", APP_DEBUG_STYLE, mutation.target.classList);
+						console.groupEnd();
+						*/
 						// use classList.contains() or className ===
-						if(mutation.target.classList.contains('dom-services-3-MuiTouchRipple-root')){ // click on next page wich target '<span class="dom-services-3-MuiTouchRipple-root"></span>'
+						//if(mutation.target.classList.contains('dom-services-3-MuiTouchRipple-root')){ // click on next page wich target '<span class="dom-services-3-MuiTouchRipple-root"></span>'
+						if(mutation.target.classList.contains(`${Facturier._sOCMainSrvClassName}-MuiTouchRipple-root`)){ // click on next page wich target '<span class="dom-services-3-MuiTouchRipple-root"></span>'
 							//console.log("%cPaging on table was modified", APP_DEBUG_STYLE);
 						}
 						if(mutation.target.nodeName === 'TBODY' && mutation.target.parentElement.nodeName === 'TABLE'){
-							//console.log("%cTable data changed",APP_DEBUG_STYLE);
-							//console.log("%c=============> Changed data : %o", APP_DEBUG_STYLE,mutation);
-							//Facturier._applyInjectionOnPathNameMutation();
+							/**/
+							console.log("%cTable data changed (TBODy,TABLE)",APP_DEBUG_STYLE);
+							console.log("%c=============> Changed data : %o", APP_DEBUG_STYLE,mutation);
+							
+							debounce(Facturier._applyInjectionOnPathNameMutation());
+						}
+						/* Since 20210623 
+						 * if button < is mutated 
+						 * parent is a li contained in an ul himself second child of a div with first child is the table
+						 * je ne peux pas regarder son label car c'est un svg
+						 * eventuellement je peux comparer 
+						 * .children[0].firstElementChild.innerHTML à '<path d=\"M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z\"></path>'
+						 * qui est la représentation de <
+						 * */
+						if(mutation.target.nodeName === 'BUTTON' && 
+							mutation.target.parentElement.parentElement.parentElement.firstElementChild.nodeName === 'TABLE'){
+							/**/
+							console.log("%cTable data changed (BUTTON, TABLE)",APP_DEBUG_STYLE);
+							console.log("%c=============> Changed data : %o", APP_DEBUG_STYLE,mutation);
+
 							debounce(Facturier._applyInjectionOnPathNameMutation());
 						}
 						
 						if(mutation.target.ariaLabel === 'Page précédente'){
 							//console.log("%cPaging < was modified", APP_DEBUG_STYLE);
 						}
-						// $('.dom-services-3-dom-services101') a priori permet de lister tous les elements du talbeau quelle que soit la catégorie de sessions aléatoire ???
+						// $('.dom-services-3-dom-services101') a priori permet de lister tous les elements du tableau quelle que soit la catégorie de sessions aléatoire ???
 						// regarder aussi <button class="dom-services-3-MuiButtonBase-root dom-services-3-MuiButton-root dom-services-3-MuiButton-text dom-services-3-dom-services144" tabindex="0" type="button" aria-label="Page précédente"><span class="dom-services-3-MuiButton-label"><svg class="dom-services-3-MuiSvgIcon-root" focusable="false" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"></path></svg></span><span class="dom-services-3-MuiTouchRipple-root"></span></button>
 						if (Facturier.pathname != document.location.pathname) {
 							Facturier.pathname = document.location.pathname;
@@ -231,17 +292,17 @@ const Facturier = {
 		let bStop = false;
 		if(bStop === false && document.location.pathname.match(/\/sessions$/)){
 			bStop = true;
-			console.log("%cgestion des sessions", APP_DEBUG_STYLE);
+			//console.log("%cgestion des sessions", APP_DEBUG_STYLE);
 			Facturier._applyInjectionForSessionsToComplete();
 		}
 		if(bStop === false && document.location.pathname.match(/\/booked-mentorship-sessions$/)){
 			bStop = true;
-			console.log("%cgestion des sessions futures"), APP_DEBUG_STYLE;
+			//console.log("%cgestion des sessions futures"), APP_DEBUG_STYLE;
 			Facturier._applyInjectionForSessionsBooked();
 			}
 		if(bStop === false && document.location.pathname.match(/\/mentorship-sessions-history$/)){
 			bStop = true;
-			console.log("%cgestion de l'historique des sessions", APP_DEBUG_STYLE);
+			//console.log("%cgestion de l'historique des sessions", APP_DEBUG_STYLE);
 			//console.log("%cTODO: supprimer l'option de configuration alwaysaddcbox", APP_DEBUG_STYLE);
 			//if(GM_config.get("alwaysaddcbox") === true){
 					Facturier._applyInjectionForSessionsHistory();
@@ -253,13 +314,15 @@ const Facturier = {
 	
 	},
 	
+	_lastMutation: 0, // timestamp in milliseconds //.unix() if in seconds
 	_applyInjectionForSessionsToComplete:function(){
 		// have to clean or hide the header
-		if(document.querySelector('table#sessions_2 thead') !== null){
-			document.querySelector('table#sessions_2 thead').style.display="none";
+		if(document.querySelector(Facturier.cssMainDataSelector+' thead') !== null){
+			document.querySelector(Facturier.cssMainDataSelector+' thead').style.display="none";
 		}
 		// have to monkey patch buttons
-		var btns = Array.from(document.querySelectorAll("table#sessions_2 tbody a[href*=sessions]"));
+		//var btns = Array.from(document.querySelectorAll('table[id*="session"] tbody a[href*=sessions]'));
+		var btns = Array.from(document.querySelectorAll(Facturier.cssMainDataSelector+' tbody a[href*=sessions]'));
 		/*btns.forEach(btn => btn.onclick = function(event) {
 				console.log("click");
 				// ajout d'un element dans la table references
@@ -323,47 +386,71 @@ const Facturier = {
 	
 	_applyInjectionForSessionsBooked:function(){
 		// have to clean or hide the header
-		if(document.querySelector('table#sessions_2 thead') !== null){
-			document.querySelector('table#sessions_2 thead').style.display="none";
+		if(document.querySelector(Facturier.cssMainDataSelector+' thead') !== null){
+			document.querySelector(Facturier.cssMainDataSelector+' thead').style.display="none";
 		}
 	},
-	
-	_applyInjectionForSessionsHistory:function(){
-		if(document.querySelector('table#sessions_2 thead') !== null){
-			document.querySelector('table#sessions_2 thead').style.display="block";
+	/*
+	 *  (int) iDelayBetweenTwoMutations : default 100 ms of delay between to mutation on dom
+	 */
+	_applyInjectionForSessionsHistory:function(iDelayBetweenTwoMutations=100){
+		console.log('%c[index._applyInjectionForSessionsHistory()] Le panel de gestion des sessions en historique a été activé, la dernière mutation date de %i',APP_DEBUG_STYLE, Facturier._lastMutation);
+		if(document.querySelector(Facturier.cssMainDataSelector+' thead') !== null){
+			document.querySelector(Facturier.cssMainDataSelector+' thead').style.display="block";
 		}
 		//if(GM_config.get("alwaysaddcbox") === true){ // cette option doit disparaitre
+		// as each mutation is registred, prevent too many mutation on same times
+		if(dayjs().valueOf()-Facturier._lastMutation < iDelayBetweenTwoMutations){
+			console.log('%c[index._applyInjectionForSessionsHistory()] Traitement abandonnée le dernier refresh date de %o limite:%o ms',APP_DEBUG_STYLE, Facturier._lastMutation, iDelayBetweenTwoMutations);
+			Facturier._lastMutation = dayjs.valueOf();
+			return;
+		}
 		addCbox();
 		//} // add checkbox to element in history
 	},
 	
 	_addHeader: function(){
+		/* set main SrvClassName*/
+		if (Facturier._sOCMainSrvClassName.length === 0){
+			Facturier._sOCMainSrvClassName = Facturier._getOCMainClass();
+		}
+		
+		if (Facturier._sOCMainSrvClassName.length === 0){
+			console.error('%c[index._addHeader()] _sOCMainSrvClassName is still unknow', APP_ERROR_STYLE);
+			//console.log("[index._addHeader()]check this %o", document.querySelector('table[id*="session"]'));
+			console.log("[index._addHeader()]check this %o", document.querySelector(Facturier.cssMainDataSelector));
+		}
+
 		let sElement = `
-<a href="" class="dom-services-3-MuiButtonBase-root dom-services-3-MuiTab-root dom-services-3-dom-services73 dom-services-3-MuiTab-textColorInherit" style="
-    margin-left: auto;
-"><span class="dom-services-3-MuiTab-wrapper">En base de donnée (21/24)</span><span class="dom-services-3-MuiTouchRipple-root"></span></a>
-		`
+<a href="" class="${Facturier._sOCMainSrvClassName}-MuiButtonBase-root
+ ${Facturier._sOCMainSrvClassName}-MuiTab-root
+ ${Facturier._sOCMainSrvClassName}-dom-services73
+ ${Facturier._sOCMainSrvClassName}-MuiTab-textColorInherit"
+ style="margin-left: auto;">
+ <span class="${Facturier._sOCMainSrvClassName}-MuiTab-wrapper">En base de donnée (21/24)</span>
+ <span class="${Facturier._sOCMainSrvClassName}-MuiTouchRipple-root"></span></a>
+`;
 		let aDom = document.querySelector('#mainContent > :not(div:empty)').children;
 		
 		let oSpan_1 = document.createElement('span');
 		oSpan_1.innerText = "Facturier v."+GM.info.script.version;
-		oSpan_1.classList.add('dom-services-3-MuiTab-wrapper');
+		oSpan_1.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTab-wrapper`);
 		let _handler;
 		oSpan_1.addEventListener('click', _handler = function(e){
 			document.querySelectorAll("tbody input[type=checkbox]").forEach( e => e.checked = !e.checked );
 		});
 		let oSpan_2 = document.createElement('span');
-		oSpan_2.classList.add('dom-services-3-MuiTouchRipple-root');
+		oSpan_2.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTouchRipple-root`);
 
 		let oRoot = document.createElement('a');
 		oRoot.alt = "tout séléctionner";
 		oRoot.appendChild(oSpan_1);
 		oRoot.appendChild(oSpan_2);
 		// copy from precedent ? need to detect unactive one
-		oRoot.classList.add('dom-services-3-MuiButtonBase-root');
-		oRoot.classList.add('dom-services-3-MuiTab-root');
+		oRoot.classList.add(`${Facturier._sOCMainSrvClassName}-MuiButtonBase-root`);
+		oRoot.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTab-root`);
 		// oRoot.classList.add('dom-services-3-dom-services73');
-		oRoot.classList.add('dom-services-3-MuiTab-textColorInherit');
+		oRoot.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTab-textColorInherit`);
 let sStyle=`
 font-size: 1rem;
 max-width: 280px;
@@ -371,7 +458,7 @@ font-family: Montserrat;
 font-weight: 400;
 line-height: 1.625rem;
 text-transform: inherit;
-`
+`;
 		oRoot.style = sStyle+'margin-left: auto'; // magic property to pull it (flex element)right
 		//aDom[2].appendChild(oRoot);
 		aDom[2].querySelector('div:nth-child(2) > div').appendChild(oRoot);
@@ -415,11 +502,10 @@ text-transform: inherit;
 	},
 	
 	_main : function(){
-		console.log('​​​%cMainLoaded​​​',APP_DEBUG_STYLE);
+		console.log('​​​%c[index._main()]MainLoaded​​​',APP_DEBUG_STYLE);
 		document.unbindArrive(Facturier._main);
 		
-		// Attention avec l'ordre des choses, ici on lance trop vite l'event monitor puisque la base est pas encore théoriquement connectée
-		
+		// Attention avec l'ordre des choses, ici on lance trop vite l'event monitor puisque la base est pas encore théoriquement connectée		
 		Facturier._eventMonitor();
 
 		Performance.paintTiming();
@@ -443,13 +529,14 @@ text-transform: inherit;
 		Meta.checkSupport();
 		
 		//Monitor
-		
+		/*
 		if(GM_config.get('userid') != 0){
 			Api.forge(GM_config.get('userid')); // pour le bien devrait sortir de la configuration
-			Api.getPendingSessionFrom(dayjs());
+			//Api.getPendingSessionFrom(dayjs());
 		} else {
 			console.log("%cVotre numéro d'utilisateur openclassrooms n'a pas ete renseigné dans la configuration vous ne pourrez pas utiliser la collecte automatique d'information", APP_ERROR_STYLE);
 		}
+		* */
 		
 		//Api.forge(7688561); // pour le bien devrait sortir de la configuration
 		//Api.getPendingSessionFrom(dayjs());
@@ -714,86 +801,7 @@ text-transform: inherit;
 		}
 	}, 
 	
-	// patch some xhr function to use openclassroomsapi
-	
-	patchxhr: function(){
-		var open = window.XMLHttpRequest.prototype.open,
-			send = window.XMLHttpRequest.prototype.send,
-			setRequestHeader = window.XMLHttpRequest.prototype.setRequestHeader;
 
-		var openReplacement = function(method, url, async, user, password) {
-			//console.log("%cmethod %o url:%o, async:%o, user %o, password:%o",'color:mediumseagreen',method,url,async,user,password);
-			this._url = url;
-			this._requestHeaders = {};
-			this._knox = [];
-			//console.log(this);
-			return open.apply(this, arguments);
-		};
-		var sendReplacement = function(data) {
-			if(this.onreadystatechange) {
-				this._onreadystatechange = this.onreadystatechange;
-			}
-			this.onreadystatechange = onReadyStateChangeReplacement;
-			return send.apply(this, arguments);
-		};
-		var setRequestHeaderReplacement = function(header, value){
-			//console.log('url is %s',this._url);
-			if(this._url.match(/^https:\/\/api.openclassrooms.com/g)){
-				//console.log('OPENCLASSROOMS');
-				this._knox.push( {key:header, value:value} );
-			}
-			this._requestHeaders[header] = value;
-			/*console.log('%csetRequestHeader key:%c%s%c, value:%c%s',
-						'color:mediumseagreen',
-						'color:darksalmon',header,
-						'color:mediumseagreen',
-						'color:darksalmon',value);
-			*/
-			//console.log('params are %o',arguments);
-			return setRequestHeader.apply(this, arguments);
-		};
-		window.XMLHttpRequest.prototype.open = openReplacement;
-		window.XMLHttpRequest.prototype.send = sendReplacement;
-		window.XMLHttpRequest.prototype.setRequestHeader = setRequestHeaderReplacement;
-	},
-	
-	// https://dmitripavlutin.com/catch-the-xmlhttp-request-in-plain-javascript/
-	overrideDebug : function(){
-		var open = window.XMLHttpRequest.prototype.open,
-		  send = window.XMLHttpRequest.prototype.send;
-
-		function openReplacement(method, url, async, user, password) {
-		  this._url = url;
-		  return open.apply(this, arguments);
-		}
-
-		function sendReplacement(data) {
-		  if(this.onreadystatechange) {
-			this._onreadystatechange = this.onreadystatechange;
-		  }
-		  /**
-		   * PLACE HERE YOUR CODE WHEN REQUEST IS SENT  
-		   */
-		 console.log(`%c Request sent : ${data}`, APP_DEBUG_STYLE);  
-		   
-		  this.onreadystatechange = onReadyStateChangeReplacement;
-		  return send.apply(this, arguments);
-		}
-
-		function onReadyStateChangeReplacement() {
-		  /**
-		   * PLACE HERE YOUR CODE FOR READYSTATECHANGE
-		   */
-		   console.log(`%c Ready state changed to: ${this.readyState}`,APP_DEBUG_STYLE);  
-		   
-		  if(this._onreadystatechange) {
-			return this._onreadystatechange.apply(this, arguments);
-		  }
-		}
-
-		window.XMLHttpRequest.prototype.open = openReplacement;
-		window.XMLHttpRequest.prototype.send = sendReplacement;	
-	},
 }
 if (window.Facturier !== undefined){
 	window.Facturier.start();

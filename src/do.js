@@ -8,7 +8,8 @@ import {
 	SESSION_DONE,SESSION_CANCEL, SESSION_CANCEL_LATE, SESSION_STUDENT_AWAY,
 	BILL_AUTOFUNDED, BILL_FUNDED, BILL_OTHER,
 	TYPE_SESSION, TYPE_DEFENSE, TYPE_COACHING,
-	OC_STATUS_0, OC_STATUS_1, OC_STATUS_2, OC_STATUS_3_M
+	OC_STATUS_0, OC_STATUS_1, OC_STATUS_2, OC_STATUS_3_M,
+	OC_DASHBOARDCSSMAINDATASELECTOR
 	} from './constants.js';
 import { _fetch, getKey, convertRowToDate } from './utils.js';
 import {
@@ -27,6 +28,7 @@ import List from './lists.js';
 import { workday_count } from './date.lib.js';
 import PDF from './pdf.js';
 import Dbase from './dbase.js';
+
 
 /**
  * 
@@ -138,11 +140,9 @@ var addCboxOld = function(){
  * */
 
 var addCbox = function(){
-	
-	console.log('%c ADDCBOX WAS CALLED', APP_DEBUG_STYLE);
-
-	
-	var sPath ="table#sessions_2";
+	//var sPath ="table#sessions_2"; // obsolete since 20210624
+	//var sPath ='table[id*="session"]';
+	var sPath = OC_DASHBOARDCSSMAINDATASELECTOR;
 	var sessions = document.querySelector(sPath);// le All me retourne aussi le tableau des étudiants
 	var bChecked = false;
 	//console.log(`the sessions object is ${sessions}`);
@@ -152,9 +152,13 @@ var addCbox = function(){
 	}
 	if (sessions.querySelector("[type=checkbox]") === null) {
 		//console.log("%cCheckBox NOT already displayed, i ve to build and show checked on|off", APP_DEBUG_STYLE);
-		var sPath ="table#sessions_2 tbody";
-		var sessions = document.querySelector(sPath);// remarque attention le All me retourne aussi le tableau des étudiants
-		for (const oTr of sessions.children) { 
+		var sessions = document.querySelector(`${sPath} tbody`);// remarque attention le All me retourne aussi le tableau des étudiants
+		for (const oTr of sessions.children) {
+			
+			// since 20210630 there are some empty lines pass them
+			if(oTr.querySelector('a') === null){
+				continue;
+			 }
 			//console.log("nom de l'étudiant : %o",el.children[2].innerText)
 			// 0 - annulé|réalisé|absent & type mentorat|soutenance
 			// 1 - date
@@ -181,32 +185,12 @@ var addCbox = function(){
 			oTr.appendChild(td);
 		}
 		// ajout d'une case selectionner tout
-/*
- <thead style="
-    display: block;
-"><tr style="
-    display: flex;
-    align-items: center;
-    border-bottom: 1px solid #e0e0e0;
-    flex-direction: row;
-    background-color: #fff;
-"><td>Facturier 1.12</td><td style="
-    font-size: 1rem;
-    max-width: 280px;
-    font-family: Montserrat;
-    font-weight: 400;
-    line-height: 1.625rem;
-    text-transform: inherit;
-    margin-left: auto;
-">Fact.(o/n)</td></tr>
-</thead>
- */
 		// 1 - ajout du thead si nécessaire
-		if(document.querySelector('table#sessions_2 thead') === null){
+		if(document.querySelector(`${sPath} thead`) === null){
 			const insertBefore = (ele, anotherEle) => anotherEle.insertAdjacentElement('beforebegin', ele);
-			sPath ="table#sessions_2 tbody";
-			var el = document.querySelector(sPath)
-			inputElem = document.createElement('input');
+			sPath =`${sPath} tbody`;
+			var el = document.querySelector(sPath);
+			var inputElem = document.createElement('input');
 			inputElem.type = "checkbox";
 			inputElem.name = "name";
 			inputElem.value = "value";
@@ -230,7 +214,7 @@ var addCbox = function(){
 `;
 			//oTd.colspan = 4
 			//oTd1.innerText = "Facturier v."+GM.info.script.version;
-			oTd1.innerText = "&nbsp;"+GM.info.script.version;
+			oTd1.innerText = " ";
 			var oTd2 = document.createElement('td');
 			oTd2.style=`
     font-size: 1rem;
@@ -258,6 +242,9 @@ var addCbox = function(){
 			var oTh = document.createElement('thead');
 			oTh.style= 'display: block;';
 			oTh.appendChild(oTr);
+			
+			//console.log("addCBox --------- il semblerait y avoir une erreur ici : %s , %o",sPath, document.querySelector(sPath));
+			
 			insertBefore(oTh, document.querySelector(sPath)) ;
 		}
 	} else {
@@ -351,7 +338,19 @@ var billInDetails = async function(){
  * @return
  * 
  */
-var collectAuto = async function (){
+ 
+var collectAuto = async function(){
+	var bDebug = true;
+	var [dtFrom,dtTo] = await popupDateSelector(dayjs().startOf('month'),dayjs().endOf('month'));
+	// -- >
+	if(bDebug==true) console.log("%ccollectAuto() Wanna collect from %s to %s", APP_DEBUG_STYLE, dtFrom.format("DD/MM/YYYY"), dtTo.format("DD/MM/YYYY"));
+	var _r = await Session.getSessionsFromAPI(dtFrom, dtTo);
+	if(bDebug==true) console.log("%ccollectAuto() Sessions are is %o", APP_DEBUG_STYLE, _r);
+	// -->
+	
+} 
+ 
+var collectAutoOld = async function (){
 
 	var [dtFrom,dtTo] = await popupDateSelector(dayjs().startOf('month'),dayjs().endOf('month'));
 	//console.log(`wanna fetch history between ${dtFrom.format()} and ${dtTo.format()} searching in page ${pg} of history`);
@@ -491,7 +490,9 @@ data-transition-in	animate the bar for entering transition, when value is set by
  */    
 var collectChecked = async function(){
 	//var sPath = "table.crud-list tbody input:checked"; //before 20210601
-	var sPath = "table#sessions_2 tbody input:checked";
+	//var sPath = "table#sessions_2 tbody input:checked";
+	//var sPath ='table[id*="session"] tbody input:checked';
+	var sPath = OC_DASHBOARDCSSMAINDATASELECTOR;
 	var cb = document.querySelectorAll(sPath);
 	// show progressbar 
 	// working with https://codepen.io/stephane_ty/pen/LYNjvew?editors=1111
@@ -1077,7 +1078,14 @@ var debugMode = function(){
 		//export_db =  JSON.parse(JSON.stringify(unsafeWindow.Facturier.cfg.dbase.getState()))
 		GM_addStyle('.formgrid{font-family: "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", Helvetica, Arial, sans-serif;}');
 		/* CSS compressed with : https://csscompressor.com/*/
-		GM_addStyle(".swal2-styled[type=button]{background-color:#3085d6;border-radius:.75em;color:#fff;font-size:1.0625em;border-left-color:#3085d6;border-right-color:#3085d6;display:inline-block}.formgrid{display:grid;grid-template-columns:1fr 1em 1fr;grid-gap:.3em .6em;grid-auto-flow:dense;align-items:center}input,output,textarea,select,button{grid-column:2 / 4;width:auto;margin:0}legend{font-size:1.2em;width:100%;border-bottom:1px dotted #99c}fieldset{max-width:40em;padding:4px;margin:2em auto;border:0 none}");
+		GM_addStyle(`
+.swal2-styled[type=button]{background-color:#3085d6;border-radius:.75em;color:#fff;font-size:1.0625em;border-left-color:#3085d6;border-right-color:#3085d6;display:inline-block}
+.formgrid{display:grid;grid-template-columns:1fr 1em 1fr;grid-gap:.3em .6em;grid-auto-flow:dense;align-items:center}
+.formgrid input,.formgrid output,.formgrid textarea,.formgrid select,.formgrid button{grid-column:2 / 4;width:auto;margin:0}
+.formgrid legend{font-size:1.2em;width:100%;border-bottom:1px dotted #99c}
+.formgrid fieldset{max-width:40em;padding:4px;margin:2em auto;border:0 none}
+`);
+
 		/* modelized here https://codepen.io/stephane_ty/pen/mdVzWpQ */
 		let sHtml="";
 		sHtml+="<legend>Que voulez vous faire ?</legend>";
@@ -1092,9 +1100,17 @@ if(STT_VERSION) {
     	hx-get="http://127.0.0.1:8000/views/test-swal-sauvegarde.html"
         hx-target="#sttPlaceHolder"
         hx-include="[name='email']"
-        hx-swap="innerHTML"> Exporter
+        hx-swap="innerHTML"> Exporter (local)
     </button>
 		`;   
+		sHtml+=`Exporter les tables
+    <button class="swal2-styled" type="button"
+    	hx-get="http://127.0.0.1:8000/views/test-swal-sauvegarde.html"
+        hx-target="#sttPlaceHolder"
+        hx-include="[name='email']"
+        hx-swap="innerHTML"> Importer (local)
+    </button>
+		`; 
 		}   
 		sHtml+=`Exporter les tables
     <button class="swal2-styled" type="button"

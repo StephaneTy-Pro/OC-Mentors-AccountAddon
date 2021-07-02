@@ -304,8 +304,8 @@ class Accounting {
 		Accounting._calculateBill,
 		{ 	maxAge: 120000,// in ms //GM_config.get("datacachelifetime"),
 			isSerialized: true,
-			onCacheAdd: function(c,o,m){console.log("%cAdd data to cache",APP_DEBUG_STYLE);/*console.dir(c.keys);console.dir(o);console.dir(m)*/;},
-			onCacheHit: function(){console.log("%cGet data from cache", APP_DEBUG_STYLE);}
+			//onCacheAdd: function(c,o,m){console.log("%cAdd data to cache",APP_DEBUG_STYLE);/*console.dir(c.keys);console.dir(o);console.dir(m)*/;},
+			//onCacheHit: function(){console.log("%cGet data from cache", APP_DEBUG_STYLE);}
 		});	
 		
 	/*
