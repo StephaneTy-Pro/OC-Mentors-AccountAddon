@@ -13,6 +13,11 @@ import Meta from './meta.js';
 import {extractDate, getKey, cyrb53, assert} from './utils.js';
 import Api from'./api.openclassrooms.js';
 import History from'./history.js';
+import {
+	toastOk,
+	} from './components.js';
+
+
 
 /*
  * version 1.1
@@ -129,7 +134,7 @@ class Session {
 	 */
 	static add = async function(oSession){
 		const iRefreshStudentDataBaseTreshold = 30 // limite pour un nouveau refresh de la base étudiante 30 minutes
-		let bDebug = false;
+		let bDebug = true;
 		if(bDebug===true)console.log("%cSession.add() so you wanna add a session %o to database", APP_DEBUG_STYLE, oSession);
 		let db=App.Cfg.dbase;
 		if(GM_config.get("checksessionalreadyexists") === true) {
@@ -224,6 +229,9 @@ class Session {
 						}
 					}
 					//var bPass2 = Student.exists(oSession.who_id, oSession.when);
+					console.log("%c[Student.add()] précédemment notre étudiant %o  n'existait pas existe t'il maintenant ?", APP_DEBUG_STYLE, oSession.who_id);
+					console.log("%c[Student.add()] la réponse est :%o", APP_DEBUG_STYLE, Student.exists(oSession.who_id, oSession.when));
+					
 					if(Student.exists(oSession.who_id, oSession.when) == false){// still not exists, have to add student manually
 						console.warn(`%c[Session.add()] Student ${oSession.who_id} which exists at ${oSession.when} still not exit in Db, have to manually create him/her`, APP_WARN_STYLE);
 						await Student.createManually(oSession.who_id, oSession.who_name, oSession.when);
@@ -264,7 +272,6 @@ class Session {
 		//console.log("%cSession.add() final object is %o", APP_DEBUG_STYLE, oSession);
 		
 		Session._save(oSession);
-
 	};
 	// save session in db
 	static _save = function(oSession){
@@ -484,7 +491,9 @@ class Session {
 		if (_r !== undefined && typeof _r === 'number' && _r > iIndexStart){
 			iIndexStart = _r; // advance to that index
 		}
-		
+		// ProgressBar
+		// calculer l'écart en jour derniere session et premiere session demandée, rapporter sur la duréee et calculer un pourcentage
+		var _iDaysToProcess = dtTo.diff(dtFrom,'d') + 1; 
 		NProgress.start();
 		
 		while(bBrowse === true){
@@ -527,14 +536,11 @@ class Session {
 			if(dayjs(oSession.when).isBefore(dtFrom) === true){
 				bBrowse = false;
 				if(bDebug === true)console.log('%cgetSessionsFromAPI() last session is before start date of parsing %s STOP browsing....', APP_DEBUG_STYLE, dayjs(oSession.dtFrom).format('DD/MM/YYYY'));
-			
+				// ~~ set HistoryIndex
 				// set or update session history cache
 				// set first element of page index
 				History.setSessionIndex(oSession.when, iIndexStart);
 			}
-			
-
-			
 			/*
 			console.log('%c[Session.getSessionsFromAPI()] compare last session date %s avec la date de fin %s est ce postérieur  %o',
 			APP_DEBUG_STYLE, 
@@ -562,29 +568,17 @@ class Session {
 				if(bDebug === true)console.log('%cgetSessionsFromAPI()  will call Session.add() on %o', APP_DEBUG_STYLE, oSession);
 				const _r = await Session.add(oSession);  
 				
-				
-				
+				// calculer l'écart en jour derniere session et premiere session demandée, rapporter sur la duréee et calculer un pourcentage
+				// ne pas oublier que l'on est en inverse sur la date donc on traite le 29 avant le 28
+				var _iDaysProcessed = dayjs(dtTo).diff(oSession.when,'d') + 1; // calcul en jours 30-29 = 1 et je veux que ce soit deux
+				NProgress.set(_iDaysProcessed/_iDaysToProcess);// — sets a percentage 
 				}
-			//);
 			//console.log('%cASYNC FUNCTION oSessionsFinal.forEach id: %s END', APP_ERROR_STYLE, _uuid);
-			
-			// ~~ set HistoryIndex
-			// Note index are floating between two month so i need to set the index when i found a last day of month ???
-			// le jour est le 12/06 en index 22, et je stocke 30/06:22-20 soit 2  ; le vrai 30 est donc plus loin
-			// le but n'est pas de trouver la page exacte mais d'accélerer les traitements
-			// History.setSessionIndex(oSession.when, iIndexStart);
-			// faut que je change la stratégie 
-			// je ne vais jamais trouver la date de fin de mois, il faut juste que je set la date telle qu'elle sans convertir au début ou a la fin
-			// loop
 			iIndexStart = iIndexEnd+1;
-			
-			// calculer l'écart en jour derniere session et premiere session demandée, rapporter sur la duréee et calculer un pourcentage
-			
-			NProgress.set(0.4);// — sets a percentage 
-			
 		}
 		
-		NProgress.remove();
+		NProgress.done();
+		await toastOk(`Collecte des sessions du ${dtFrom.format('DD/MM/YYYY')} au ${dtTo.format('DD/MM/YYYY')} terminée`);
 	} 
 	
 	/*

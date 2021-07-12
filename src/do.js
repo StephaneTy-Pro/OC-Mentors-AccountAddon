@@ -17,17 +17,18 @@ import {
 	toastOk,
 	tableSelector
 	} from './components.js';
-import Accounting from './accounting.js';
-import Core from './core.js';
-import History from './history.js'
-import GMC from "./gmc.polyfills.js";
-import Session from './sessions.js';
-import Student from './students.js';
-import Archive from './archives.js';
-import List from './lists.js';
+import Accounting 	from './accounting.js';
+import Core 		from './core.js';
+import History 		from './history.js'
+import GMC 			from "./gmc.polyfills.js";
+import Session 		from './sessions.js';
+import Student 		from './students.js';
+import Archive 		from './archives.js';
+import List 		from './lists.js';
 import { workday_count } from './date.lib.js';
-import PDF from './pdf.js';
-import Dbase from './dbase.js';
+import PDF 			from './pdf.js';
+import Dbase 		from './dbase.js';
+import Meta 		from './meta.js';
 
 
 /**
@@ -1401,6 +1402,7 @@ if(STT_VERSION) {
                 }).showToast();
             }, 500);
             Student.delete(dtFrom,dtTo);
+            Meta.remStudentListUpd(); // remove treshold for update
 
         }
         if (bRAZSessions === true){
@@ -1439,7 +1441,7 @@ if(STT_VERSION) {
                     backgroundColor: "linear-gradient(to right, #ff5f6d, #ffc371)",
                 }).showToast();
             }, 500);
-            History.delete(dtFrom, dtTo);
+            History.remove(dtFrom, dtTo);
         }        
         
     }

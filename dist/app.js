@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Facturier
 // @namespace    http://tampermonkey.net/
-// @version      1.10.0006
+// @version      1.10.0007
 // @description  Un addon pour vous aider dans votre facturation
 // @author       Stéphane TORCHY
 // @updateURL    https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/dist/app.min.js
@@ -36,7 +36,13 @@
 // @require      https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.29/plugin/localeData.min.js
 
 
-// GM_Config
+//// GM_Compat : Portable monkey-patching for userscripts  
+// SRC 				https://github.com/chocolateboy/gm-compat
+// permet notamment d'utiliser GMCompat.unsafeWindow.notify('loaded', { value: 42 }) sous chrome
+// @require       	https://unpkg.com/gm-compat@1.1.0 
+
+//// GM_Config
+// SRC 			https://github.com/sizzlemctwizzle/GM_config/wiki
 // require      https://openuserjs.org/src/libs/sizzle/GM_config.js (cassé ce jour 28/08/2020);
 // @require      https://raw.githubusercontent.com/sizzlemctwizzle/GM_config/master/gm_config.js
 
@@ -106,7 +112,7 @@
 
 
 // @require https://unpkg.com/nprogress@0.2.0/nprogress.js
-// @resource nprogress https://unpkg.com/nprogress@0.2.0/nprogress.css
+// @resource nprogress_css https://unpkg.com/nprogress@0.2.0/nprogress.css
 
 
 // semble cassé
@@ -974,6 +980,10 @@
   // src/helpers.js
   var isArray = (_2) => Array.isArray(_2);
   var isEmptyFunction = (_2) => _2.toString().trim().length <= "function(){}".length;
+  var wait = async function(ms) {
+    console.log(`%cwait() will wait ${ms}ms`, "color:darksalmon");
+    sleep2(ms);
+  };
   var debounce = function(fn) {
     var timeout;
     return function() {
@@ -986,6 +996,10 @@
         fn.apply(context, args);
       });
     };
+  };
+  var sleep2 = async function(ms) {
+    console.log("%csleep() will sleep %i ms ", "color:darksalmon", ms);
+    return new Promise((resolve) => setTimeout(resolve, ms));
   };
   var pause = function(milliseconds) {
     const date = Date.now();
@@ -1483,7 +1497,7 @@
     let db = src_default.Cfg.dbase;
     var sPath = "table.crud-list tbody";
     if (bDebug === true)
-      console.log("%cgetAll() Enter function", APP_DEBUG_STYLE);
+      console.log("%c[getAll()] Enter function", APP_DEBUG_STYLE);
     const oDom = await _fetch(`https://openclassrooms.com/fr/mentorship/dashboard/students`, 'script[id="mentorshipDashboardConfiguration"]');
     var _r2 = JSON.parse(oDom.innerText.trim());
     var aStudents = _r2.mentorStudents;
@@ -1740,6 +1754,9 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       let _r2 = src_default.Cfg.dbase.get(Meta.tbl_name).find({ "key": "studentLstUpd" }).value();
       return typeof _r2 === "undefined" ? -1 : _r2.value;
     };
+    const remStudentListUpd = function() {
+      return setStudentListUpd(dayjs("19701006").toISOString());
+    };
     const checkSupport = function() {
       if (src_default.Cfg.dbase.get("meta").value() === void 0) {
         console.log("%cDb dont' contain meta table create it", APP_DEBUG_STYLE);
@@ -1759,6 +1776,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       delDbVersion,
       setStudentListUpd,
       getStudentListUpd,
+      remStudentListUpd,
       tbl_name: TBL_NAME
     });
   };
@@ -2253,7 +2271,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
   });
   __publicField(Session, "add", async function(oSession2) {
     const iRefreshStudentDataBaseTreshold = 30;
-    let bDebug2 = false;
+    let bDebug2 = true;
     if (bDebug2 === true)
       console.log("%cSession.add() so you wanna add a session %o to database", APP_DEBUG_STYLE, oSession2);
     let db = src_default.Cfg.dbase;
@@ -2306,6 +2324,8 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
                 console.log("%c[Session.add()]student %s removed from the m_findById function cache", APP_DEBUG_STYLE, oSession2.who_id);
             }
           }
+          console.log("%c[Student.add()] pr\xE9c\xE9demment notre \xE9tudiant %o  n'existait pas existe t'il maintenant ?", APP_DEBUG_STYLE, oSession2.who_id);
+          console.log("%c[Student.add()] la r\xE9ponse est :%o", APP_DEBUG_STYLE, students_default.exists(oSession2.who_id, oSession2.when));
           if (students_default.exists(oSession2.who_id, oSession2.when) == false) {
             console.warn(`%c[Session.add()] Student ${oSession2.who_id} which exists at ${oSession2.when} still not exit in Db, have to manually create him/her`, APP_WARN_STYLE);
             await students_default.createManually(oSession2.who_id, oSession2.who_name, oSession2.when);
@@ -2334,6 +2354,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       oSession2.id = _r.key1.toString();
     }
     _Session._save(oSession2);
+    await wait(50);
   });
   __publicField(Session, "_save", function(oSession2) {
     var dDebug = false;
@@ -2459,6 +2480,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     if (_r2 !== void 0 && typeof _r2 === "number" && _r2 > iIndexStart) {
       iIndexStart = _r2;
     }
+    var _iDaysToProcess = dtTo2.diff(dtFrom2, "d") + 1;
     NProgress.start();
     while (bBrowse === true) {
       if (iLoop > iMaxLoop) {
@@ -2498,11 +2520,13 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
         if (bDebug2 === true)
           console.log("%cgetSessionsFromAPI()  will call Session.add() on %o", APP_DEBUG_STYLE, oSession);
         const _r3 = await _Session.add(oSession);
+        var _iDaysProcessed = dayjs(dtTo2).diff(oSession.when, "d") + 1;
+        NProgress.set(_iDaysProcessed / _iDaysToProcess);
       }
       iIndexStart = iIndexEnd + 1;
-      NProgress.set(0.4);
     }
-    NProgress.remove();
+    NProgress.done();
+    await toastOk(`Collecte des sessions du ${dtFrom2.format("DD/MM/YYYY")} au ${dtTo2.format("DD/MM/YYYY")} termin\xE9e`);
   });
   __publicField(Session, "parseRowFromApi", function(oSession2) {
     bDebug = false;
@@ -4415,6 +4439,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
         }).showToast();
       }, 500);
       students_default.delete(dtFrom2, dtTo2);
+      meta_default.remStudentListUpd();
     }
     if (bRAZSessions === true) {
       setTimeout(function() {
@@ -4451,7 +4476,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
           backgroundColor: "linear-gradient(to right, #ff5f6d, #ffc371)"
         }).showToast();
       }, 500);
-      history_default.delete(dtFrom2, dtTo2);
+      history_default.remove(dtFrom2, dtTo2);
     }
   };
   var showBill = async function() {
@@ -5704,13 +5729,6 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
         type: "checkbox",
         default: true
       },
-      show_throttle: {
-        label: "Afficher le temoin d'utilisation du CPU",
-        title: "Affiche le point rouge qui circule dans la barre de menu. Quand il s'arr\xEAte le CPU est utilis\xE9",
-        labelPos: "left",
-        type: "checkbox",
-        default: true
-      },
       "hackheaderzindex": {
         section: ["", "Hack"],
         label: "Changer le zindex du bandeau haut",
@@ -6630,6 +6648,7 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
     },
     raf: null,
     cssMainDataSelector: OC_DASHBOARDCSSMAINDATASELECTOR,
+    ID_MENU_FORCE_LOADING: null,
     start: async function() {
       await domReady();
       const bSupport = Facturier.checkSupport();
@@ -6638,7 +6657,7 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
       if (document.querySelector(sCSSObserved) === null) {
         console.log(`%c All condition not met, waiting element '${sCSSObserved}' `, APP_DEBUG_STYLE);
         document.arrive(sCSSObserved, Facturier._warmup);
-        GM_registerMenuCommand("force - loading", Facturier._warmup);
+        Facturier.ID_MENU_FORCE_LOADING = GM_registerMenuCommand("force - loading", Facturier._warmup);
       } else {
         console.log(`%c All condition already met go`, APP_DEBUG_STYLE);
         Facturier._warmup();
@@ -6650,7 +6669,7 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
     _warmup: function() {
       console.log("%c in _warmup", APP_DEBUG_STYLE);
       document.unbindArrive(Facturier._warmup);
-      GM_unregisterMenuCommand("force - loading");
+      GM_unregisterMenuCommand(Facturier.ID_MENU_FORCE_LOADING);
       if (GM === void 0) {
         console.log("%cI am not in a tamper env", APP_DEBUG_STYLE);
         Facturier._userscriptless();
@@ -6661,9 +6680,10 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
       GM_addStyle(GM_getResourceText("toastifycss"));
       GM_addStyle(GM_getResourceText("simpledatatablecss"));
       GM_addStyle(GM_getResourceText("loading_barcss"));
+      GM_addStyle(GM_getResourceText("nprogress_css"));
       GM_config.init(appmenu);
-      GM_registerMenuCommand("configure", opencfg);
-      GM_registerMenuCommand("force - cbox", Facturier._forceCbox);
+      GM_registerMenuCommand("collectauto", opencfg, "a");
+      GM_registerMenuCommand("configure", opencfg, "a");
       if (GM_config.get("hackheaderzindex") === true) {
         document.getElementById("header").style.zIndex = 0;
       }
@@ -6847,7 +6867,12 @@ line-height: 1.625rem;
 text-transform: inherit;
 `;
       oRoot.style = sStyle + "margin-left: auto";
-      aDom[2].querySelector("div:nth-child(2) > div").appendChild(oRoot);
+      let _z;
+      for (var i of aDom) {
+        let _z2 = [...i.children].find((e) => e.classList.toString().match(/MuiTabs/));
+        _z = _z2 !== void 0 ? _z2 : _z;
+      }
+      _z.appendChild(oRoot);
     },
     _userscriptless() {
       console.log(`%cIm'not in a Tamper environment so i need to load js scripts`, APP_DEBUG_STYLE);
@@ -6961,6 +6986,7 @@ text-transform: inherit;
       unsafeWindow.Facturier.klass.push({ id: "Meta", ptr: meta_default });
       unsafeWindow.Facturier.klass.push({ id: "Ref", ptr: refs_default });
       unsafeWindow.Facturier.klass.push({ id: "Api", ptr: api_openclassrooms_default });
+      unsafeWindow.Facturier.libs.push({ id: "NProgress", ptr: NProgress });
       if (GM.info.script.downloadURL === "http://localhost:8000/dist/app-facturier.iife.js") {
         console.log("%cALERTE .... version locale !!!!!! ", "background-color:coral;color:white");
         console.log("%c test readfile", APP_DEBUG_STYLE);

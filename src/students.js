@@ -391,6 +391,7 @@ path: "81-expert-en-strategie-marketing-et-communication"
 			oListToUpdate.get(i).assign({'funding': sNewState}).write();
 		}
 	}
+	
 	/**
 	 * Update the list of student
 	 * 
@@ -404,7 +405,7 @@ path: "81-expert-en-strategie-marketing-et-communication"
         let db=App.Cfg.dbase; 
         var sPath ="table.crud-list tbody";
         // get full list of student
-        if(bDebug===true)console.log('%cgetAll() Enter function', APP_DEBUG_STYLE);
+        if(bDebug===true)console.log('%c[getAll()] Enter function', APP_DEBUG_STYLE);
         const oDom = await _fetch(`https://openclassrooms.com/fr/mentorship/dashboard/students`, 'script[id="mentorshipDashboardConfiguration"]');
         
         //console.log(JSON.parse(doc.querySelector('script[id="mentorshipDashboardConfiguration"]').innerText.trim()));

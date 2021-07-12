@@ -58,6 +58,16 @@ var fMeta = function(){
 		let _r = App.Cfg.dbase.get(Meta.tbl_name).find({'key':'studentLstUpd'}).value()
 		return typeof _r === "undefined" ? -1 : _r.value;
 	}
+	
+	/*
+	 * remove 
+	 *   NOTESTT: because it's a needed value, i don't delete it but
+	 *      reset it
+	 */
+	
+	const remStudentListUpd = function(){
+		return setStudentListUpd(dayjs('19701006').toISOString());
+	}
 
 	const checkSupport = function(){
 		if( App.Cfg.dbase.get("meta").value() === undefined) {
@@ -82,6 +92,7 @@ var fMeta = function(){
 		delDbVersion,
 		setStudentListUpd,
 		getStudentListUpd,
+		remStudentListUpd,
 		tbl_name: TBL_NAME,
  	});
   

@@ -96,6 +96,9 @@ const Facturier = {
 	// SINCE 20210630
 	
 	 cssMainDataSelector: OC_DASHBOARDCSSMAINDATASELECTOR, // before 'table[id*="session"]
+	 
+	// menu
+	ID_MENU_FORCE_LOADING: null,
 
 	/*
 	 * 
@@ -115,7 +118,7 @@ const Facturier = {
 			console.log(`%c All condition not met, waiting element '${sCSSObserved}' `, APP_DEBUG_STYLE); 
 			document.arrive(sCSSObserved, Facturier._warmup); 
 			/* hack */
-			GM_registerMenuCommand('force - loading', Facturier._warmup);
+			Facturier.ID_MENU_FORCE_LOADING = GM_registerMenuCommand('force - loading', Facturier._warmup);
 		} else { 
 			console.log(`%c All condition already met go`, APP_DEBUG_STYLE);
 			Facturier._warmup(); 
@@ -145,7 +148,7 @@ const Facturier = {
 		// 'this' refers to the newly created element
 		console.log("%c in _warmup",APP_DEBUG_STYLE);
 		document.unbindArrive(Facturier._warmup);
-		GM_unregisterMenuCommand('force - loading');
+		GM_unregisterMenuCommand(Facturier.ID_MENU_FORCE_LOADING);
 		// -- seem not to be used GM_disableMenuCommand('force - loading');
 		if(GM === undefined){
 			console.log("%cI am not in a tamper env", APP_DEBUG_STYLE);
@@ -158,11 +161,14 @@ const Facturier = {
 		GM_addStyle( GM_getResourceText("toastifycss") );
 		GM_addStyle( GM_getResourceText("simpledatatablecss") );
 		GM_addStyle( GM_getResourceText("loading_barcss") );
+		/* progressbar */
+		GM_addStyle( GM_getResourceText("nprogress_css") );
 		/* SPECTRE CSS */
 		// fonctionne mal avec le thème oc GM_addStyle( GM_getResourceText("spectrecss") );
 		GM_config.init(appmenu);
-		GM_registerMenuCommand('configure', opencfg);
-		GM_registerMenuCommand('force - cbox', Facturier._forceCbox);
+		GM_registerMenuCommand('collectauto', opencfg, "a");
+		GM_registerMenuCommand('configure', opencfg, "a");
+		//GM_registerMenuCommand('force - cbox', Facturier._forceCbox);
 		/* hacks */
 		if(GM_config.get('hackheaderzindex') === true){
 			document.getElementById('header').style.zIndex = 0; // because z index is 1000 in oc rules
@@ -430,6 +436,7 @@ const Facturier = {
  <span class="${Facturier._sOCMainSrvClassName}-MuiTab-wrapper">En base de donnée (21/24)</span>
  <span class="${Facturier._sOCMainSrvClassName}-MuiTouchRipple-root"></span></a>
 `;
+		//selectionner les elements non vides enfants direct pour trouver les "onglets" historique...
 		let aDom = document.querySelector('#mainContent > :not(div:empty)').children;
 		
 		let oSpan_1 = document.createElement('span');
@@ -461,7 +468,22 @@ text-transform: inherit;
 `;
 		oRoot.style = sStyle+'margin-left: auto'; // magic property to pull it (flex element)right
 		//aDom[2].appendChild(oRoot);
-		aDom[2].querySelector('div:nth-child(2) > div').appendChild(oRoot);
+		//aDom[1].querySelector('div:nth-child(2) > div').appendChild(oRoot); contient le text Sessions et le bouton créer pour créer une session
+		
+		/* pour être OC résilient il faudrait chercher parmi aDom tout ce qui contient muiTabs*/
+		/* classList.toString().match(/MuiTabs/) */
+		
+		let _z;
+		for(var i of aDom){
+		//console.log([...i.children]);
+		//[...i.children].map( e => console.log(e.classList.toString()));
+		let _z2 = [...i.children].find( e => e.classList.toString().match(/MuiTabs/));
+		_z = (_z2 !== undefined) ? _z2 : _z;
+		//console.log(_z);
+		}
+		
+		//aDom[2].querySelector('div:nth-child(2) > div').appendChild(oRoot);
+		_z.appendChild(oRoot);
 	},
 	
 	/*
@@ -760,6 +782,9 @@ text-transform: inherit;
 		unsafeWindow.Facturier.klass.push({id:'Ref',ptr:Ref});
 		unsafeWindow.Facturier.klass.push({id:'Api',ptr:Api});
 		//console.log("%cImportants values are exported in unsafeWindow.Facturier", APP_DEBUG_STYLE);   
+		
+		// libs
+		unsafeWindow.Facturier.libs.push({id:'NProgress',ptr:NProgress});// unsafeWindow.Facturier.libs.find(o => o.id == 'NProgress').ptr pour le retrouver
 		 
 		// ici toute l'idée est de verifier que le fichier d'install contient src ou dist ... s'il contient source alors, on doit utiliser en sus les ressources locales
 		// sinon on est sur la version livrée et donc on a tout déjà dans le script de base qui a été build

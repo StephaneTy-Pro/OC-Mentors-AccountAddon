@@ -111,13 +111,14 @@ const appmenu = {
 			type: 'checkbox',
 			default: true,
 		},
+		/*
 		show_throttle:{
 			label: 'Afficher le temoin d\'utilisation du CPU',
 			title: 'Affiche le point rouge qui circule dans la barre de menu. Quand il s\'arrête le CPU est utilisé',
 			labelPos: 'left',
 			type: 'checkbox',
 			default: true,
-		},		
+		},*/		
 		'hackheaderzindex':{
 			section: ['', 'Hack'],
 			label: 'Changer le zindex du bandeau haut',
