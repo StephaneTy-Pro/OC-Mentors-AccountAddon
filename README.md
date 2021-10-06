@@ -77,7 +77,7 @@ Dans le menu de configuration vous pouvez configurer la taille des caractères
 
 > Il y a un écart entre la facture détail et la facture globale
 
-La facture détail est toujours recalculée à chaque demande, le cache et les archives ne sont pas utilisées ce qui peut expliquer un écart (cf. 'le point mon calcul est faux ci dessus'.
+La facture détail est toujours recalculée à chaque demande, le cache et les archives ne sont pas utilisées ce qui peut expliquer un écart (cf. 'le point mon calcul est faux ci dessus').
 
 > Qu'est ce que le THMp dans le module de statistiques
 
