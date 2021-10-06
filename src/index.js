@@ -58,6 +58,7 @@ import {
 
 import{
 	addCbox,
+	about,
 } from './do.js';
 
 import{
@@ -74,7 +75,7 @@ import Dbase from './dbase.js';
 import fetchInject from './vendor/fetch-inject/fetch-inject.js';
 import arrive from './vendor/arrive/arrive.js';
 
-// utiles juste pour pouvoir etre exportés dans unstafe.window
+// utiles juste pour pouvoir etre exportés dans unsafe.window
 import Student 			from './students.js';
 import Session 			from './sessions.js';
 import Archive 			from './archives.js';
@@ -99,6 +100,7 @@ const Facturier = {
 	 
 	// menu
 	ID_MENU_FORCE_LOADING: null,
+	ID_MENU_FORCE_ADDTOLEFTMENU: null,
 
 	/*
 	 * 
@@ -119,6 +121,7 @@ const Facturier = {
 			document.arrive(sCSSObserved, Facturier._warmup); 
 			/* hack */
 			Facturier.ID_MENU_FORCE_LOADING = GM_registerMenuCommand('force - loading', Facturier._warmup);
+			Facturier.ID_MENU_FORCE_ADDTOLEFTMENU = GM_registerMenuCommand('force - populate menuleft', Facturier._addLinkToMenu);
 		} else { 
 			console.log(`%c All condition already met go`, APP_DEBUG_STYLE);
 			Facturier._warmup(); 
@@ -255,6 +258,13 @@ const Facturier = {
 							
 							debounce(Facturier._applyInjectionOnPathNameMutation());
 						}
+						if(mutation.target.nodeName === 'OL'){// since 20211001
+							/**/
+							console.log("%cTable data changed (OL)",APP_DEBUG_STYLE);
+							console.log("%c=============> Changed data : %o", APP_DEBUG_STYLE, mutation);
+							
+							debounce(Facturier._applyInjectionOnPathNameMutation());
+						}
 						/* Since 20210623 
 						 * if button < is mutated 
 						 * parent is a li contained in an ul himself second child of a div with first child is the table
@@ -323,12 +333,15 @@ const Facturier = {
 	_lastMutation: 0, // timestamp in milliseconds //.unix() if in seconds
 	_applyInjectionForSessionsToComplete:function(){
 		// have to clean or hide the header
-		if(document.querySelector(Facturier.cssMainDataSelector+' thead') !== null){
-			document.querySelector(Facturier.cssMainDataSelector+' thead').style.display="none";
+		if(document.querySelector(`${Facturier.cssMainDataSelector} .Facturier__cbox_all`) !== null){
+			document.querySelector(`${Facturier.cssMainDataSelector} .Facturier__cbox_all`).style.display="none";
 		}
-		// have to monkey patch buttons
+		// have to monkey patch buttons to call another windo
 		//var btns = Array.from(document.querySelectorAll('table[id*="session"] tbody a[href*=sessions]'));
-		var btns = Array.from(document.querySelectorAll(Facturier.cssMainDataSelector+' tbody a[href*=sessions]'));
+		// all elements are in an a element first then into div for column
+		// so catching a a => get the button himself
+		console.log("%cWill Patch All Buttons corresponding to this CSS PATH %s",APP_DEBUG_STYLE, `${Facturier.cssMainDataSelector} a a[href*=sessions]`); 
+		var btns = Array.from(document.querySelectorAll(`${Facturier.cssMainDataSelector} a a[href*=sessions]`));
 		/*btns.forEach(btn => btn.onclick = function(event) {
 				console.log("click");
 				// ajout d'un element dans la table references
@@ -340,23 +353,25 @@ const Facturier = {
 		var _handler;
 		// tester la mise en place d'un overlay qui permet de savoir si c'est patché ou pas
 		btns.forEach( function(btn){
-			//console.log("%cWill Patch Button %o",APP_DEBUG_STYLE, btn);  
-			let oBtnText = btn.querySelector('span span')
-			oBtnText.innerText = ".:"+oBtnText.innerText+":."; // show it was patched
+			console.log("%cWill Patch Button %o",APP_DEBUG_STYLE, btn);  
+			//let oBtnText = btn.querySelector('div+div+div+div'); // 4eme colonne
+			//oBtnText.innerText = ".:"+oBtnText.innerText+":."; // show it was patched
+			btn.innerText = ".:"+btn.innerText+":."; // show it was patched
 			//console.log('btns trapped');
 			btn.addEventListener('click', _handler = function(e){
 				e.stopPropagation();
 				e.preventDefault(); // must be as soon as possible
-				var oTr = btn.parentElement.parentElement.parentElement; // tjhe full row which contain data
-				var sWhen = oTr.children[1].querySelector('time').dateTime.trim();
-				var sWho = getKey(oTr.children[2], -2);
+				var oLine = btn.parentElement.parentElement.parentElement; // tjhe full row which contain data
+				var sDateTime = oLine.children[1].querySelector('time').getAttribute('datetime').trim(); 
+				//var sWhen = oLine.children[1].querySelector('time').dateTime.trim();
+				var sWho_id = getKey(oLine.children[2],-2);
 				// extract the key
-				var sHref = oTr.children[3].querySelector("a").getAttribute("href-sav");
+				var sHref = oLine.children[3].querySelector("a").getAttribute("href-sav"); //cf. ci dessous pour voir que j'ai attribué cet attribut pour sauvegarder le href
 				var _t1 = (sHref || "/").split("/");
 				var sSessionId = _t1[_t1.length-1];
-				sWhen = dayjs(sWhen).toISOString()
-				var iHash = Session.getHashId(sWhen,sWho);
-				let iSessionId = parseInt(sSessionId,10);
+				var sWhen = dayjs(sDateTime).toISOString()
+				var iHash = Session.getHashId(sWhen, sWho_id);
+				let iSessionId = parseInt(sSessionId, 10);
 				// Save Data to Db
 				// check if exist
 				let bExistsSessionId = Ref.exists(iSessionId, 1, Ref.TYPE.SESSIONID_DATEREFID);
@@ -392,26 +407,31 @@ const Facturier = {
 	
 	_applyInjectionForSessionsBooked:function(){
 		// have to clean or hide the header
-		if(document.querySelector(Facturier.cssMainDataSelector+' thead') !== null){
-			document.querySelector(Facturier.cssMainDataSelector+' thead').style.display="none";
+		if(document.querySelector(`${Facturier.cssMainDataSelector} .Facturier__cbox_all`) !== null){
+			document.querySelector(`${Facturier.cssMainDataSelector} .Facturier__cbox_all`).style.display="none";
 		}
 	},
 	/*
 	 *  (int) iDelayBetweenTwoMutations : default 100 ms of delay between to mutation on dom
 	 */
 	_applyInjectionForSessionsHistory:function(iDelayBetweenTwoMutations=100){
-		console.log('%c[index._applyInjectionForSessionsHistory()] Le panel de gestion des sessions en historique a été activé, la dernière mutation date de %i',APP_DEBUG_STYLE, Facturier._lastMutation);
-		if(document.querySelector(Facturier.cssMainDataSelector+' thead') !== null){
-			document.querySelector(Facturier.cssMainDataSelector+' thead').style.display="block";
+		//console.log('%c[index._applyInjectionForSessionsHistory()] Le panel de gestion des sessions en historique a été activé, la dernière mutation date de %i',APP_DEBUG_STYLE, Facturier._lastMutation);
+		if(document.querySelector(`${Facturier.cssMainDataSelector} .Facturier__cbox_all`) !== null){
+			document.querySelector(`${Facturier.cssMainDataSelector} .Facturier__cbox_all`).style.display="block";
 		}
 		//if(GM_config.get("alwaysaddcbox") === true){ // cette option doit disparaitre
 		// as each mutation is registred, prevent too many mutation on same times
 		if(dayjs().valueOf()-Facturier._lastMutation < iDelayBetweenTwoMutations){
-			console.log('%c[index._applyInjectionForSessionsHistory()] Traitement abandonnée le dernier refresh date de %o limite:%o ms',APP_DEBUG_STYLE, Facturier._lastMutation, iDelayBetweenTwoMutations);
-			Facturier._lastMutation = dayjs.valueOf();
+			/*console.log('%c[index._applyInjectionForSessionsHistory()] Traitement abandonnée le dernier refresh date de %o ms et le minimum est de %o ms',
+			  APP_DEBUG_STYLE,
+			  dayjs().valueOf() - Facturier._lastMutation,
+			  iDelayBetweenTwoMutations);
+			 */
 			return;
 		}
 		addCbox();
+		Facturier._lastMutation = dayjs().valueOf();
+		//console.log('%c[index._applyInjectionForSessionsHistory()] maj de la dernière mutation à %o',APP_DEBUG_STYLE, Facturier._lastMutation);
 		//} // add checkbox to element in history
 	},
 	
@@ -438,26 +458,48 @@ const Facturier = {
 `;
 		//selectionner les elements non vides enfants direct pour trouver les "onglets" historique...
 		let aDom = document.querySelector('#mainContent > :not(div:empty)').children;
-		
+		// la barre contenant le pseudo menu se trouve avant la ligne section
+		let i = 0;
+		for(i=aDom.length-1;i>=0;i--){
+			console.log(i, aDom[i].nodeName)
+			if(aDom[i].nodeName === 'SECTION')break;
+		}
+		if(i === 0){
+			console.error('IRRECOVERABLE ERROR element <section> not found');
+			return;
+		}
+		i = i - 1; // celui avant la section
+		// chercher le conteneur du menu
+		//    aDom[2].firstChild.lastChild.firstChild
+		// ou aDom[2].querySelector('a').parentElement
+		const oPanelSelectorContainer = aDom[i].querySelector('a').parentElement;
+		const oRefCSS = aDom[i].querySelector('a[aria-selected=false]');
 		let oSpan_1 = document.createElement('span');
 		oSpan_1.innerText = "Facturier v."+GM.info.script.version;
-		oSpan_1.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTab-wrapper`);
-		let _handler;
+		//oSpan_1.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTab-wrapper`);
+		oSpan_1.classList.add(...oRefCSS.children[0].classList);
+		oSpan_1.classList.add('Facturier__header');
+		/*let _handler;
 		oSpan_1.addEventListener('click', _handler = function(e){
 			document.querySelectorAll("tbody input[type=checkbox]").forEach( e => e.checked = !e.checked );
-		});
+		});*/
 		let oSpan_2 = document.createElement('span');
-		oSpan_2.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTouchRipple-root`);
-
+		//oSpan_2.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTouchRipple-root`);
+		oSpan_2.classList.add(...oRefCSS.children[1].classList);
+		oSpan_2.classList.add('Facturier__header');
 		let oRoot = document.createElement('a');
-		oRoot.alt = "tout séléctionner";
+		oRoot.onclick = about;
+		//oRoot.alt = "tout séléctionner";
+		oRoot.classList.add(...oRefCSS.classList);
+		oRoot.classList.add('Facturier__header');
 		oRoot.appendChild(oSpan_1);
 		oRoot.appendChild(oSpan_2);
 		// copy from precedent ? need to detect unactive one
-		oRoot.classList.add(`${Facturier._sOCMainSrvClassName}-MuiButtonBase-root`);
-		oRoot.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTab-root`);
+		//oRoot.classList.add(`${Facturier._sOCMainSrvClassName}-MuiButtonBase-root`);
+		//oRoot.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTab-root`);
 		// oRoot.classList.add('dom-services-3-dom-services73');
-		oRoot.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTab-textColorInherit`);
+		//oRoot.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTab-textColorInherit`);
+/*
 let sStyle=`
 font-size: 1rem;
 max-width: 280px;
@@ -466,24 +508,28 @@ font-weight: 400;
 line-height: 1.625rem;
 text-transform: inherit;
 `;
-		oRoot.style = sStyle+'margin-left: auto'; // magic property to pull it (flex element)right
+*/
+		//oRoot.style = sStyle+'margin-left: auto'; // magic property to pull it (flex element)right
+		oRoot.style = 'margin-left: auto'; // magic property to pull it (flex element)right
 		//aDom[2].appendChild(oRoot);
 		//aDom[1].querySelector('div:nth-child(2) > div').appendChild(oRoot); contient le text Sessions et le bouton créer pour créer une session
 		
 		/* pour être OC résilient il faudrait chercher parmi aDom tout ce qui contient muiTabs*/
 		/* classList.toString().match(/MuiTabs/) */
-		
+		/*
 		let _z;
 		for(var i of aDom){
-		//console.log([...i.children]);
-		//[...i.children].map( e => console.log(e.classList.toString()));
-		let _z2 = [...i.children].find( e => e.classList.toString().match(/MuiTabs/));
-		_z = (_z2 !== undefined) ? _z2 : _z;
-		//console.log(_z);
+			//console.log([...i.children]);
+			//[...i.children].map( e => console.log(e.classList.toString()));
+			let _z2 = [...i.children].find( e => e.classList.toString().match(/MuiTabs/));
+			_z = (_z2 !== undefined) ? _z2 : _z;
+			//console.log(_z);
 		}
 		
 		//aDom[2].querySelector('div:nth-child(2) > div').appendChild(oRoot);
 		_z.appendChild(oRoot);
+		*/
+		oPanelSelectorContainer.appendChild(oRoot);
 	},
 	
 	/*
@@ -529,9 +575,11 @@ text-transform: inherit;
 		
 		// Attention avec l'ordre des choses, ici on lance trop vite l'event monitor puisque la base est pas encore théoriquement connectée		
 		Facturier._eventMonitor();
-
+if(STT_VERSION) { 
 		Performance.paintTiming();
 		Performance.longTaskTiming();
+}
+		
 		let adapter = new LocalStorage('db');
 		var db = low(adapter);
 		db.defaults({ students: [], sessions: [], f_archives:[], history_session_cache:[], meta:[], refs:[], students_history:[], }).write();
@@ -575,6 +623,16 @@ text-transform: inherit;
 		Facturier._addHeader();
 		// 2-
 		Facturier._applyInjectionOnPathNameMutation();
+		
+		// 3 - Add element on menu
+		//// Select all element with no role only one
+		
+		// le menu s'affiche plus tard ça ne va pas fonctionner aussi simplement
+		// TODO corriger la partie svg qui ne s'affiche pas quand bien meme elle est presente
+		console.log(`%cWait for side menu to add element to it`, APP_DEBUG_STYLE);
+		sCSSObserved = 'nav:not([role])'
+		document.arrive(sCSSObserved, Facturier._addLinkToMenu);
+		
 		
 		//// Patch to add new tbl
 		/*
@@ -785,6 +843,19 @@ text-transform: inherit;
 		
 		// libs
 		unsafeWindow.Facturier.libs.push({id:'NProgress',ptr:NProgress});// unsafeWindow.Facturier.libs.find(o => o.id == 'NProgress').ptr pour le retrouver
+		
+		//
+if(STT_VERSION) {    
+		document.body.appendChild(document.createElement('div')).innerHTML='<iframe id="temoin" style="display:none"></iframe>'; 
+		console.groupCollapsed('liste de variable de la page');
+		Object.keys(window).filter(a=>!(a in window.frames[window.frames.length-1])).sort().forEach((a,i)=>console.log(i,a,window[a])); 
+		document.body.removeChild(document.querySelector('#temoin').parentNode); 
+		console.groupEnd();
+}
+		//
+		
+		
+		unsafeWindow.Facturier.libs.push({id:'Moise',ptr:moize});// unsafeWindow.Facturier.libs.find(o => o.id == 'NProgress').ptr pour le retrouver
 		 
 		// ici toute l'idée est de verifier que le fichier d'install contient src ou dist ... s'il contient source alors, on doit utiliser en sus les ressources locales
 		// sinon on est sur la version livrée et donc on a tout déjà dans le script de base qui a été build
@@ -804,6 +875,34 @@ text-transform: inherit;
 			console.log(`%c GM.info.script.downloadURL url : ${GM.info.script.downloadURL}`, APP_DEBUG_STYLE);
 		}		
 	
+	},
+	// add an option to oc menu to show hide the bar
+	_addLinkToMenu: function(){
+		console.log(`%cSide menu was added`, APP_DEBUG_STYLE);
+		document.unbindArrive(Facturier._addLinkToMenu);
+		try{
+			let oMenu = document.querySelectorAll('nav:not([role])')[0];
+			// clone last li node from ul child list
+			let oCloneLI = oMenu.children[0].lastChild.cloneNode(true); // li element contain an a element
+			oCloneLI.firstChild.innerText = "Facturier";
+			elMenu = document.querySelector('.panel.draggable');//.setAttribute('style','display:show')
+			oCloneLI.firstChild.href = "javascript:function(){elMenu = document.querySelector('.panel.draggable');elMenu.style.display = (elMenu.style.display != 'block') ? 'block' : 'none';}";
+			// ajouter les sous elements non copies avec le clone ... le svg et les deux span
+			let el =  oMenu.children[0].lastChild.firstChild; // pointe sur le <a href"">
+			oCloneLI.firstChild.appendChild(el.children[0].cloneNode(true)); // to have path which is a subnode
+			oCloneLI.firstChild.appendChild(el.children[1].cloneNode(false));
+			oCloneLI.firstChild.appendChild(el.children[2].cloneNode(false));
+			//oMenu.appendChild(oClone);
+			/*
+			let oCloneUL = oMenu.children[0].cloneNode(true);
+			while( oCloneUL.hasChildNodes() ){
+				oCloneUL.removeChild(oCloneUL.lastChild);
+			}
+			* */
+			let oCloneUL = oMenu.children[0].cloneNode(false);
+			oCloneUL.appendChild(oCloneLI);
+			oMenu.appendChild(oCloneUL);
+		} catch(e){console.log('%cInjecting menu encounter an error: %o',APP_ERROR_STYLE, e)};
 	},
 	
 	loadDependencies : function(){

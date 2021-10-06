@@ -138,6 +138,8 @@ var addCboxOld = function(){
 // a priori je vais devoir attendre 
 /*
  * sessions.firstChild.querySelector('tr > td > div > div+p')
+ * 
+ * version 1.08.20211005 -> changement dans l'affichage
  * */
 
 var addCbox = function(){
@@ -151,26 +153,37 @@ var addCbox = function(){
 		console.log(`%cERROR:Could'nt find the table which display sessions : ${sessions}`, APP_ERROR_STYLE);
 		throw new Error("!!!! IRRECOVERABLE ERROR NO TABLE OF SESSIONS FOUNDED"); 
 	}
-	if (sessions.querySelector("[type=checkbox]") === null) {
+	if (sessions.querySelector(".Facturier__cbox input[type=checkbox]") === null) {
 		//console.log("%cCheckBox NOT already displayed, i ve to build and show checked on|off", APP_DEBUG_STYLE);
-		var sessions = document.querySelector(`${sPath} tbody`);// remarque attention le All me retourne aussi le tableau des étudiants
-		for (const oTr of sessions.children) {
+		//var sessions = document.querySelector(`${sPath} tbody`);// remarque attention le All me retourne aussi le tableau des étudiants
+		var sessions = document.querySelector(`${sPath}`);// remarque attention le All me retourne aussi le tableau des étudiants
+		for (const oEl of sessions.children) {
+			// avoid month summary
+			// les sommaires sont directement contenues dans le div enfant
+			if(oEl.firstChild.nodeName !== 'A'){continue}
+			// une ligne d'un element du tableau qui continent des données est contenue dans une balise a
+			// les colonnes sont matérialisées par des div
+			const oLine = oEl.firstChild;
 			
-			// since 20210630 there are some empty lines pass them
-			if(oTr.querySelector('a') === null){
-				continue;
-			 }
 			//console.log("nom de l'étudiant : %o",el.children[2].innerText)
 			// 0 - annulé|réalisé|absent & type mentorat|soutenance
 			// 1 - date
 			// 2 - zone nom étudiant + avatar
 			// 3 - niveau d'expertise
-			var sWho_id = getKey(oTr.children[2],-2); // get the before last '/' element
+			
+			// colonne 0
+			var sState = oLine.children[0].querySelector('svg').getAttribute('aria-label'); // Annulée...
+			var sSessionType =  oLine.children[0].querySelector('p').innerText; // Mentorat
+			// colonne 1
+			var sDateTime = oLine.children[1].querySelector('time').getAttribute('datetime').trim(); //  "2021-10-08T07:45:00+0000"
+			// colonne 2
+			var sStudentName =  oLine.children[2].querySelector('a').innerText;
+			//var sWho_id = getKey(_oEl.children[2],-2); // get the before last '/' element
+			var sWho_id = getKey(oLine.children[2],-2); // get the before last '/' element
 			var inputElem = document.createElement('input');
 			inputElem.type = "checkbox";
 			inputElem.name = "name";
-			var sWhen = oTr.children[1].querySelector('time').dateTime.trim();
-			sWhen = dayjs(sWhen).toISOString()
+			var sWhen = dayjs(sDateTime).toISOString();
 			// the cid (calculate id is a combination of id of student and timetime)
 			var iHash = Session.getHashId(sWhen, sWho_id);
 			//console.log('%ciHash is (%o)%o',APP_DEBUG_STYLE, typeof iHash, iHash);
@@ -180,77 +193,53 @@ var addCbox = function(){
 			bChecked = Session.exists(iHash);
 			//console.log(`%cIs the session with cid ${iHash} (this is the calculated id) in db ? ${bChecked}`, APP_DEBUG_STYLE);
 			if (bChecked === true) inputElem.checked = true;
+			/*
 			var td = document.createElement('td');
 			td.style = "text-align: center";
 			td.appendChild(inputElem);
-			oTr.appendChild(td);
+			*/
+			// get classlist from last element
+			const cls2ndChild = oLine.children[1].classList;
+			// get classlist from before lastelement
+			const clsLastChild = oLine.lastChild.classList;
+			//
+			oLine.lastChild.classList = cls2ndChild;
+			var oSubEl = document.createElement('div');
+			oSubEl.appendChild(inputElem);
+			oSubEl.classList.add(...clsLastChild);
+			oSubEl.classList.add('Facturier__cbox');
+			oLine.appendChild(oSubEl);
+			//oEl.appendChild(td);
 		}
 		// ajout d'une case selectionner tout
 		// 1 - ajout du thead si nécessaire
-		if(document.querySelector(`${sPath} thead`) === null){
+		if(document.querySelector(`${sPath} .Facturier__cbox_all`) === null){
 			const insertBefore = (ele, anotherEle) => anotherEle.insertAdjacentElement('beforebegin', ele);
-			sPath =`${sPath} tbody`;
-			var el = document.querySelector(sPath);
+			var el = document.querySelector(`${sPath} li`); // first li
+			const cls = el.firstChild.classList; // first div under first li
 			var inputElem = document.createElement('input');
 			inputElem.type = "checkbox";
 			inputElem.name = "name";
 			inputElem.value = "value";
 			inputElem.id = "id";
-			inputElem.onclick = function (){document.querySelectorAll("tbody input[type=checkbox]").forEach( e => e.checked = !e.checked);}
+			inputElem.onclick = function (){document.querySelectorAll(".Facturier__cbox input[type=checkbox]").forEach( e => e.checked = !e.checked);}
 			inputElem.style = "visibility: hidden;"
 			var label = document.createElement('label');
 			label.innerText = "in DB";
-			label.style="display:block;";
+			label.style="display:block;text-align:right;";
 			label.onMouseOver="this.style.cursor=pointer;";
 			label.onMouseOut="this.style.cursor=auto;";
 			label.appendChild(inputElem);
-			var oTd1 = document.createElement('td');
-			oTd1.style=`
-    font-size: 1rem;
-    max-width: 280px;
-    font-family: Montserrat;
-    font-weight: 400;
-    line-height: 1.625rem;
-    text-transform: inherit;
-`;
-			//oTd.colspan = 4
-			//oTd1.innerText = "Facturier v."+GM.info.script.version;
-			oTd1.innerText = " ";
-			var oTd2 = document.createElement('td');
-			oTd2.style=`
-    font-size: 1rem;
-    max-width: 280px;
-    font-family: Montserrat;
-    font-weight: 400;
-    line-height: 1.625rem;
-    text-transform: inherit;
-    margin-left: auto;
-`;
-			oTd2.innerText = "Fact.(o/n)";
-			oTd2.addEventListener('click', _handler = function(e){
-				document.querySelectorAll("tbody input[type=checkbox]").forEach( e => e.checked = !e.checked );
-			});
-			var oTr = document.createElement('tr');
-			oTr.style=`
-    display: flex;
-    align-items: center;
-    border-bottom: 1px solid #e0e0e0;
-    flex-direction: row;
-    background-color: #fff;
-`;
-			oTr.appendChild(oTd1);
-			oTr.appendChild(oTd2);
-			var oTh = document.createElement('thead');
-			oTh.style= 'display: block;';
-			oTh.appendChild(oTr);
-			
+			var oEl = document.createElement('div');
+			oEl.classList = cls;
+			oEl.classList.add('Facturier__cbox_all');
+			oEl.appendChild(label);
 			//console.log("addCBox --------- il semblerait y avoir une erreur ici : %s , %o",sPath, document.querySelector(sPath));
-			
-			insertBefore(oTh, document.querySelector(sPath)) ;
+			insertBefore(oEl, document.querySelector(`${sPath} li`)) ;
 		}
 	} else {
 		//console.log("%cCheckBox already displayed, i ve only to show checked on|off", APP_DEBUG_STYLE);
-		var _t = sessions.querySelectorAll("[type=checkbox]"); // NOTESTT could be CPU Consumer ? so by precaution define it here
+		var _t = sessions.querySelectorAll(".Facturier__cbox input[type=checkbox]"); // NOTESTT could be CPU Consumer ? so by precaution define it here
 		var i = _t.length, aChkBox = new Array(i);for(; i--; aChkBox[i] = _t[i]); // NOTESTT those two lines are more optimized than ? var aChkBox = Array.prototype.slice.call(_t)
 		for(var v in aChkBox){
 			let iHash = parseInt(aChkBox[v].value,10);
@@ -1269,7 +1258,7 @@ if(STT_VERSION) {
 		if (file) {
 		  const reader = new FileReader()
 		  reader.onload = (e) => {
-			Dbase.import(e.target.result);
+			Dbase.load(e.target.result);
 			addCbox();
 			toastOk("Chargement de la base terminé");
 		  }

@@ -441,6 +441,8 @@ class Session {
      * Note avant mentorat on a un icon svg avec un aria-label qui permet de savoir ce que c'est
      */
     static parseRow = function(oRow){
+		let bDebug = true;
+		if(bDebug === true)console.log('%cparseRow() Row is %o',APP_DEBUG_STYLE, oRow);
 		var sType = oRow.children[0].innerText.length >0 ? oRow.children[0].innerText.trim().toLowerCase() : 'session'; 
 		var sStatus = oRow.children[0].querySelector('svg').getAttribute('aria-label').trim().toLowerCase();
 		var sWhen = oRow.children[1].querySelector('time').dateTime;

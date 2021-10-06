@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Facturier
 // @namespace    http://tampermonkey.net/
-// @version      1.10.0007
+// @version      1.10.0008
 // @description  Un addon pour vous aider dans votre facturation
 // @author       Stéphane TORCHY
 // @updateURL    https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/dist/app.min.js
@@ -811,7 +811,7 @@
   var OC_API_SESSION_STATUS_1 = "canceled";
   var OC_API_SESSION_STATUS_2 = "late canceled";
   var OC_API_SESSION_STATUS_3 = "marked student as absent";
-  var OC_DASHBOARDCSSMAINDATASELECTOR = "table";
+  var OC_DASHBOARDCSSMAINDATASELECTOR = "ol";
 
   // src/utils.js
   var domReady = function() {
@@ -980,10 +980,6 @@
   // src/helpers.js
   var isArray = (_2) => Array.isArray(_2);
   var isEmptyFunction = (_2) => _2.toString().trim().length <= "function(){}".length;
-  var wait = async function(ms) {
-    console.log(`%cwait() will wait ${ms}ms`, "color:darksalmon");
-    sleep2(ms);
-  };
   var debounce = function(fn) {
     var timeout;
     return function() {
@@ -996,10 +992,6 @@
         fn.apply(context, args);
       });
     };
-  };
-  var sleep2 = async function(ms) {
-    console.log("%csleep() will sleep %i ms ", "color:darksalmon", ms);
-    return new Promise((resolve) => setTimeout(resolve, ms));
   };
   var pause = function(milliseconds) {
     const date = Date.now();
@@ -1359,7 +1351,9 @@
     return _r2 === void 0 ? false : true;
   });
   __publicField(Student, "findById", function(sNeedle, dtFrom2 = null) {
-    let bUseCache = true;
+    let bUseCache = GM_config.get("use_student_cache");
+    if (bUseCache === false)
+      console.log("%cache \xE9tudiant desactiv\xE9 dans les options", APP_DEBUG_STYLE);
     if (typeof sNeedle === "number") {
       sNeedle = sNeedle.toString(10);
     }
@@ -2354,7 +2348,6 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       oSession2.id = _r.key1.toString();
     }
     _Session._save(oSession2);
-    await wait(50);
   });
   __publicField(Session, "_save", function(oSession2) {
     var dDebug = false;
@@ -2449,6 +2442,9 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     return cyrb53(sDate + sId);
   });
   __publicField(Session, "parseRow", function(oRow) {
+    let bDebug2 = true;
+    if (bDebug2 === true)
+      console.log("%cparseRow() Row is %o", APP_DEBUG_STYLE, oRow);
     var sType2 = oRow.children[0].innerText.length > 0 ? oRow.children[0].innerText.trim().toLowerCase() : "session";
     var sStatus = oRow.children[0].querySelector("svg").getAttribute("aria-label").trim().toLowerCase();
     var sWhen = oRow.children[1].querySelector("time").dateTime;
@@ -2679,7 +2675,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       }
       toUpdate.data.push(oTheSession);
       theSessionsMatrix.set(iType, iStatus, iFunding, +oTheSession.lvl, toUpdate);
-      if (iType === TYPE_SESSION && iFunding === BILL_AUTOFUNDED) {
+      if (iType === TYPE_SESSION && iFunding === BILL_AUTOFUNDED && oTheSession.status !== OC_STATUS_1) {
         aBonus.push({ id: +oTheSession.who_id, who_id: oTheSession.who_id, who_name: oTheSession.who_name });
       }
     }
@@ -3648,18 +3644,22 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       console.log(`%cERROR:Could'nt find the table which display sessions : ${sessions}`, APP_ERROR_STYLE);
       throw new Error("!!!! IRRECOVERABLE ERROR NO TABLE OF SESSIONS FOUNDED");
     }
-    if (sessions.querySelector("[type=checkbox]") === null) {
-      var sessions = document.querySelector(`${sPath} tbody`);
-      for (const oTr2 of sessions.children) {
-        if (oTr2.querySelector("a") === null) {
+    if (sessions.querySelector(".Facturier__cbox input[type=checkbox]") === null) {
+      var sessions = document.querySelector(`${sPath}`);
+      for (const oEl2 of sessions.children) {
+        if (oEl2.firstChild.nodeName !== "A") {
           continue;
         }
-        var sWho_id = getKey(oTr2.children[2], -2);
+        const oLine = oEl2.firstChild;
+        var sState = oLine.children[0].querySelector("svg").getAttribute("aria-label");
+        var sSessionType = oLine.children[0].querySelector("p").innerText;
+        var sDateTime = oLine.children[1].querySelector("time").getAttribute("datetime").trim();
+        var sStudentName = oLine.children[2].querySelector("a").innerText;
+        var sWho_id = getKey(oLine.children[2], -2);
         var inputElem = document.createElement("input");
         inputElem.type = "checkbox";
         inputElem.name = "name";
-        var sWhen = oTr2.children[1].querySelector("time").dateTime.trim();
-        sWhen = dayjs(sWhen).toISOString();
+        var sWhen = dayjs(sDateTime).toISOString();
         var iHash = sessions_default.getHashId(sWhen, sWho_id);
         inputElem.value = iHash;
         inputElem.onclick = function(event) {
@@ -3668,71 +3668,42 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
         bChecked = sessions_default.exists(iHash);
         if (bChecked === true)
           inputElem.checked = true;
-        var td = document.createElement("td");
-        td.style = "text-align: center";
-        td.appendChild(inputElem);
-        oTr2.appendChild(td);
+        const cls2ndChild = oLine.children[1].classList;
+        const clsLastChild = oLine.lastChild.classList;
+        oLine.lastChild.classList = cls2ndChild;
+        var oSubEl = document.createElement("div");
+        oSubEl.appendChild(inputElem);
+        oSubEl.classList.add(...clsLastChild);
+        oSubEl.classList.add("Facturier__cbox");
+        oLine.appendChild(oSubEl);
       }
-      if (document.querySelector(`${sPath} thead`) === null) {
+      if (document.querySelector(`${sPath} .Facturier__cbox_all`) === null) {
         const insertBefore = (ele, anotherEle) => anotherEle.insertAdjacentElement("beforebegin", ele);
-        sPath = `${sPath} tbody`;
-        var el = document.querySelector(sPath);
+        var el = document.querySelector(`${sPath} li`);
+        const cls = el.firstChild.classList;
         var inputElem = document.createElement("input");
         inputElem.type = "checkbox";
         inputElem.name = "name";
         inputElem.value = "value";
         inputElem.id = "id";
         inputElem.onclick = function() {
-          document.querySelectorAll("tbody input[type=checkbox]").forEach((e) => e.checked = !e.checked);
+          document.querySelectorAll(".Facturier__cbox input[type=checkbox]").forEach((e) => e.checked = !e.checked);
         };
         inputElem.style = "visibility: hidden;";
         var label = document.createElement("label");
         label.innerText = "in DB";
-        label.style = "display:block;";
+        label.style = "display:block;text-align:right;";
         label.onMouseOver = "this.style.cursor=pointer;";
         label.onMouseOut = "this.style.cursor=auto;";
         label.appendChild(inputElem);
-        var oTd1 = document.createElement("td");
-        oTd1.style = `
-    font-size: 1rem;
-    max-width: 280px;
-    font-family: Montserrat;
-    font-weight: 400;
-    line-height: 1.625rem;
-    text-transform: inherit;
-`;
-        oTd1.innerText = " ";
-        var oTd2 = document.createElement("td");
-        oTd2.style = `
-    font-size: 1rem;
-    max-width: 280px;
-    font-family: Montserrat;
-    font-weight: 400;
-    line-height: 1.625rem;
-    text-transform: inherit;
-    margin-left: auto;
-`;
-        oTd2.innerText = "Fact.(o/n)";
-        oTd2.addEventListener("click", _handler = function(e) {
-          document.querySelectorAll("tbody input[type=checkbox]").forEach((e2) => e2.checked = !e2.checked);
-        });
-        var oTr = document.createElement("tr");
-        oTr.style = `
-    display: flex;
-    align-items: center;
-    border-bottom: 1px solid #e0e0e0;
-    flex-direction: row;
-    background-color: #fff;
-`;
-        oTr.appendChild(oTd1);
-        oTr.appendChild(oTd2);
-        var oTh = document.createElement("thead");
-        oTh.style = "display: block;";
-        oTh.appendChild(oTr);
-        insertBefore(oTh, document.querySelector(sPath));
+        var oEl = document.createElement("div");
+        oEl.classList = cls;
+        oEl.classList.add("Facturier__cbox_all");
+        oEl.appendChild(label);
+        insertBefore(oEl, document.querySelector(`${sPath} li`));
       }
     } else {
-      var _t = sessions.querySelectorAll("[type=checkbox]");
+      var _t = sessions.querySelectorAll(".Facturier__cbox input[type=checkbox]");
       var i = _t.length, aChkBox = new Array(i);
       for (; i--; aChkBox[i] = _t[i])
         ;
@@ -4334,7 +4305,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        dbase_default.import(e.target.result);
+        dbase_default.load(e.target.result);
         addCbox();
         toastOk("Chargement de la base termin\xE9");
       };
@@ -5561,16 +5532,16 @@ in extra narrow spaces */
 grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 20 px is size of handle*/ 
 }
 		`);
-    var elMenu = document.createElement("div");
+    var elMenu2 = document.createElement("div");
     var elHandle = document.createElement("div");
     elHandle.classList.add("handle");
-    elMenu.appendChild(elHandle);
-    elMenu.classList.add("panel", "draggable");
-    document.body.insertAdjacentElement("beforeend", elMenu);
-    elMenu.setAttribute("style", `top:-${document.body.offsetHeight - elMenu.offsetHeight}px`);
+    elMenu2.appendChild(elHandle);
+    elMenu2.classList.add("panel", "draggable");
+    document.body.insertAdjacentElement("beforeend", elMenu2);
+    elMenu2.setAttribute("style", `top:-${document.body.offsetHeight - elMenu2.offsetHeight}px`);
     var elMenuContent = document.createElement("div");
     elMenuContent.classList.add("menuBar");
-    elMenu.appendChild(elMenuContent);
+    elMenu2.appendChild(elMenuContent);
     _UI.addButton("collectChecked", collectChecked, {}, elMenuContent);
     _UI.addButton("CollectAuto", collectAuto, {}, elMenuContent);
     _UI.addButton("showBill", showBill, {}, elMenuContent);
@@ -5716,8 +5687,8 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
         default: ""
       },
       custom_css_data: {
-        label: "saisir ici le code css \xE0 injecter directement dans la page",
-        title: "Je me demande bien \xE0 quoi sert le titre",
+        label: "code css \xE0 injecter ?",
+        title: "saisir ici le code css \xE0 injecter directement dans la page web g\xE9n\xE9r\xE9e",
         labelPos: "left",
         type: "input",
         default: ""
@@ -5733,6 +5704,14 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
         section: ["", "Hack"],
         label: "Changer le zindex du bandeau haut",
         title: "le bandeau haut \xE0 un z-index  (1000) qui le place au dessus de tout ce qui est pr\xE9sent \xE0 l'\xE9cran, ce qui g\xEAne la barre de menu ; activer cette option r\xE9duit ce chiffre \xE0 0",
+        labelPos: "left",
+        type: "checkbox",
+        default: true
+      },
+      "use_student_cache": {
+        section: ["Avanc\xE9es", ""],
+        label: "Utiliser le cache \xE9tudiant",
+        title: "Lorsque l' application recherche si un \xE9tudiant est pr\xE9sent on utilise un cache pour \xE9viter de passer trop de temps dans les requ\xEAtes, d\xE9sactiver le cache permettra de toujours faire une requete en base ",
         labelPos: "left",
         type: "checkbox",
         default: true
@@ -5811,7 +5790,6 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
       console.log("PaintTiming: Not supported");
     }
   });
-  var gm_perf_default = Performance;
 
   // src/vendor/fetch-inject/injectors.js
   var head = function(i, n, j, e, c, t, s) {
@@ -6649,15 +6627,17 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
     raf: null,
     cssMainDataSelector: OC_DASHBOARDCSSMAINDATASELECTOR,
     ID_MENU_FORCE_LOADING: null,
+    ID_MENU_FORCE_ADDTOLEFTMENU: null,
     start: async function() {
       await domReady();
       const bSupport = Facturier.checkSupport();
       console.log(`%cAre all functions supported ? : ${bSupport}`, APP_DEBUG_STYLE);
-      var sCSSObserved = "header [class*=MuiAvatar-img]";
-      if (document.querySelector(sCSSObserved) === null) {
-        console.log(`%c All condition not met, waiting element '${sCSSObserved}' `, APP_DEBUG_STYLE);
-        document.arrive(sCSSObserved, Facturier._warmup);
+      var sCSSObserved2 = "header [class*=MuiAvatar-img]";
+      if (document.querySelector(sCSSObserved2) === null) {
+        console.log(`%c All condition not met, waiting element '${sCSSObserved2}' `, APP_DEBUG_STYLE);
+        document.arrive(sCSSObserved2, Facturier._warmup);
         Facturier.ID_MENU_FORCE_LOADING = GM_registerMenuCommand("force - loading", Facturier._warmup);
+        Facturier.ID_MENU_FORCE_ADDTOLEFTMENU = GM_registerMenuCommand("force - populate menuleft", Facturier._addLinkToMenu);
       } else {
         console.log(`%c All condition already met go`, APP_DEBUG_STYLE);
         Facturier._warmup();
@@ -6688,10 +6668,10 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
         document.getElementById("header").style.zIndex = 0;
       }
       GM_addStyle(".swal2-title{font-size:1.275em)");
-      var sCSSObserved = Facturier.cssMainDataSelector;
-      if (document.querySelector(sCSSObserved) === null) {
-        console.log(`%c All condition not met, waiting element '${sCSSObserved}' `, APP_DEBUG_STYLE);
-        document.arrive(sCSSObserved, Facturier._main);
+      var sCSSObserved2 = Facturier.cssMainDataSelector;
+      if (document.querySelector(sCSSObserved2) === null) {
+        console.log(`%c All condition not met, waiting element '${sCSSObserved2}' `, APP_DEBUG_STYLE);
+        document.arrive(sCSSObserved2, Facturier._main);
       } else {
         console.log(`%c All condition already met go`, APP_DEBUG_STYLE);
         Facturier._main();
@@ -6721,6 +6701,11 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
           }
           if (mutation.target.nodeName === "TBODY" && mutation.target.parentElement.nodeName === "TABLE") {
             console.log("%cTable data changed (TBODy,TABLE)", APP_DEBUG_STYLE);
+            console.log("%c=============> Changed data : %o", APP_DEBUG_STYLE, mutation);
+            debounce(Facturier._applyInjectionOnPathNameMutation());
+          }
+          if (mutation.target.nodeName === "OL") {
+            console.log("%cTable data changed (OL)", APP_DEBUG_STYLE);
             console.log("%c=============> Changed data : %o", APP_DEBUG_STYLE, mutation);
             debounce(Facturier._applyInjectionOnPathNameMutation());
           }
@@ -6763,25 +6748,26 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
     },
     _lastMutation: 0,
     _applyInjectionForSessionsToComplete: function() {
-      if (document.querySelector(Facturier.cssMainDataSelector + " thead") !== null) {
-        document.querySelector(Facturier.cssMainDataSelector + " thead").style.display = "none";
+      if (document.querySelector(`${Facturier.cssMainDataSelector} .Facturier__cbox_all`) !== null) {
+        document.querySelector(`${Facturier.cssMainDataSelector} .Facturier__cbox_all`).style.display = "none";
       }
-      var btns = Array.from(document.querySelectorAll(Facturier.cssMainDataSelector + " tbody a[href*=sessions]"));
+      console.log("%cWill Patch All Buttons corresponding to this CSS PATH %s", APP_DEBUG_STYLE, `${Facturier.cssMainDataSelector} a a[href*=sessions]`);
+      var btns = Array.from(document.querySelectorAll(`${Facturier.cssMainDataSelector} a a[href*=sessions]`));
       var _handler2;
       btns.forEach(function(btn) {
-        let oBtnText = btn.querySelector("span span");
-        oBtnText.innerText = ".:" + oBtnText.innerText + ":.";
+        console.log("%cWill Patch Button %o", APP_DEBUG_STYLE, btn);
+        btn.innerText = ".:" + btn.innerText + ":.";
         btn.addEventListener("click", _handler2 = function(e) {
           e.stopPropagation();
           e.preventDefault();
-          var oTr = btn.parentElement.parentElement.parentElement;
-          var sWhen = oTr.children[1].querySelector("time").dateTime.trim();
-          var sWho = getKey(oTr.children[2], -2);
-          var sHref = oTr.children[3].querySelector("a").getAttribute("href-sav");
+          var oLine = btn.parentElement.parentElement.parentElement;
+          var sDateTime = oLine.children[1].querySelector("time").getAttribute("datetime").trim();
+          var sWho_id = getKey(oLine.children[2], -2);
+          var sHref = oLine.children[3].querySelector("a").getAttribute("href-sav");
           var _t1 = (sHref || "/").split("/");
           var sSessionId = _t1[_t1.length - 1];
-          sWhen = dayjs(sWhen).toISOString();
-          var iHash = sessions_default.getHashId(sWhen, sWho);
+          var sWhen = dayjs(sDateTime).toISOString();
+          var iHash = sessions_default.getHashId(sWhen, sWho_id);
           let iSessionId = parseInt(sSessionId, 10);
           let bExistsSessionId = refs_default.exists(iSessionId, 1, refs_default.TYPE.SESSIONID_DATEREFID);
           let bExistsHashId = refs_default.exists(iHash, 2, refs_default.TYPE.SESSIONID_DATEREFID);
@@ -6808,21 +6794,19 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
       });
     },
     _applyInjectionForSessionsBooked: function() {
-      if (document.querySelector(Facturier.cssMainDataSelector + " thead") !== null) {
-        document.querySelector(Facturier.cssMainDataSelector + " thead").style.display = "none";
+      if (document.querySelector(`${Facturier.cssMainDataSelector} .Facturier__cbox_all`) !== null) {
+        document.querySelector(`${Facturier.cssMainDataSelector} .Facturier__cbox_all`).style.display = "none";
       }
     },
     _applyInjectionForSessionsHistory: function(iDelayBetweenTwoMutations = 100) {
-      console.log("%c[index._applyInjectionForSessionsHistory()] Le panel de gestion des sessions en historique a \xE9t\xE9 activ\xE9, la derni\xE8re mutation date de %i", APP_DEBUG_STYLE, Facturier._lastMutation);
-      if (document.querySelector(Facturier.cssMainDataSelector + " thead") !== null) {
-        document.querySelector(Facturier.cssMainDataSelector + " thead").style.display = "block";
+      if (document.querySelector(`${Facturier.cssMainDataSelector} .Facturier__cbox_all`) !== null) {
+        document.querySelector(`${Facturier.cssMainDataSelector} .Facturier__cbox_all`).style.display = "block";
       }
       if (dayjs().valueOf() - Facturier._lastMutation < iDelayBetweenTwoMutations) {
-        console.log("%c[index._applyInjectionForSessionsHistory()] Traitement abandonn\xE9e le dernier refresh date de %o limite:%o ms", APP_DEBUG_STYLE, Facturier._lastMutation, iDelayBetweenTwoMutations);
-        Facturier._lastMutation = dayjs.valueOf();
         return;
       }
       addCbox();
+      Facturier._lastMutation = dayjs().valueOf();
     },
     _addHeader: function() {
       if (Facturier._sOCMainSrvClassName.length === 0) {
@@ -6842,37 +6826,34 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
  <span class="${Facturier._sOCMainSrvClassName}-MuiTouchRipple-root"></span></a>
 `;
       let aDom = document.querySelector("#mainContent > :not(div:empty)").children;
+      let i = 0;
+      for (i = aDom.length - 1; i >= 0; i--) {
+        console.log(i, aDom[i].nodeName);
+        if (aDom[i].nodeName === "SECTION")
+          break;
+      }
+      if (i === 0) {
+        console.error("IRRECOVERABLE ERROR element <section> not found");
+        return;
+      }
+      i = i - 1;
+      const oPanelSelectorContainer = aDom[i].querySelector("a").parentElement;
+      const oRefCSS = aDom[i].querySelector("a[aria-selected=false]");
       let oSpan_1 = document.createElement("span");
       oSpan_1.innerText = "Facturier v." + GM.info.script.version;
-      oSpan_1.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTab-wrapper`);
-      let _handler2;
-      oSpan_1.addEventListener("click", _handler2 = function(e) {
-        document.querySelectorAll("tbody input[type=checkbox]").forEach((e2) => e2.checked = !e2.checked);
-      });
+      oSpan_1.classList.add(...oRefCSS.children[0].classList);
+      oSpan_1.classList.add("Facturier__header");
       let oSpan_2 = document.createElement("span");
-      oSpan_2.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTouchRipple-root`);
+      oSpan_2.classList.add(...oRefCSS.children[1].classList);
+      oSpan_2.classList.add("Facturier__header");
       let oRoot = document.createElement("a");
-      oRoot.alt = "tout s\xE9l\xE9ctionner";
+      oRoot.onclick = about;
+      oRoot.classList.add(...oRefCSS.classList);
+      oRoot.classList.add("Facturier__header");
       oRoot.appendChild(oSpan_1);
       oRoot.appendChild(oSpan_2);
-      oRoot.classList.add(`${Facturier._sOCMainSrvClassName}-MuiButtonBase-root`);
-      oRoot.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTab-root`);
-      oRoot.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTab-textColorInherit`);
-      let sStyle = `
-font-size: 1rem;
-max-width: 280px;
-font-family: Montserrat;
-font-weight: 400;
-line-height: 1.625rem;
-text-transform: inherit;
-`;
-      oRoot.style = sStyle + "margin-left: auto";
-      let _z;
-      for (var i of aDom) {
-        let _z2 = [...i.children].find((e) => e.classList.toString().match(/MuiTabs/));
-        _z = _z2 !== void 0 ? _z2 : _z;
-      }
-      _z.appendChild(oRoot);
+      oRoot.style = "margin-left: auto";
+      oPanelSelectorContainer.appendChild(oRoot);
     },
     _userscriptless() {
       console.log(`%cIm'not in a Tamper environment so i need to load js scripts`, APP_DEBUG_STYLE);
@@ -6881,8 +6862,10 @@ text-transform: inherit;
       console.log("\u200B\u200B\u200B%c[index._main()]MainLoaded\u200B\u200B\u200B", APP_DEBUG_STYLE);
       document.unbindArrive(Facturier._main);
       Facturier._eventMonitor();
-      gm_perf_default.paintTiming();
-      gm_perf_default.longTaskTiming();
+      if (false) {
+        gm_perf_default.paintTiming();
+        gm_perf_default.longTaskTiming();
+      }
       let adapter = new LocalStorage("db");
       var db = low(adapter);
       db.defaults({ students: [], sessions: [], f_archives: [], history_session_cache: [], meta: [], refs: [], students_history: [] }).write();
@@ -6901,6 +6884,9 @@ text-transform: inherit;
       }
       Facturier._addHeader();
       Facturier._applyInjectionOnPathNameMutation();
+      console.log(`%cWait for side menu to add element to it`, APP_DEBUG_STYLE);
+      sCSSObserved = "nav:not([role])";
+      document.arrive(sCSSObserved, Facturier._addLinkToMenu);
       let sDbVersion = meta_default.getDbVersion();
       if (semverCompare(GM.info.script.version, sDbVersion) == 1) {
         console.log(`%cDB is in version: ${meta_default.getDbVersion()} need to go to version ${GM.info.script.version}`, APP_DEBUG_STYLE);
@@ -6987,6 +6973,14 @@ text-transform: inherit;
       unsafeWindow.Facturier.klass.push({ id: "Ref", ptr: refs_default });
       unsafeWindow.Facturier.klass.push({ id: "Api", ptr: api_openclassrooms_default });
       unsafeWindow.Facturier.libs.push({ id: "NProgress", ptr: NProgress });
+      if (false) {
+        document.body.appendChild(document.createElement("div")).innerHTML = '<iframe id="temoin" style="display:none"></iframe>';
+        console.groupCollapsed("liste de variable de la page");
+        Object.keys(window).filter((a) => !(a in window.frames[window.frames.length - 1])).sort().forEach((a, i) => console.log(i, a, window[a]));
+        document.body.removeChild(document.querySelector("#temoin").parentNode);
+        console.groupEnd();
+      }
+      unsafeWindow.Facturier.libs.push({ id: "Moise", ptr: moize });
       if (GM.info.script.downloadURL === "http://localhost:8000/dist/app-facturier.iife.js") {
         console.log("%cALERTE .... version locale !!!!!! ", "background-color:coral;color:white");
         console.log("%c test readfile", APP_DEBUG_STYLE);
@@ -6997,6 +6991,27 @@ text-transform: inherit;
       } else {
         console.log(`%c GM.info.script.downloadURL url : ${GM.info.script.downloadURL}`, APP_DEBUG_STYLE);
       }
+    },
+    _addLinkToMenu: function() {
+      console.log(`%cSide menu was added`, APP_DEBUG_STYLE);
+      document.unbindArrive(Facturier._addLinkToMenu);
+      try {
+        let oMenu = document.querySelectorAll("nav:not([role])")[0];
+        let oCloneLI = oMenu.children[0].lastChild.cloneNode(true);
+        oCloneLI.firstChild.innerText = "Facturier";
+        elMenu = document.querySelector(".panel.draggable");
+        oCloneLI.firstChild.href = "javascript:function(){elMenu = document.querySelector('.panel.draggable');elMenu.style.display = (elMenu.style.display != 'block') ? 'block' : 'none';}";
+        let el = oMenu.children[0].lastChild.firstChild;
+        oCloneLI.firstChild.appendChild(el.children[0].cloneNode(true));
+        oCloneLI.firstChild.appendChild(el.children[1].cloneNode(false));
+        oCloneLI.firstChild.appendChild(el.children[2].cloneNode(false));
+        let oCloneUL = oMenu.children[0].cloneNode(false);
+        oCloneUL.appendChild(oCloneLI);
+        oMenu.appendChild(oCloneUL);
+      } catch (e) {
+        console.log("%cInjecting menu encounter an error: %o", APP_ERROR_STYLE, e);
+      }
+      ;
     },
     loadDependencies: function() {
       let rDependencies = [];

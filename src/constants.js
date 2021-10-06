@@ -56,4 +56,6 @@ export const OC_API_SESSION_STATUS_2 	= "late canceled";
 export const OC_API_SESSION_STATUS_3 	= "marked student as absent";
 
 // SELECTOR
-export const OC_DASHBOARDCSSMAINDATASELECTOR = 'table'; // before 'table[id*="session"]
+//// the panel where all sessions are stored
+//export const OC_DASHBOARDCSSMAINDATASELECTOR = 'table'; // before 'table[id*="session"]
+export const OC_DASHBOARDCSSMAINDATASELECTOR = 'ol'; // before 'table

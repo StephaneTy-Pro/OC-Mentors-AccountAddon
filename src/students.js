@@ -131,7 +131,11 @@ path: "81-expert-en-strategie-marketing-et-communication"
 	 */
     static findById = function(sNeedle, dtFrom=null){
 		//this option is used to desactivate cache so debugging is easier
-		let bUseCache = true;
+		//let bUseCache = true;
+		let bUseCache = GM_config.get("use_student_cache")
+		
+		if(bUseCache === false)console.log("%cache étudiant desactivé dans les options", APP_DEBUG_STYLE); 
+		
 		
 		// provisoire avant conversion de base
 		if (typeof sNeedle === 'number'){

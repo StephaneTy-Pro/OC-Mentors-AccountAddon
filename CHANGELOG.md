@@ -2,9 +2,15 @@
 
 C : Corrections(Fixes) / B : Corrections de Bug (BugFixes) / F : Ajout de fonctionnalité (Features) / D : Divers (Misc)
 
+  ## 1.10.0008 (06/10/2021)
+   
+   - C: Prise en compte d'une évolution d'OpenClassrooms sur l'ui de l'écran de contrôle mentor
+   - C: Correction du bug sur le forfait des autofinancés : les sessions annulées ne sont plus prises en compte
+
   ## 1.10.0007 (11/07/2021)
-   C: Prise en compte d'une évolution d'OpenClassrooms sur l'ui de l'écran de contrôle mentor
-   F: Ajout d'une barre de progression lors de la collect automatique
+   
+   - C: Prise en compte d'une évolution d'OpenClassrooms sur l'ui de l'écran de contrôle mentor
+   - F: Ajout d'une barre de progression lors de la collect automatique
    
 
   ## 1.10.0006 (02/07/2021)

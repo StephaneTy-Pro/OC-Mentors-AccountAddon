@@ -227,8 +227,11 @@ class Accounting {
 			//console.log(toUpdate);
 			theSessionsMatrix.set(iType, iStatus, iFunding, +oTheSession.lvl, toUpdate);
 			
-			// bonus
-			if(iType === TYPE_SESSION && iFunding === BILL_AUTOFUNDED){
+			// bonus : session, autofinancées non annulées
+			if(iType === TYPE_SESSION
+			 && iFunding === BILL_AUTOFUNDED
+			 && oTheSession.status !== OC_STATUS_1 
+			 ){
 				aBonus.push({id:+oTheSession.who_id, who_id:oTheSession.who_id,who_name:oTheSession.who_name});
 			}
 			
