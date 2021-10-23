@@ -17,7 +17,7 @@ import {
 	toastOk,
 	} from './components.js';
 
-
+import t from './vendor/tcomb/tcomb.neutral.js';
 
 /*
  * version 1.1
@@ -41,8 +41,26 @@ import {
   * 	path:
   * 	funding:
   */
+  
+	const SessionData = t.struct({
+		id: t.String,              		// required string
+		cid: t.maybe(t.Integer),  		// optional string
+		who_id: t.String,				// required string
+		who_name: t.String,				// required string
+		type: t.String,					// required string
+		lvl: t.Integer,					// required string
+		when: t.Date,					// required string
+		path: t.String,					// required string
+		funding: t.String,				// required string
+	}, 'SessionData');
+	// mapper for oc session object
+	SessionData.prototype.ocmapper = function(o){
+		
+	}
 
 class Session {
+	
+
 
 	static tbl_name = 'sessions'; // private field prefixed with # are not currently supported 
 	

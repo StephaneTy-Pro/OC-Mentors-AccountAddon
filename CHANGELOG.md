@@ -2,29 +2,34 @@
 
 C : Corrections(Fixes) / B : Corrections de Bug (BugFixes) / F : Ajout de fonctionnalité (Features) / D : Divers (Misc)
 
-  ## 1.10.0008 (06/10/2021)
+## 1.10.0009 (23/10/2021)
+
+	-C: Prise en compte d'une évolution d'OpenClassrooms sur la gestion des étudiants (utilisation de l'API et non plus de l'url).
+
+
+## 1.10.0008 (06/10/2021)
    
    - C: Prise en compte d'une évolution d'OpenClassrooms sur l'ui de l'écran de contrôle mentor
    - C: Correction du bug sur le forfait des autofinancés : les sessions annulées ne sont plus prises en compte
 
-  ## 1.10.0007 (11/07/2021)
+## 1.10.0007 (11/07/2021)
    
    - C: Prise en compte d'une évolution d'OpenClassrooms sur l'ui de l'écran de contrôle mentor
    - F: Ajout d'une barre de progression lors de la collect automatique
    
 
-  ## 1.10.0006 (02/07/2021)
+## 1.10.0006 (02/07/2021)
    C: Prise en compte d'une évolution d'OpenClassrooms sur l'ui de l'écran de contrôle mentor
    C: Remise en fonction de la fonctionnalité COLLECTAUTO
 
-  ## 1.10.0005 (09/06/2021)
+## 1.10.0005 (09/06/2021)
   	- C: Prise en compte d'une évolution d'OpenClassrooms sur l'ui de l'écran de contrôle mentor
   	- NOTE : la fonctionnalité de mise à jour par lot COLLECTAUTO n'est pas active pour le moment
 
-  ## 1.10.0004 (27/04/2021)
+## 1.10.0004 (27/04/2021)
   	- C: Prise en compte d'une évolution d'OpenClassrooms sur l'ui de l'écran de contrôle mentor
 
-  ## 1.10.0003 (01/02/2021)
+## 1.10.0003 (01/02/2021)
   
   	- C: Correction d'un bug dans la partie ajout d'étudiant
   	- A: Ajout de la fonctionnalité d'export
@@ -35,11 +40,11 @@ C : Corrections(Fixes) / B : Corrections de Bug (BugFixes) / F : Ajout de foncti
   
   	- C: Correction d'un bug dans la partie ajout d'étudiant
 
-  ## 1.10.0001 (14/01/2021)
+## 1.10.0001 (14/01/2021)
   
   	- C: Correction d'un bug dans la partie management de base de donnée RAZ
 
-  ## 1.10.0000 (14/01/2021)
+## 1.10.0000 (14/01/2021)
     
     - F: prise en compte du mode autre dans les modes de financement 
     - F: possiblité de définir une feuille de style personnalisée
@@ -52,33 +57,33 @@ C : Corrections(Fixes) / B : Corrections de Bug (BugFixes) / F : Ajout de foncti
     
     
 
-  ## 1.00.0005 (30/07/2020)
+## 1.00.0005 (30/07/2020)
 
   - F: Mise à jour du mode de calcul des stat, outre les performances, les stat du mois en cours ne sont plus ajoutées au stat totales, tant que nous ne sommes pas le dernier jour du mois (pour ne pas fausser les stat)
   - F: Travail sur la partie interface début de paramétrage d'un style personnalisé (non finalisé donc non pleinement fonctionnel)
   - F: Début de travail pour sortir un plugin autonome (3 versions user scripts/extension/standalone)
   - B: Corrections diverses
   
-  ## 1.00.0004 (18/07/2020)
+## 1.00.0004 (18/07/2020)
 
   - B: Erreur sous chrome : var dans extractDate non définie -> crash malgré le try/catch
   
-  ## 1.00.0003 (17/07/2020)
+## 1.00.0003 (17/07/2020)
 
   - B: Erreur en création des index d'historique qui a provoqué des erreurs en chaine
   - B: Correction du format de l'index des historique qui passe d'une chaine à un entier
 
-  ## 1.00.0002 (16/07/2020)
+ ## 1.00.0002 (16/07/2020)
 
   - B: Erreur RAZ la base n'était pas correctement effacée
   - F: import de base de donnée (json)
   - F: export de base de données (json)
  
- ## 1.00.0001 (15/07/2020)
+## 1.00.0001 (15/07/2020)
 
   - B: Erreur en facture détail suite à changement de version 
   
- ## 1.00 (15/07/2020)
+## 1.00 (15/07/2020)
  
   - F:Ajout de la fonctionnalité de signet (cache sur l'historique)
   - F:Ajout de la possibilité d'ajouter une ou plusieurs feuille(s) de style ou du style personnel

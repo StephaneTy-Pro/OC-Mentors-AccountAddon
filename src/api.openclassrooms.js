@@ -1,7 +1,13 @@
 /**
  * Commentaires
  * 	Ne pas oublier que URL est une fonction de base dans JS !!!!!
+ *
+ *
+ * v1.1
+ * 		Ajout des fonctions liés aux étudiant dans l'api
  */
+ 
+ 
 
 import {
 	APP_DEBUG_STYLE, APP_WARN_STYLE, APP_ERROR_STYLE,
@@ -97,10 +103,10 @@ var fApi = function(){
 		
 	const _getSessionOnDate = async function(sPeriod="BEFORE", dtDate, 
 		aFilter=[
-		LIFE_CYCLE_STATUS_CANCELED,
-		LIFE_CYCLE_STATUS_COMPLETED,
-		LIFE_CYCLE_STATUS_LATE_CANCELED,
-		LIFE_CYCLE_STATUS_ABSENT,
+			LIFE_CYCLE_STATUS_CANCELED,
+			LIFE_CYCLE_STATUS_COMPLETED,
+			LIFE_CYCLE_STATUS_LATE_CANCELED,
+			LIFE_CYCLE_STATUS_ABSENT,
 		],
 		iFrom=0, iTo=19){
 		bDebug = true;
@@ -220,6 +226,18 @@ var fApi = function(){
 		let _r = await xGet(API_USER_PATHS);
         return _r;
     };
+    
+    // exemple https://api.openclassrooms.com/mentors/7688561/students
+    const getUserStudents = async function(iUser=null){
+		if(iUser === null){
+			let _r = await getMe();
+			_r = JSON.parse(_r);
+			iUser = _r.id;
+		}
+		const API_REQUEST = `${API_BASE_URL}/mentors/${iUser}/students`;
+		let _r = await xGet(API_REQUEST);
+        return _r;
+	}
     
     // -- use at your ownr risks
     const xGet = async function(sUrl, oHeader={}){
@@ -415,6 +433,7 @@ var fApi = function(){
 		getPendingSessionAfter: getPendingSessionAfter,
 		getPendingSessionBefore: getPendingSessionBefore,
 		getHistorySession: getHistorySession,
+		getUserStudents: getUserStudents,
         getUser:getUser,
         getUserFollowedPath:getUserFollowedPath,
         getUserPath:getUserPath,

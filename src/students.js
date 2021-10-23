@@ -23,6 +23,35 @@ import {
 
 import StudentHistory from './students_history.js';
 
+import Api from './api.openclassrooms.js';
+// voir aussi http://objectmodel.js.org qui parait plus récent et qui a plus d'options
+import t from './vendor/tcomb/tcomb.neutral.js';
+
+const StudentData = t.struct({
+	id: t.String,              		// required string
+	fullname: t.String,				// required string
+	path: t.String,					// required string
+	funding: t.String,					// required string
+	created: t.String,				// required string
+}, 'StudentData');
+// mapper for oc session object
+/*
+{
+"id": 6513434,
+"displayName": "Alex Bourgoin",
+"profilePicture": "https://user.oc-static.com/users/avatars/1609241852123_Alex%20%282%29.png",
+"followedLearningPath": {
+"learningPathId": 150,
+"learningPathTitle": "Chef de projet digital"
+},
+"followedProject": {
+"projectId": 520,
+"projectTitle": "Développez votre présence en ligne",
+"projectLevel": "2"
+}
+}*/
+
+
 class Student {
 	/**
 	 * 
@@ -53,6 +82,41 @@ path: "81-expert-en-strategie-marketing-et-communication"
 	 * */
 	
 	static tbl_name = 'students'; // private field prefixed with # are not currently supported 
+	
+	
+	/*
+	 * 
+	 */
+	 
+	static ocmapper = async function(o){
+		let bDebug = false;
+		try {
+			let _r = await Student.getFundingFomDashboard(o.id);
+			if(bDebug===true)console.log('%cocmapper() funding is %o', APP_DEBUG_STYLE, _r);
+			//this.id = o.id; 
+			let id = o.id.toString(10); // force to string
+			let fullname = o.displayName; 
+			let _s = o.followedLearningPath.learningPathTitle; 
+			let path;
+			if (_s.length == 0){
+				path = "non défini";
+			}else{
+				path =_s;
+			}
+			let funding = _r.toLowerCase();
+			let created = dayjs().format('YYYY-MM-DDTHH:mm:ssZ[Z]');
+			
+		return StudentData({
+			id,
+			fullname,
+			path,
+			funding,
+			created
+		});
+		
+		}catch(e){ console.error('%c,IRRECOVERABLE ERROR in StudentData.ocmapper: %o', APP_ERROR_STYLE, e); } 
+	}
+	
 	/*
 	 * 
 	 * name: inconnu
@@ -410,26 +474,32 @@ path: "81-expert-en-strategie-marketing-et-communication"
         var sPath ="table.crud-list tbody";
         // get full list of student
         if(bDebug===true)console.log('%c[getAll()] Enter function', APP_DEBUG_STYLE);
-        const oDom = await _fetch(`https://openclassrooms.com/fr/mentorship/dashboard/students`, 'script[id="mentorshipDashboardConfiguration"]');
-        
-        //console.log(JSON.parse(doc.querySelector('script[id="mentorshipDashboardConfiguration"]').innerText.trim()));
-        // renvoie un objet json
-        /*
-		mentorStudents: Array(30)
-			0:
-				followedLearningPathId: 150
-				followedLearningPathSlug: "chef-de-projet-digital"
-				followedLearningPathTitle: "Chef de projet digital"
-				followedProjectId: 519
-				followedProjectSlug: "participez-au-sprint-de-developpement-dun-site-e-commerce"
-				followedProjectTitle: "Participez au sprint de développement d'un site e-commerce"
-				studentDisplayableName: "Alex Bourgoin"
-				studentId: 6513434
-        */ 
+        //const oDom = await _fetch(`https://openclassrooms.com/fr/mentorship/dashboard/students`, 'script[id="mentorshipDashboardConfiguration"]');
+        //var _r = JSON.parse(oDom.innerText.trim())
+        //var aStudents = _r.mentorStudents;
+        const oJson = await Api.getUserStudents();
+        var aStudents = JSON.parse(oJson);
+/*
+ {
+  "id": 6513434,
+  "displayName": "Alex Bourgoin",
+  "profilePicture": "https://user.oc-static.com/users/avatars/1609241852123_Alex%20%282%29.png",
+  "followedLearningPath": {
+    "learningPathId": 150,
+    "learningPathTitle": "Chef de projet digital"
+  },
+  "followedProject": {
+    "projectId": 520,
+    "projectTitle": "Développez votre présence en ligne",
+    "projectLevel": "2"
+  }
+}
+* 
+* controler le nom des champs car tout à changer, il faudrait probablement faire un mapping pour etre tranquille
+* 
+*/
          
-        var _r = JSON.parse(oDom.innerText.trim())
-        //var aStudents = oDom.querySelectorAll('tr'); //  get list of Attributed Students
-        var aStudents = _r.mentorStudents;
+
         if(bDebug===true)console.log('%cgetAll() collect this array of stundent %o', APP_DEBUG_STYLE, aStudents);
         const now = dayjs().format('YYYY-MM-DDTHH:mm:ssZ[Z]'); // old format
         //const now = dayjs().format('YYYY-MM-DDTHH:mm:ssZZ'); //ISO A FAIRE POUR UN PROCHAINE MAJ BDD penser à verifier deleteById mais j'ai supprimé cette possibilité
@@ -438,7 +508,9 @@ path: "81-expert-en-strategie-marketing-et-communication"
         // essai d'estimmer le temps nécessaire à la mise à jour des différentes fiches étudiant
 		var t0 = performance.now();
 		//var sFirstStudentId = getKey(aStudents[0].children[0].querySelector('a').href, -2); // first line, first column, a.href
-		await Student.getFundingFomDashboard(aStudents[0].studentId)
+		//await Student.getFundingFomDashboard(aStudents[0].studentId)
+		//await Student.getFundingFomDashboard(aStudents[0].id);
+		await Student.ocmapper(aStudents[0]);
 		if(bDebug===true)console.log(`%cEstimated time for updating : ${(performance.now()-t0)* aStudents.length} ms`, APP_DEBUG_STYLE);
 
         // --
@@ -451,7 +523,7 @@ path: "81-expert-en-strategie-marketing-et-communication"
             timer: 1000
         })
         
-        // ce timer est nécessaire uniquement si j'utilise Swal et donc toastok
+        //NOTESTT: ce timer est nécessaire uniquement si j'utilise Swal et donc toastok
         await sleep(1000);
         if(bDebug===true)console.log('%cWill process all students of board', APP_DEBUG_STYLE);
         for (const oStudent of aStudents) {
@@ -469,7 +541,11 @@ path: "81-expert-en-strategie-marketing-et-communication"
                 }, 300);
             */
             
-            var sStudentId = oStudent.studentId.toString(10); // sinon c'est un entier et toutes les insertions en bdd plantent
+            //var sStudentId = oStudent.studentId.toString(10); // sinon c'est un entier et toutes les insertions en bdd plantent
+            
+            let theStudent = await Student.ocmapper(oStudent);
+            /*
+            var sStudentId = oStudent.id.toString(10); // sinon c'est un entier et toutes les insertions en bdd plantent
             var sStudentFullName = oStudent.studentDisplayableName;
             if(bDebug===true)console.log('%c Working on student "%s"', APP_DEBUG_STYLE, sStudentFullName);
             toastOk(`Collecte les données de l'étudiant : ${sStudentFullName}`);
@@ -480,39 +556,49 @@ path: "81-expert-en-strategie-marketing-et-communication"
             let sStudentFunding = await Student.getFundingFomDashboard(sStudentId);
             //var res = db.get(Student.tbl_name).find({id: sStudentId}).value();
             //var _r = db.get(Student.tbl_name).find({id: sStudentId}).value();
-            
+            * */
+            if(bDebug===true)console.log('%c Working on student "%s"', APP_DEBUG_STYLE, theStudent.fullname);
+            toastOk(`Collecte les données de l'étudiant : ${theStudent.fullname}`);
+            //NOTESTT ne devrait plus servir le check etant fait avant
+            /*
 			assert(
-				typeof sStudentId === 'string',
+				typeof theStudent.id === 'string',
 				'sStudentId need to be a string.',
 				TypeError
 			);
-			
-            var _r = Student.m_findById(sStudentId, null);
+			*/
+            var _r = Student.m_findById(theStudent.id, null);
             
             if (_r === undefined ){
-				if(bDebug===true)console.log(`%cStudent ${sStudentFullName} (id:${sStudentId}) not present in student database will create it`, APP_DEBUG_STYLE);
-				Student.add(sStudentId, sStudentFullName, sStudentPath, sStudentFunding, now); // addStudent
+				if(bDebug===true)console.log(`%cStudent ${theStudent.fullname} (id:${theStudent.id}) not present in student database will create it`, APP_DEBUG_STYLE);
+				Student.add(
+					theStudent.id, 
+					theStudent.fullname,
+					theStudent.path,
+					theStudent.funding,
+					theStudent.created
+				); // addStudent
 				continue; // break iterator , so it goes to next iteration
 			}
 			/* i have found a student with this id check if it was updated*/
 
-			if(sStudentFunding.toLowerCase() !== _r.funding.toLowerCase()){// update value and history
+			if(theStudent.funding.toLowerCase() !== _r.funding.toLowerCase()){// update value and history
 				db.get(Student.tbl_name)
-				.find({id: sStudentId})
-				.assign({ funding: sStudentFunding.toLowerCase()})
+				.find({id: theStudent.id})
+				.assign({funding: theStudent.funding})
 				.write();
 				
-				StudentHistory.addFunding( sStudentId, _r.funding.toLowerCase(), dayjs());
-				console.log(`%c[Student.getAll]Student ${sStudentFullName}(id:${sStudentId}) was already present in database but change of funding was detected (from ${_r.funding.toLowerCase()} to ${sStudentFunding.toLowerCase()})`, APP_DEBUG_STYLE);
+				StudentHistory.addFunding( theStudent.id, _r.funding, dayjs());
+				console.log(`%c[Student.getAll]Student ${theStudent.fullname}(id:${theStudent.id}) was already present in database but change of funding was detected (from ${_r.funding.toLowerCase()} to ${theStudent.funding.toLowerCase()})`, APP_DEBUG_STYLE);
 			}
-			if(sStudentPath !== _r.path){// update value and history
+			if(theStudent.path !== _r.path){// update value and history
 				db.get(Student.tbl_name)
-				.find({id: sStudentId})
-				.assign({ path: sStudentPath})
+				.find({id: theStudent.id})
+				.assign({ path: theStudent.path})
 				.write();
 				
-				StudentHistory.addPath( sStudentId, _r.path, dayjs());
-				console.log(`%c[Student.getAll]Student ${sStudentFullName}(id:${sStudentId}) was already present in database but change of path was detected (from ${_r.path} to ${sStudentPath})`, APP_DEBUG_STYLE);
+				StudentHistory.addPath( theStudent.id, _r.path, dayjs());
+				console.log(`%c[Student.getAll]Student ${theStudent.fullname}(id:${theStudent.id}) was already present in database but change of path was detected (from ${_r.path} to ${theStudent.path})`, APP_DEBUG_STYLE);
 			}
 			
 

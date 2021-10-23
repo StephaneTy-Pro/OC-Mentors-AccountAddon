@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Facturier
 // @namespace    http://tampermonkey.net/
-// @version      1.10.0008
+// @version      1.10.0009
 // @description  Un addon pour vous aider dans votre facturation
 // @author       Stéphane TORCHY
 // @updateURL    https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/dist/app.min.js
@@ -1278,7 +1278,1981 @@
   var StudentHistory = fStudentHistory();
   var students_history_default = StudentHistory;
 
+  // src/api.openclassrooms.js
+  var fApi = function() {
+    let _header = {};
+    let _user = "0";
+    const VERBOSE = true;
+    const API_BASE_URL = "https://api.openclassrooms.com";
+    const LIFE_CYCLE_STATUS_PENDING = "pending";
+    const LIFE_CYCLE_STATUS_CANCELED = "canceled";
+    const LIFE_CYCLE_STATUS_COMPLETED = "completed";
+    const LIFE_CYCLE_STATUS_LATE_CANCELED = "late canceled";
+    const LIFE_CYCLE_STATUS_ABSENT = "marked student as absent";
+    const _setUser = async function() {
+      let _r2 = await getMe();
+      _r2 = JSON.parse(_r2);
+      _user = _r2.id;
+      return _user;
+    };
+    const _checkSupport = async function() {
+      if (_header.length == 0) {
+        throw new Error("_header is empty, no xhr have been trapped so could't do some api request");
+      }
+    };
+    const getMe = async function() {
+      const API_ME_URL = API_BASE_URL + "/me";
+      let _r2 = await _fetchGet(API_ME_URL);
+      return _r2;
+    };
+    const _getLimit = function(iFrom, iTo) {
+      return { "Range": `items=${iFrom}-${iTo}` };
+    };
+    const getPendingSessionAfter = async (dtDate = dayjs(), iFrom = 0, iTo = 19) => await _getSessionOnDate("AFTER", dtDate, [LIFE_CYCLE_STATUS_PENDING], iFrom, iTo);
+    const getPendingSessionBefore = async (dtDate = dayjs(), iFrom = 0, iTo = 19) => await _getSessionOnDate("BEFORE", dtDate, [LIFE_CYCLE_STATUS_PENDING], iFrom, iTo);
+    const getHistorySession = async (aFilter, iFrom = 0, iTo = 19) => await _getSession(aFilter, iFrom, iTo);
+    const _getSessionOnDate = async function(sPeriod = "BEFORE", dtDate, aFilter = [
+      LIFE_CYCLE_STATUS_CANCELED,
+      LIFE_CYCLE_STATUS_COMPLETED,
+      LIFE_CYCLE_STATUS_LATE_CANCELED,
+      LIFE_CYCLE_STATUS_ABSENT
+    ], iFrom = 0, iTo = 19) {
+      bDebug = true;
+      if (typeof dtDate === "string") {
+        dtDate = dayjs(dtDate);
+      }
+      assert(isArray(aFilter) === true, "You must provide an array as param aFilter.", TypeError);
+      assert(dtDate instanceof dayjs === true, "date must be a string or a dayjs object.", TypeError);
+      let sFilter = aFilter.join(",");
+      let sDate = encodeURIComponent(dtDate.format("YYYY-MM-DDTHH:MM:ss[Z]"));
+      sFilter = encodeURIComponent(sFilter);
+      let API_URL = "";
+      if (_user == 0) {
+        await _setUser();
+      }
+      if (sPeriod === "AFTER") {
+        API_URL = `${API_BASE_URL}/users/${_user}/sessions?actor=expert&after=${sDate}&life-cycle-status=${sFilter}`;
+        console.log("URL IS %s", API_URL);
+      } else {
+        API_URL = `${API_BASE_URL}/users/${_user}/sessions?actor=expert&before=${sDate}&life-cycle-status=${sFilter}`;
+        console.log("URL IS %s", API_URL);
+      }
+      let oLimit = _getLimit(iFrom, iTo);
+      if (bDebug) {
+        console.log("%c_getSessionOnDate url to call is:%s , params are %o", APP_DEBUG_STYLE, API_URL, oLimit);
+      }
+      let _r2 = await xGet(API_URL, _getLimit(iFrom, iTo));
+      return _r2;
+    };
+    const _getSession = async function(aFilter = [], iFrom = 0, iTo = 19) {
+      bDebug = true;
+      assert(isArray(aFilter) === true, "You must provide an array as param aFilter.", TypeError);
+      if (aFilter.length == 0) {
+        aFilter = [
+          LIFE_CYCLE_STATUS_CANCELED,
+          LIFE_CYCLE_STATUS_COMPLETED,
+          LIFE_CYCLE_STATUS_LATE_CANCELED,
+          LIFE_CYCLE_STATUS_ABSENT
+        ];
+      }
+      let sFilter = aFilter.join(",");
+      sFilter = encodeURIComponent(sFilter);
+      if (_user == 0) {
+        await _setUser();
+      }
+      const API_URL = `${API_BASE_URL}/users/${_user}/sessions?actor=expert&life-cycle-status=${sFilter}`;
+      let oLimit = _getLimit(iFrom, iTo);
+      if (bDebug) {
+        console.log("%cUrl to call is:%o , params are %o", APP_DEBUG_STYLE, API_URL, oLimit);
+      }
+      let _r2 = await xGet(API_URL, oLimit);
+      if (_r2 === null || _r2 === void 0) {
+        console.error("%cAPI have a problem returned value %o is null|undefined", APP_ERROR_STYLE, _r2);
+        throw new Error(`Request:${API_BASE_URL}/users/${_user}/sessions?actor=expert&life-cycle-status=${sFilter} have a problem`);
+      }
+      if (_r2.errors) {
+        console.log("%cAPI return an error %s", APP_ERROR_STYLE, _r2.errors.message);
+      }
+      return _r2;
+    };
+    const getUser = async function(iUser) {
+      const API_USER = `${API_BASE_URL}/users/${iUser}`;
+      let _r2 = await xGet(API_USER);
+      return _r2;
+    };
+    const getUserFollowedPath = async function(iUser) {
+      await _checkSupport();
+      const API_URL = `${API_BASE_URL}/users/${iUser}/paths/followed-path`;
+      let _r2 = await xGet(API_URL);
+      return _r2;
+    };
+    const getUserPath = async function(iUser) {
+      const API_USER_PATHS = `${API_BASE_URL}/users/${iUser}/paths`;
+      let _r2 = await xGet(API_USER_PATHS);
+      return _r2;
+    };
+    const getUserStudents = async function(iUser = null) {
+      if (iUser === null) {
+        let _r3 = await getMe();
+        _r3 = JSON.parse(_r3);
+        iUser = _r3.id;
+      }
+      const API_REQUEST = `${API_BASE_URL}/mentors/${iUser}/students`;
+      let _r2 = await xGet(API_REQUEST);
+      return _r2;
+    };
+    const xGet = async function(sUrl, oHeader = {}) {
+      await _checkSupport();
+      let _r2 = await _fetchGet(sUrl, oHeader);
+      return _r2;
+    };
+    const xPost = async function(sUrl) {
+      await _checkSupport();
+      let _r2 = await _fetchPost(sUrl, mData);
+      return _r2;
+    };
+    const forge = function(idUser) {
+      _user = idUser;
+    };
+    const _containsEncodedComponents = function(x) {
+      return decodeURI(x) !== decodeURIComponent(x);
+    };
+    const _fetchGet = async function(sUrl = "", oHeader = {}, sFormat = "json", sPath = "", bAll = true) {
+      let mHeader = Object.assign({ "User-Agent": "Mozilla/5.0" }, _header, oHeader);
+      if (sFormat.toLowerCase() === "json") {
+        const response = await GMC.XHR({
+          method: "GET",
+          url: sUrl,
+          responseType: "application/json",
+          headers: mHeader
+        }).catch((error) => {
+          console.error("%c[Api_fetchGer()]Error is %o", APP_ERROR_STYLE, error);
+        });
+        return response.responseText;
+      }
+      if (sFormat.toLowerCase === "html") {
+        const response = await GMC.XHR({
+          method: "GET",
+          url: sUrl,
+          responseType: "application/json",
+          headers: mHeader
+        }).catch((error) => {
+          console.error("%c[Api_fetchGer()]Error is %o", APP_ERROR_STYLE, error);
+        });
+        let domparser = new DOMParser();
+        let doc = domparser.parseFromString(response.responseText.replace(/\n/mg, ""), "text/html");
+        var oDom = {};
+        if (bAll === true) {
+          oDom = doc.querySelectorAll(sPath);
+        } else {
+          oDom = doc.querySelector(sPath);
+        }
+        return oDom;
+      }
+    };
+    const _fetchPost = async function(sUrl = "", oHeader = {}, oData = {}) {
+    };
+    const _bootstrap = function() {
+      const VERBOSE2 = false;
+      const FN_VERBOSE_STYLE = "color:DarkSalmon;background-color:AliceBlue;";
+      var open = window.XMLHttpRequest.prototype.open, send = window.XMLHttpRequest.prototype.send, setRequestHeader = window.XMLHttpRequest.prototype.setRequestHeader;
+      var openReplacement = function(method, url, async, user, password) {
+        if (VERBOSE2 === true)
+          console.log("%cmethod %o url:%o, async:%o, user %o, password:%o", FN_VERBOSE_STYLE, method, url, async, user, password);
+        this._url = url;
+        this._requestHeaders = {};
+        this._knox = [];
+        return open.apply(this, arguments);
+      };
+      var onReadyStateChangeReplacement = function() {
+        if (VERBOSE2 === true)
+          console.log("%cReady state changed to: %o", FN_VERBOSE_STYLE, this.readyState);
+        if (this.readyState === 4 && this.status && this.status >= 200 && this.status < 300) {
+          if (this._url.match(/^https:\/\/api.openclassrooms.com/g)) {
+            if (VERBOSE2 === true)
+              console.log("%cOPENCLASSROOMS API", FN_VERBOSE_STYLE);
+            for (var i in this._knox) {
+              _header[this._knox[i].key] = this._knox[i].value;
+            }
+            if (VERBOSE2 === true)
+              console.log("%c _header is %o", FN_VERBOSE_STYLE, _header);
+            if (VERBOSE2 === true) {
+              if (_containsEncodedComponents(this._url)) {
+                console.log("%cDECODED URL:%s", FN_VERBOSE_STYLE, decodeURIComponent(this._url));
+              } else {
+                console.log("%c DECODED URL:%s", FN_VERBOSE_STYLE, decodeURI(this._url));
+              }
+            }
+          }
+          if (VERBOSE2 === true)
+            console.log("%cResponse is :%o", FN_VERBOSE_STYLE, this.response);
+        }
+        if (this._onreadystatechange) {
+          return this._onreadystatechange.apply(this, arguments);
+        }
+      };
+      var sendReplacement = function(data) {
+        if (VERBOSE2 === true)
+          console.log("%csendReplacement(%o)", FN_VERBOSE_STYLE, data);
+        if (this.onreadystatechange) {
+          this._onreadystatechange = this.onreadystatechange;
+        }
+        this.onreadystatechange = onReadyStateChangeReplacement;
+        return send.apply(this, arguments);
+      };
+      var setRequestHeaderReplacement = function(header, value) {
+        if (this._url.match(/^https:\/\/api.openclassrooms.com/g)) {
+          this._knox.push({ key: header, value });
+        }
+        this._requestHeaders[header] = value;
+        return setRequestHeader.apply(this, arguments);
+      };
+      window.XMLHttpRequest.prototype.open = openReplacement;
+      window.XMLHttpRequest.prototype.send = sendReplacement;
+      window.XMLHttpRequest.prototype.setRequestHeader = setRequestHeaderReplacement;
+    };
+    _bootstrap();
+    return Object.freeze({
+      forge,
+      getPendingSessionAfter,
+      getPendingSessionBefore,
+      getHistorySession,
+      getUserStudents,
+      getUser,
+      getUserFollowedPath,
+      getUserPath,
+      getMe,
+      xGet,
+      xPost
+    });
+  };
+  var Api = fApi();
+  var api_openclassrooms_default = Api;
+
+  // src/vendor/tcomb/tcomb.neutral.js
+  var __commonJS2 = (cb, mod) => function __require() {
+    return mod || (0, cb[Object.keys(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+  };
+  var require_isFunction = __commonJS2({
+    "src/lib/isFunction.js"(exports, module) {
+      module.exports = function isFunction(x) {
+        return typeof x === "function";
+      };
+    }
+  });
+  var require_isNil = __commonJS2({
+    "src/lib/isNil.js"(exports, module) {
+      module.exports = function isNil(x) {
+        return x === null || x === void 0;
+      };
+    }
+  });
+  var require_fail = __commonJS2({
+    "src/lib/fail.js"(exports, module) {
+      module.exports = function fail(message) {
+        throw new TypeError("[tcomb] " + message);
+      };
+    }
+  });
+  var require_getFunctionName = __commonJS2({
+    "src/lib/getFunctionName.js"(exports, module) {
+      module.exports = function getFunctionName(f) {
+        return f.displayName || f.name || "<function" + f.length + ">";
+      };
+    }
+  });
+  var require_stringify = __commonJS2({
+    "src/lib/stringify.js"(exports, module) {
+      var getFunctionName = require_getFunctionName();
+      function replacer(key, value) {
+        if (typeof value === "function") {
+          return getFunctionName(value);
+        }
+        return value;
+      }
+      module.exports = function stringify(x) {
+        try {
+          return JSON.stringify(x, replacer, 2);
+        } catch (e) {
+          return String(x);
+        }
+      };
+    }
+  });
+  var require_assert = __commonJS2({
+    "src/lib/assert.js"(exports, module) {
+      var isFunction = require_isFunction();
+      var isNil = require_isNil();
+      var fail = require_fail();
+      var stringify = require_stringify();
+      function assert2(guard, message) {
+        if (guard !== true) {
+          if (isFunction(message)) {
+            message = message();
+          } else if (isNil(message)) {
+            message = 'Assert failed (turn on "Pause on exceptions" in your Source panel)';
+          }
+          assert2.fail(message);
+        }
+      }
+      assert2.fail = fail;
+      assert2.stringify = stringify;
+      module.exports = assert2;
+    }
+  });
+  var require_isString = __commonJS2({
+    "src/lib/isString.js"(exports, module) {
+      module.exports = function isString(x) {
+        return typeof x === "string";
+      };
+    }
+  });
+  var require_isArray = __commonJS2({
+    "src/lib/isArray.js"(exports, module) {
+      module.exports = function isArray2(x) {
+        return Array.isArray ? Array.isArray(x) : x instanceof Array;
+      };
+    }
+  });
+  var require_isObject = __commonJS2({
+    "src/lib/isObject.js"(exports, module) {
+      var isNil = require_isNil();
+      var isArray2 = require_isArray();
+      module.exports = function isObject(x) {
+        return !isNil(x) && typeof x === "object" && !isArray2(x);
+      };
+    }
+  });
+  var require_isType = __commonJS2({
+    "src/lib/isType.js"(exports, module) {
+      var isFunction = require_isFunction();
+      var isObject = require_isObject();
+      module.exports = function isType(x) {
+        return isFunction(x) && isObject(x.meta);
+      };
+    }
+  });
+  var require_getTypeName = __commonJS2({
+    "src/lib/getTypeName.js"(exports, module) {
+      var isType = require_isType();
+      var getFunctionName = require_getFunctionName();
+      module.exports = function getTypeName(ctor) {
+        if (isType(ctor)) {
+          return ctor.displayName;
+        }
+        return getFunctionName(ctor);
+      };
+    }
+  });
+  var require_forbidNewOperator = __commonJS2({
+    "src/lib/forbidNewOperator.js"(exports, module) {
+      var assert2 = require_assert();
+      var getTypeName = require_getTypeName();
+      module.exports = function forbidNewOperator(x, type) {
+        assert2(!(x instanceof type), function() {
+          return "Cannot use the new operator to instantiate the type " + getTypeName(type);
+        });
+      };
+    }
+  });
+  var require_irreducible = __commonJS2({
+    "src/lib/irreducible.js"(exports, module) {
+      var assert2 = require_assert();
+      var isString = require_isString();
+      var isFunction = require_isFunction();
+      var forbidNewOperator = require_forbidNewOperator();
+      module.exports = function irreducible(name, predicate) {
+        if (true) {
+          assert2(isString(name), function() {
+            return "Invalid argument name " + assert2.stringify(name) + " supplied to irreducible(name, predicate) (expected a string)";
+          });
+          assert2(isFunction(predicate), "Invalid argument predicate " + assert2.stringify(predicate) + " supplied to irreducible(name, predicate) (expected a function)");
+        }
+        function Irreducible(value, path) {
+          if (true) {
+            forbidNewOperator(this, Irreducible);
+            path = path || [name];
+            assert2(predicate(value), function() {
+              return "Invalid value " + assert2.stringify(value) + " supplied to " + path.join("/");
+            });
+          }
+          return value;
+        }
+        Irreducible.meta = {
+          kind: "irreducible",
+          name,
+          predicate,
+          identity: true
+        };
+        Irreducible.displayName = name;
+        Irreducible.is = predicate;
+        return Irreducible;
+      };
+    }
+  });
+  var require_Any = __commonJS2({
+    "src/lib/Any.js"(exports, module) {
+      var irreducible = require_irreducible();
+      module.exports = irreducible("Any", function() {
+        return true;
+      });
+    }
+  });
+  var require_Array = __commonJS2({
+    "src/lib/Array.js"(exports, module) {
+      var irreducible = require_irreducible();
+      var isArray2 = require_isArray();
+      module.exports = irreducible("Array", isArray2);
+    }
+  });
+  var require_isBoolean = __commonJS2({
+    "src/lib/isBoolean.js"(exports, module) {
+      module.exports = function isBoolean(x) {
+        return x === true || x === false;
+      };
+    }
+  });
+  var require_Boolean = __commonJS2({
+    "src/lib/Boolean.js"(exports, module) {
+      var irreducible = require_irreducible();
+      var isBoolean = require_isBoolean();
+      module.exports = irreducible("Boolean", isBoolean);
+    }
+  });
+  var require_Date = __commonJS2({
+    "src/lib/Date.js"(exports, module) {
+      var irreducible = require_irreducible();
+      module.exports = irreducible("Date", function(x) {
+        return x instanceof Date;
+      });
+    }
+  });
+  var require_Error = __commonJS2({
+    "src/lib/Error.js"(exports, module) {
+      var irreducible = require_irreducible();
+      module.exports = irreducible("Error", function(x) {
+        return x instanceof Error;
+      });
+    }
+  });
+  var require_Function = __commonJS2({
+    "src/lib/Function.js"(exports, module) {
+      var irreducible = require_irreducible();
+      var isFunction = require_isFunction();
+      module.exports = irreducible("Function", isFunction);
+    }
+  });
+  var require_Nil = __commonJS2({
+    "src/lib/Nil.js"(exports, module) {
+      var irreducible = require_irreducible();
+      var isNil = require_isNil();
+      module.exports = irreducible("Nil", isNil);
+    }
+  });
+  var require_isNumber = __commonJS2({
+    "src/lib/isNumber.js"(exports, module) {
+      module.exports = function isNumber(x) {
+        return typeof x === "number" && isFinite(x) && !isNaN(x);
+      };
+    }
+  });
+  var require_Number = __commonJS2({
+    "src/lib/Number.js"(exports, module) {
+      var irreducible = require_irreducible();
+      var isNumber = require_isNumber();
+      module.exports = irreducible("Number", isNumber);
+    }
+  });
+  var require_isTypeName = __commonJS2({
+    "src/lib/isTypeName.js"(exports, module) {
+      var isNil = require_isNil();
+      var isString = require_isString();
+      module.exports = function isTypeName(name) {
+        return isNil(name) || isString(name);
+      };
+    }
+  });
+  var require_isIdentity = __commonJS2({
+    "src/lib/isIdentity.js"(exports, module) {
+      var assert2 = require_assert();
+      var Boolean = require_Boolean();
+      var isType = require_isType();
+      var getTypeName = require_getTypeName();
+      module.exports = function isIdentity(type) {
+        if (isType(type)) {
+          if (true) {
+            assert2(Boolean.is(type.meta.identity), function() {
+              return "Invalid meta identity " + assert2.stringify(type.meta.identity) + " supplied to type " + getTypeName(type);
+            });
+          }
+          return type.meta.identity;
+        }
+        return true;
+      };
+    }
+  });
+  var require_create = __commonJS2({
+    "src/lib/create.js"(exports, module) {
+      var isType = require_isType();
+      var getFunctionName = require_getFunctionName();
+      var assert2 = require_assert();
+      var stringify = require_stringify();
+      module.exports = function create(type, value, path) {
+        if (isType(type)) {
+          return !type.meta.identity && typeof value === "object" && value !== null ? new type(value, path) : type(value, path);
+        }
+        if (true) {
+          path = path || [getFunctionName(type)];
+          assert2(value instanceof type, function() {
+            return "Invalid value " + stringify(value) + " supplied to " + path.join("/");
+          });
+        }
+        return value;
+      };
+    }
+  });
+  var require_is = __commonJS2({
+    "src/lib/is.js"(exports, module) {
+      var isType = require_isType();
+      module.exports = function is(x, type) {
+        if (isType(type)) {
+          return type.is(x);
+        }
+        return x instanceof type;
+      };
+    }
+  });
+  var require_refinement = __commonJS2({
+    "src/lib/refinement.js"(exports, module) {
+      var assert2 = require_assert();
+      var isTypeName = require_isTypeName();
+      var isFunction = require_isFunction();
+      var forbidNewOperator = require_forbidNewOperator();
+      var isIdentity = require_isIdentity();
+      var create = require_create();
+      var is = require_is();
+      var getTypeName = require_getTypeName();
+      var getFunctionName = require_getFunctionName();
+      function getDefaultName(type, predicate) {
+        return "{" + getTypeName(type) + " | " + getFunctionName(predicate) + "}";
+      }
+      function refinement(type, predicate, name) {
+        if (true) {
+          assert2(isFunction(type), function() {
+            return "Invalid argument type " + assert2.stringify(type) + " supplied to refinement(type, predicate, [name]) combinator (expected a type)";
+          });
+          assert2(isFunction(predicate), function() {
+            return "Invalid argument predicate supplied to refinement(type, predicate, [name]) combinator (expected a function)";
+          });
+          assert2(isTypeName(name), function() {
+            return "Invalid argument name " + assert2.stringify(name) + " supplied to refinement(type, predicate, [name]) combinator (expected a string)";
+          });
+        }
+        var displayName = name || getDefaultName(type, predicate);
+        var identity = isIdentity(type);
+        function Refinement(value, path) {
+          if (true) {
+            if (identity) {
+              forbidNewOperator(this, Refinement);
+            }
+            path = path || [displayName];
+          }
+          var x = create(type, value, path);
+          if (true) {
+            assert2(predicate(x), function() {
+              return "Invalid value " + assert2.stringify(value) + " supplied to " + path.join("/");
+            });
+          }
+          return x;
+        }
+        Refinement.meta = {
+          kind: "subtype",
+          type,
+          predicate,
+          name,
+          identity
+        };
+        Refinement.displayName = displayName;
+        Refinement.is = function(x) {
+          return is(x, type) && predicate(x);
+        };
+        Refinement.update = function(instance, patch) {
+          return Refinement(assert2.update(instance, patch));
+        };
+        return Refinement;
+      }
+      refinement.getDefaultName = getDefaultName;
+      module.exports = refinement;
+    }
+  });
+  var require_Integer = __commonJS2({
+    "src/lib/Integer.js"(exports, module) {
+      var refinement = require_refinement();
+      var Number2 = require_Number();
+      module.exports = refinement(Number2, function(x) {
+        return x % 1 === 0;
+      }, "Integer");
+    }
+  });
+  var require_Object = __commonJS2({
+    "src/lib/Object.js"(exports, module) {
+      var irreducible = require_irreducible();
+      var isObject = require_isObject();
+      module.exports = irreducible("Object", isObject);
+    }
+  });
+  var require_RegExp = __commonJS2({
+    "src/lib/RegExp.js"(exports, module) {
+      var irreducible = require_irreducible();
+      module.exports = irreducible("RegExp", function(x) {
+        return x instanceof RegExp;
+      });
+    }
+  });
+  var require_String = __commonJS2({
+    "src/lib/String.js"(exports, module) {
+      var irreducible = require_irreducible();
+      var isString = require_isString();
+      module.exports = irreducible("String", isString);
+    }
+  });
+  var require_Type = __commonJS2({
+    "src/lib/Type.js"(exports, module) {
+      var irreducible = require_irreducible();
+      var isType = require_isType();
+      module.exports = irreducible("Type", isType);
+    }
+  });
+  var require_dict = __commonJS2({
+    "src/lib/dict.js"(exports, module) {
+      var assert2 = require_assert();
+      var isTypeName = require_isTypeName();
+      var isFunction = require_isFunction();
+      var getTypeName = require_getTypeName();
+      var isIdentity = require_isIdentity();
+      var isObject = require_isObject();
+      var create = require_create();
+      var is = require_is();
+      function getDefaultName(domain, codomain) {
+        return "{[key: " + getTypeName(domain) + "]: " + getTypeName(codomain) + "}";
+      }
+      function dict(domain, codomain, name) {
+        if (true) {
+          assert2(isFunction(domain), function() {
+            return "Invalid argument domain " + assert2.stringify(domain) + " supplied to dict(domain, codomain, [name]) combinator (expected a type)";
+          });
+          assert2(isFunction(codomain), function() {
+            return "Invalid argument codomain " + assert2.stringify(codomain) + " supplied to dict(domain, codomain, [name]) combinator (expected a type)";
+          });
+          assert2(isTypeName(name), function() {
+            return "Invalid argument name " + assert2.stringify(name) + " supplied to dict(domain, codomain, [name]) combinator (expected a string)";
+          });
+        }
+        var displayName = name || getDefaultName(domain, codomain);
+        var domainNameCache = getTypeName(domain);
+        var codomainNameCache = getTypeName(codomain);
+        var identity = isIdentity(domain) && isIdentity(codomain);
+        function Dict(value, path) {
+          if (false) {
+            if (identity) {
+              return value;
+            }
+          }
+          if (true) {
+            path = path || [displayName];
+            assert2(isObject(value), function() {
+              return "Invalid value " + assert2.stringify(value) + " supplied to " + path.join("/");
+            });
+          }
+          var idempotent = true;
+          var ret = {};
+          for (var k in value) {
+            if (value.hasOwnProperty(k)) {
+              k = create(domain, k, true ? path.concat(domainNameCache) : null);
+              var actual = value[k];
+              var instance = create(codomain, actual, true ? path.concat(k + ": " + codomainNameCache) : null);
+              idempotent = idempotent && actual === instance;
+              ret[k] = instance;
+            }
+          }
+          if (idempotent) {
+            ret = value;
+          }
+          if (true) {
+            Object.freeze(ret);
+          }
+          return ret;
+        }
+        Dict.meta = {
+          kind: "dict",
+          domain,
+          codomain,
+          name,
+          identity
+        };
+        Dict.displayName = displayName;
+        Dict.is = function(x) {
+          if (!isObject(x)) {
+            return false;
+          }
+          for (var k in x) {
+            if (x.hasOwnProperty(k)) {
+              if (!is(k, domain) || !is(x[k], codomain)) {
+                return false;
+              }
+            }
+          }
+          return true;
+        };
+        Dict.update = function(instance, patch) {
+          return Dict(assert2.update(instance, patch));
+        };
+        return Dict;
+      }
+      dict.getDefaultName = getDefaultName;
+      module.exports = dict;
+    }
+  });
+  var require_mixin = __commonJS2({
+    "src/lib/mixin.js"(exports, module) {
+      var isNil = require_isNil();
+      var assert2 = require_assert();
+      module.exports = function mixin(target, source, overwrite) {
+        if (isNil(source)) {
+          return target;
+        }
+        for (var k in source) {
+          if (source.hasOwnProperty(k)) {
+            if (overwrite !== true) {
+              if (true) {
+                assert2(!target.hasOwnProperty(k) || target[k] === source[k], function() {
+                  return 'Invalid call to mixin(target, source, [overwrite]): cannot overwrite property "' + k + '" of target object';
+                });
+              }
+            }
+            target[k] = source[k];
+          }
+        }
+        return target;
+      };
+    }
+  });
+  var require_isUnion = __commonJS2({
+    "src/lib/isUnion.js"(exports, module) {
+      var isType = require_isType();
+      module.exports = function isUnion(x) {
+        return isType(x) && x.meta.kind === "union";
+      };
+    }
+  });
+  var require_declare = __commonJS2({
+    "src/lib/declare.js"(exports, module) {
+      var assert2 = require_assert();
+      var isTypeName = require_isTypeName();
+      var isType = require_isType();
+      var isNil = require_isNil();
+      var mixin = require_mixin();
+      var getTypeName = require_getTypeName();
+      var isUnion = require_isUnion();
+      var nextDeclareUniqueId = 1;
+      module.exports = function declare(name) {
+        if (true) {
+          assert2(isTypeName(name), function() {
+            return "Invalid argument name " + name + " supplied to declare([name]) (expected a string)";
+          });
+        }
+        var type;
+        function Declare(value, path) {
+          if (true) {
+            assert2(!isNil(type), function() {
+              return "Type declared but not defined, don't forget to call .define on every declared type";
+            });
+            if (isUnion(type)) {
+              assert2(type.dispatch === Declare.dispatch, function() {
+                return "Please define the custom " + name + ".dispatch function before calling " + name + ".define()";
+              });
+            }
+          }
+          return type(value, path);
+        }
+        Declare.define = function(spec) {
+          if (true) {
+            assert2(isType(spec), function() {
+              return "Invalid argument type " + assert2.stringify(spec) + " supplied to define(type) (expected a type)";
+            });
+            assert2(isNil(type), function() {
+              return "Declare.define(type) can only be invoked once";
+            });
+          }
+          if (isUnion(spec) && Declare.hasOwnProperty("dispatch")) {
+            spec.dispatch = Declare.dispatch;
+          }
+          type = spec;
+          mixin(Declare, type, true);
+          if (name) {
+            type.displayName = Declare.displayName = name;
+            Declare.meta.name = name;
+          }
+          Declare.meta.identity = type.meta.identity;
+          Declare.prototype = type.prototype;
+          return Declare;
+        };
+        Declare.displayName = name || getTypeName(Declare) + "$" + nextDeclareUniqueId++;
+        Declare.meta = { identity: false };
+        Declare.prototype = null;
+        return Declare;
+      };
+    }
+  });
+  var require_enums = __commonJS2({
+    "src/lib/enums.js"(exports, module) {
+      var assert2 = require_assert();
+      var isTypeName = require_isTypeName();
+      var forbidNewOperator = require_forbidNewOperator();
+      var isNumber = require_isNumber();
+      var isString = require_isString();
+      var isObject = require_isObject();
+      function getDefaultName(map) {
+        return Object.keys(map).map(function(k) {
+          return assert2.stringify(k);
+        }).join(" | ");
+      }
+      function enums(map, name) {
+        if (true) {
+          assert2(isObject(map), function() {
+            return "Invalid argument map " + assert2.stringify(map) + " supplied to enums(map, [name]) combinator (expected a dictionary of String -> String | Number)";
+          });
+          assert2(isTypeName(name), function() {
+            return "Invalid argument name " + assert2.stringify(name) + " supplied to enums(map, [name]) combinator (expected a string)";
+          });
+        }
+        var displayName = name || getDefaultName(map);
+        function Enums(value, path) {
+          if (true) {
+            forbidNewOperator(this, Enums);
+            path = path || [displayName];
+            assert2(Enums.is(value), function() {
+              return "Invalid value " + assert2.stringify(value) + " supplied to " + path.join("/") + " (expected one of " + assert2.stringify(Object.keys(map)) + ")";
+            });
+          }
+          return value;
+        }
+        Enums.meta = {
+          kind: "enums",
+          map,
+          name,
+          identity: true
+        };
+        Enums.displayName = displayName;
+        Enums.is = function(x) {
+          return (isString(x) || isNumber(x)) && map.hasOwnProperty(x);
+        };
+        return Enums;
+      }
+      enums.of = function(keys, name) {
+        keys = isString(keys) ? keys.split(" ") : keys;
+        var value = {};
+        keys.forEach(function(k) {
+          value[k] = k;
+        });
+        return enums(value, name);
+      };
+      enums.getDefaultName = getDefaultName;
+      module.exports = enums;
+    }
+  });
+  var require_list = __commonJS2({
+    "src/lib/list.js"(exports, module) {
+      var assert2 = require_assert();
+      var isTypeName = require_isTypeName();
+      var isFunction = require_isFunction();
+      var getTypeName = require_getTypeName();
+      var isIdentity = require_isIdentity();
+      var create = require_create();
+      var is = require_is();
+      var isArray2 = require_isArray();
+      function getDefaultName(type) {
+        return "Array<" + getTypeName(type) + ">";
+      }
+      function list(type, name) {
+        if (true) {
+          assert2(isFunction(type), function() {
+            return "Invalid argument type " + assert2.stringify(type) + " supplied to list(type, [name]) combinator (expected a type)";
+          });
+          assert2(isTypeName(name), function() {
+            return "Invalid argument name " + assert2.stringify(name) + " supplied to list(type, [name]) combinator (expected a string)";
+          });
+        }
+        var displayName = name || getDefaultName(type);
+        var typeNameCache = getTypeName(type);
+        var identity = isIdentity(type);
+        function List2(value, path) {
+          if (false) {
+            if (identity) {
+              return value;
+            }
+          }
+          if (true) {
+            path = path || [displayName];
+            assert2(isArray2(value), function() {
+              return "Invalid value " + assert2.stringify(value) + " supplied to " + path.join("/") + " (expected an array of " + typeNameCache + ")";
+            });
+          }
+          var idempotent = true;
+          var ret = [];
+          for (var i = 0, len = value.length; i < len; i++) {
+            var actual = value[i];
+            var instance = create(type, actual, true ? path.concat(i + ": " + typeNameCache) : null);
+            idempotent = idempotent && actual === instance;
+            ret.push(instance);
+          }
+          if (idempotent) {
+            ret = value;
+          }
+          if (true) {
+            Object.freeze(ret);
+          }
+          return ret;
+        }
+        List2.meta = {
+          kind: "list",
+          type,
+          name,
+          identity
+        };
+        List2.displayName = displayName;
+        List2.is = function(x) {
+          return isArray2(x) && x.every(function(e) {
+            return is(e, type);
+          });
+        };
+        List2.update = function(instance, patch) {
+          return List2(assert2.update(instance, patch));
+        };
+        return List2;
+      }
+      list.getDefaultName = getDefaultName;
+      module.exports = list;
+    }
+  });
+  var require_isMaybe = __commonJS2({
+    "src/lib/isMaybe.js"(exports, module) {
+      var isType = require_isType();
+      module.exports = function isMaybe(x) {
+        return isType(x) && x.meta.kind === "maybe";
+      };
+    }
+  });
+  var require_maybe = __commonJS2({
+    "src/lib/maybe.js"(exports, module) {
+      var assert2 = require_assert();
+      var isTypeName = require_isTypeName();
+      var isFunction = require_isFunction();
+      var isMaybe = require_isMaybe();
+      var isIdentity = require_isIdentity();
+      var Any = require_Any();
+      var create = require_create();
+      var Nil = require_Nil();
+      var forbidNewOperator = require_forbidNewOperator();
+      var is = require_is();
+      var getTypeName = require_getTypeName();
+      function getDefaultName(type) {
+        return "?" + getTypeName(type);
+      }
+      function maybe(type, name) {
+        if (isMaybe(type) || type === Any || type === Nil) {
+          return type;
+        }
+        if (true) {
+          assert2(isFunction(type), function() {
+            return "Invalid argument type " + assert2.stringify(type) + " supplied to maybe(type, [name]) combinator (expected a type)";
+          });
+          assert2(isTypeName(name), function() {
+            return "Invalid argument name " + assert2.stringify(name) + " supplied to maybe(type, [name]) combinator (expected a string)";
+          });
+        }
+        var displayName = name || getDefaultName(type);
+        var identity = isIdentity(type);
+        function Maybe(value, path) {
+          if (true) {
+            if (identity) {
+              forbidNewOperator(this, Maybe);
+            }
+          }
+          return Nil.is(value) ? value : create(type, value, path);
+        }
+        Maybe.meta = {
+          kind: "maybe",
+          type,
+          name,
+          identity
+        };
+        Maybe.displayName = displayName;
+        Maybe.is = function(x) {
+          return Nil.is(x) || is(x, type);
+        };
+        return Maybe;
+      }
+      maybe.getDefaultName = getDefaultName;
+      module.exports = maybe;
+    }
+  });
+  var require_getDefaultInterfaceName = __commonJS2({
+    "src/lib/getDefaultInterfaceName.js"(exports, module) {
+      var getTypeName = require_getTypeName();
+      function getDefaultInterfaceName(props) {
+        return "{" + Object.keys(props).map(function(prop) {
+          return prop + ": " + getTypeName(props[prop]);
+        }).join(", ") + "}";
+      }
+      module.exports = getDefaultInterfaceName;
+    }
+  });
+  var require_isStruct = __commonJS2({
+    "src/lib/isStruct.js"(exports, module) {
+      var isType = require_isType();
+      module.exports = function isStruct(x) {
+        return isType(x) && x.meta.kind === "struct";
+      };
+    }
+  });
+  var require_isInterface = __commonJS2({
+    "src/lib/isInterface.js"(exports, module) {
+      var isType = require_isType();
+      module.exports = function isInterface(x) {
+        return isType(x) && x.meta.kind === "interface";
+      };
+    }
+  });
+  var require_decompose = __commonJS2({
+    "src/lib/decompose.js"(exports, module) {
+      var isType = require_isType();
+      function isRefinement(type) {
+        return isType(type) && type.meta.kind === "subtype";
+      }
+      function getPredicates(type) {
+        return isRefinement(type) ? [type.meta.predicate].concat(getPredicates(type.meta.type)) : [];
+      }
+      function getUnrefinedType(type) {
+        return isRefinement(type) ? getUnrefinedType(type.meta.type) : type;
+      }
+      function decompose(type) {
+        return {
+          predicates: getPredicates(type),
+          unrefinedType: getUnrefinedType(type)
+        };
+      }
+      module.exports = decompose;
+    }
+  });
+  var require_extend = __commonJS2({
+    "src/lib/extend.js"(exports, module) {
+      var assert2 = require_assert();
+      var isFunction = require_isFunction();
+      var isArray2 = require_isArray();
+      var mixin = require_mixin();
+      var isStruct = require_isStruct();
+      var isInterface = require_isInterface();
+      var isObject = require_isObject();
+      var refinement = require_refinement();
+      var decompose = require_decompose();
+      function compose(predicates, unrefinedType, name) {
+        var result = predicates.reduce(function(type, predicate) {
+          return refinement(type, predicate);
+        }, unrefinedType);
+        if (name) {
+          result.displayName = name;
+          result.meta.name = name;
+        }
+        return result;
+      }
+      function getProps(type) {
+        return isObject(type) ? type : type.meta.props;
+      }
+      function getDefaultProps(type) {
+        return isObject(type) ? null : type.meta.defaultProps;
+      }
+      function pushAll(arr, elements) {
+        Array.prototype.push.apply(arr, elements);
+      }
+      function extend(combinator, mixins, options) {
+        if (true) {
+          assert2(isFunction(combinator), function() {
+            return "Invalid argument combinator supplied to extend(combinator, mixins, options), expected a function";
+          });
+          assert2(isArray2(mixins), function() {
+            return "Invalid argument mixins supplied to extend(combinator, mixins, options), expected an array";
+          });
+        }
+        var props = {};
+        var prototype = {};
+        var predicates = [];
+        var defaultProps = {};
+        mixins.forEach(function(x, i) {
+          var decomposition = decompose(x);
+          var unrefinedType = decomposition.unrefinedType;
+          if (true) {
+            assert2(isObject(unrefinedType) || isStruct(unrefinedType) || isInterface(unrefinedType), function() {
+              return "Invalid argument mixins[" + i + "] supplied to extend(combinator, mixins, options), expected an object, struct, interface or a refinement (of struct or interface)";
+            });
+          }
+          pushAll(predicates, decomposition.predicates);
+          mixin(props, getProps(unrefinedType));
+          mixin(prototype, unrefinedType.prototype);
+          mixin(defaultProps, getDefaultProps(unrefinedType), true);
+        });
+        options = combinator.getOptions(options);
+        options.defaultProps = mixin(defaultProps, options.defaultProps, true);
+        var result = compose(predicates, combinator(props, {
+          strict: options.strict,
+          defaultProps: options.defaultProps
+        }), options.name);
+        mixin(result.prototype, prototype);
+        return result;
+      }
+      module.exports = extend;
+    }
+  });
+  var require_struct = __commonJS2({
+    "src/lib/struct.js"(exports, module) {
+      var assert2 = require_assert();
+      var isTypeName = require_isTypeName();
+      var String2 = require_String();
+      var Function2 = require_Function();
+      var isBoolean = require_isBoolean();
+      var isObject = require_isObject();
+      var isNil = require_isNil();
+      var create = require_create();
+      var getTypeName = require_getTypeName();
+      var dict = require_dict();
+      var getDefaultInterfaceName = require_getDefaultInterfaceName();
+      var extend = require_extend();
+      function getDefaultName(props) {
+        return "Struct" + getDefaultInterfaceName(props);
+      }
+      function extendStruct(mixins, name) {
+        return extend(struct, mixins, name);
+      }
+      function getOptions(options) {
+        if (!isObject(options)) {
+          options = isNil(options) ? {} : { name: options };
+        }
+        if (!options.hasOwnProperty("strict")) {
+          options.strict = struct.strict;
+        }
+        if (!options.hasOwnProperty("defaultProps")) {
+          options.defaultProps = {};
+        }
+        return options;
+      }
+      function struct(props, options) {
+        options = getOptions(options);
+        var name = options.name;
+        var strict = options.strict;
+        var defaultProps = options.defaultProps;
+        if (true) {
+          assert2(dict(String2, Function2).is(props), function() {
+            return "Invalid argument props " + assert2.stringify(props) + " supplied to struct(props, [options]) combinator (expected a dictionary String -> Type)";
+          });
+          assert2(isTypeName(name), function() {
+            return "Invalid argument name " + assert2.stringify(name) + " supplied to struct(props, [options]) combinator (expected a string)";
+          });
+          assert2(isBoolean(strict), function() {
+            return "Invalid argument strict " + assert2.stringify(strict) + " supplied to struct(props, [options]) combinator (expected a boolean)";
+          });
+          assert2(isObject(defaultProps), function() {
+            return "Invalid argument defaultProps " + assert2.stringify(defaultProps) + " supplied to struct(props, [options]) combinator (expected an object)";
+          });
+        }
+        var displayName = name || getDefaultName(props);
+        function Struct(value, path) {
+          if (Struct.is(value)) {
+            return value;
+          }
+          if (true) {
+            path = path || [displayName];
+            assert2(isObject(value), function() {
+              return "Invalid value " + assert2.stringify(value) + " supplied to " + path.join("/") + " (expected an object)";
+            });
+            if (strict) {
+              for (k in value) {
+                if (value.hasOwnProperty(k)) {
+                  assert2(props.hasOwnProperty(k), function() {
+                    return 'Invalid additional prop "' + k + '" supplied to ' + path.join("/");
+                  });
+                }
+              }
+            }
+          }
+          if (!(this instanceof Struct)) {
+            return new Struct(value, path);
+          }
+          for (var k in props) {
+            if (props.hasOwnProperty(k)) {
+              var expected = props[k];
+              var actual = value[k];
+              if (actual === void 0) {
+                actual = defaultProps[k];
+              }
+              this[k] = create(expected, actual, true ? path.concat(k + ": " + getTypeName(expected)) : null);
+            }
+          }
+          if (true) {
+            Object.freeze(this);
+          }
+        }
+        Struct.meta = {
+          kind: "struct",
+          props,
+          name,
+          identity: false,
+          strict,
+          defaultProps
+        };
+        Struct.displayName = displayName;
+        Struct.is = function(x) {
+          return x instanceof Struct;
+        };
+        Struct.update = function(instance, patch) {
+          return new Struct(assert2.update(instance, patch));
+        };
+        Struct.extend = function(xs, name2) {
+          return extendStruct([Struct].concat(xs), name2);
+        };
+        return Struct;
+      }
+      struct.strict = false;
+      struct.getOptions = getOptions;
+      struct.getDefaultName = getDefaultName;
+      struct.extend = extendStruct;
+      module.exports = struct;
+    }
+  });
+  var require_tuple = __commonJS2({
+    "src/lib/tuple.js"(exports, module) {
+      var assert2 = require_assert();
+      var isTypeName = require_isTypeName();
+      var isFunction = require_isFunction();
+      var getTypeName = require_getTypeName();
+      var isIdentity = require_isIdentity();
+      var isArray2 = require_isArray();
+      var create = require_create();
+      var is = require_is();
+      function getDefaultName(types) {
+        return "[" + types.map(getTypeName).join(", ") + "]";
+      }
+      function tuple(types, name) {
+        if (true) {
+          assert2(isArray2(types) && types.every(isFunction), function() {
+            return "Invalid argument types " + assert2.stringify(types) + " supplied to tuple(types, [name]) combinator (expected an array of types)";
+          });
+          assert2(isTypeName(name), function() {
+            return "Invalid argument name " + assert2.stringify(name) + " supplied to tuple(types, [name]) combinator (expected a string)";
+          });
+        }
+        var displayName = name || getDefaultName(types);
+        var identity = types.every(isIdentity);
+        function Tuple(value, path) {
+          if (false) {
+            if (identity) {
+              return value;
+            }
+          }
+          if (true) {
+            path = path || [displayName];
+            assert2(isArray2(value) && value.length === types.length, function() {
+              return "Invalid value " + assert2.stringify(value) + " supplied to " + path.join("/") + " (expected an array of length " + types.length + ")";
+            });
+          }
+          var idempotent = true;
+          var ret = [];
+          for (var i = 0, len = types.length; i < len; i++) {
+            var expected = types[i];
+            var actual = value[i];
+            var instance = create(expected, actual, true ? path.concat(i + ": " + getTypeName(expected)) : null);
+            idempotent = idempotent && actual === instance;
+            ret.push(instance);
+          }
+          if (idempotent) {
+            ret = value;
+          }
+          if (true) {
+            Object.freeze(ret);
+          }
+          return ret;
+        }
+        Tuple.meta = {
+          kind: "tuple",
+          types,
+          name,
+          identity
+        };
+        Tuple.displayName = displayName;
+        Tuple.is = function(x) {
+          return isArray2(x) && x.length === types.length && types.every(function(type, i) {
+            return is(x[i], type);
+          });
+        };
+        Tuple.update = function(instance, patch) {
+          return Tuple(assert2.update(instance, patch));
+        };
+        return Tuple;
+      }
+      tuple.getDefaultName = getDefaultName;
+      module.exports = tuple;
+    }
+  });
+  var require_union = __commonJS2({
+    "src/lib/union.js"(exports, module) {
+      var assert2 = require_assert();
+      var isTypeName = require_isTypeName();
+      var isFunction = require_isFunction();
+      var getTypeName = require_getTypeName();
+      var isIdentity = require_isIdentity();
+      var isArray2 = require_isArray();
+      var create = require_create();
+      var is = require_is();
+      var forbidNewOperator = require_forbidNewOperator();
+      var isUnion = require_isUnion();
+      var isNil = require_isNil();
+      function getDefaultName(types) {
+        return types.map(getTypeName).join(" | ");
+      }
+      function union(types, name) {
+        if (true) {
+          assert2(isArray2(types) && types.every(isFunction) && types.length >= 2, function() {
+            return "Invalid argument types " + assert2.stringify(types) + " supplied to union(types, [name]) combinator (expected an array of at least 2 types)";
+          });
+          assert2(isTypeName(name), function() {
+            return "Invalid argument name " + assert2.stringify(name) + " supplied to union(types, [name]) combinator (expected a string)";
+          });
+        }
+        var displayName = name || getDefaultName(types);
+        var identity = types.every(isIdentity);
+        function Union(value, path) {
+          if (false) {
+            if (identity) {
+              return value;
+            }
+          }
+          var type = Union.dispatch(value);
+          if (!type && Union.is(value)) {
+            return value;
+          }
+          if (true) {
+            if (identity) {
+              forbidNewOperator(this, Union);
+            }
+            path = path || [displayName];
+            assert2(isFunction(type), function() {
+              return "Invalid value " + assert2.stringify(value) + " supplied to " + path.join("/") + " (no constructor returned by dispatch)";
+            });
+            path[path.length - 1] += "(" + getTypeName(type) + ")";
+          }
+          return create(type, value, path);
+        }
+        Union.meta = {
+          kind: "union",
+          types,
+          name,
+          identity
+        };
+        Union.displayName = displayName;
+        Union.is = function(x) {
+          return types.some(function(type) {
+            return is(x, type);
+          });
+        };
+        Union.dispatch = function(x) {
+          for (var i = 0, len = types.length; i < len; i++) {
+            var type = types[i];
+            if (isUnion(type)) {
+              var t = type.dispatch(x);
+              if (!isNil(t)) {
+                return t;
+              }
+            } else if (is(x, type)) {
+              return type;
+            }
+          }
+        };
+        Union.update = function(instance, patch) {
+          return Union(assert2.update(instance, patch));
+        };
+        return Union;
+      }
+      union.getDefaultName = getDefaultName;
+      module.exports = union;
+    }
+  });
+  var require_func = __commonJS2({
+    "src/lib/func.js"(exports, module) {
+      var assert2 = require_assert();
+      var isTypeName = require_isTypeName();
+      var FunctionType = require_Function();
+      var isArray2 = require_isArray();
+      var list = require_list();
+      var isObject = require_isObject();
+      var create = require_create();
+      var isNil = require_isNil();
+      var isBoolean = require_isBoolean();
+      var tuple = require_tuple();
+      var getFunctionName = require_getFunctionName();
+      var getTypeName = require_getTypeName();
+      var isType = require_isType();
+      function getDefaultName(domain, codomain) {
+        return "(" + domain.map(getTypeName).join(", ") + ") => " + getTypeName(codomain);
+      }
+      function isInstrumented(f) {
+        return FunctionType.is(f) && isObject(f.instrumentation);
+      }
+      function getOptionalArgumentsIndex(types) {
+        var end = types.length;
+        var areAllMaybes = false;
+        for (var i = end - 1; i >= 0; i--) {
+          var type = types[i];
+          if (!isType(type) || type.meta.kind !== "maybe") {
+            return i + 1;
+          } else {
+            areAllMaybes = true;
+          }
+        }
+        return areAllMaybes ? 0 : end;
+      }
+      function func(domain, codomain, name) {
+        domain = isArray2(domain) ? domain : [domain];
+        if (true) {
+          assert2(list(FunctionType).is(domain), function() {
+            return "Invalid argument domain " + assert2.stringify(domain) + " supplied to func(domain, codomain, [name]) combinator (expected an array of types)";
+          });
+          assert2(FunctionType.is(codomain), function() {
+            return "Invalid argument codomain " + assert2.stringify(codomain) + " supplied to func(domain, codomain, [name]) combinator (expected a type)";
+          });
+          assert2(isTypeName(name), function() {
+            return "Invalid argument name " + assert2.stringify(name) + " supplied to func(domain, codomain, [name]) combinator (expected a string)";
+          });
+        }
+        var displayName = name || getDefaultName(domain, codomain);
+        var domainLength = domain.length;
+        var optionalArgumentsIndex = getOptionalArgumentsIndex(domain);
+        function FuncType(value, path) {
+          if (!isInstrumented(value)) {
+            return FuncType.of(value);
+          }
+          if (true) {
+            path = path || [displayName];
+            assert2(FuncType.is(value), function() {
+              return "Invalid value " + assert2.stringify(value) + " supplied to " + path.join("/");
+            });
+          }
+          return value;
+        }
+        FuncType.meta = {
+          kind: "func",
+          domain,
+          codomain,
+          name,
+          identity: true
+        };
+        FuncType.displayName = displayName;
+        FuncType.is = function(x) {
+          return isInstrumented(x) && x.instrumentation.domain.length === domainLength && x.instrumentation.domain.every(function(type, i) {
+            return type === domain[i];
+          }) && x.instrumentation.codomain === codomain;
+        };
+        FuncType.of = function(f, curried) {
+          if (true) {
+            assert2(FunctionType.is(f), function() {
+              return "Invalid argument f supplied to func.of " + displayName + " (expected a function)";
+            });
+            assert2(isNil(curried) || isBoolean(curried), function() {
+              return "Invalid argument curried " + assert2.stringify(curried) + " supplied to func.of " + displayName + " (expected a boolean)";
+            });
+          }
+          if (FuncType.is(f)) {
+            return f;
+          }
+          function fn() {
+            var args = Array.prototype.slice.call(arguments);
+            var argsLength = args.length;
+            if (true) {
+              var tupleLength = curried ? argsLength : Math.max(argsLength, optionalArgumentsIndex);
+              tuple(domain.slice(0, tupleLength), "arguments of function " + displayName)(args);
+            }
+            if (curried && argsLength < domainLength) {
+              if (true) {
+                assert2(argsLength > 0, "Invalid arguments.length = 0 for curried function " + displayName);
+              }
+              var g = Function.prototype.bind.apply(f, [this].concat(args));
+              var newDomain = func(domain.slice(argsLength), codomain);
+              return newDomain.of(g, true);
+            } else {
+              return create(codomain, f.apply(this, args));
+            }
+          }
+          fn.instrumentation = {
+            domain,
+            codomain,
+            f
+          };
+          fn.displayName = getFunctionName(f);
+          return fn;
+        };
+        return FuncType;
+      }
+      func.getDefaultName = getDefaultName;
+      func.getOptionalArgumentsIndex = getOptionalArgumentsIndex;
+      module.exports = func;
+    }
+  });
+  var require_intersection = __commonJS2({
+    "src/lib/intersection.js"(exports, module) {
+      var assert2 = require_assert();
+      var isTypeName = require_isTypeName();
+      var isFunction = require_isFunction();
+      var isArray2 = require_isArray();
+      var forbidNewOperator = require_isIdentity();
+      var is = require_is();
+      var getTypeName = require_getTypeName();
+      var isIdentity = require_isIdentity();
+      function getDefaultName(types) {
+        return types.map(getTypeName).join(" & ");
+      }
+      function intersection(types, name) {
+        if (true) {
+          assert2(isArray2(types) && types.every(isFunction) && types.length >= 2, function() {
+            return "Invalid argument types " + assert2.stringify(types) + " supplied to intersection(types, [name]) combinator (expected an array of at least 2 types)";
+          });
+          assert2(isTypeName(name), function() {
+            return "Invalid argument name " + assert2.stringify(name) + " supplied to intersection(types, [name]) combinator (expected a string)";
+          });
+        }
+        var displayName = name || getDefaultName(types);
+        var identity = types.every(isIdentity);
+        function Intersection(value, path) {
+          if (true) {
+            if (identity) {
+              forbidNewOperator(this, Intersection);
+            }
+            path = path || [displayName];
+            assert2(Intersection.is(value), function() {
+              return "Invalid value " + assert2.stringify(value) + " supplied to " + path.join("/");
+            });
+          }
+          return value;
+        }
+        Intersection.meta = {
+          kind: "intersection",
+          types,
+          name,
+          identity
+        };
+        Intersection.displayName = displayName;
+        Intersection.is = function(x) {
+          return types.every(function(type) {
+            return is(x, type);
+          });
+        };
+        Intersection.update = function(instance, patch) {
+          return Intersection(assert2.update(instance, patch));
+        };
+        return Intersection;
+      }
+      intersection.getDefaultName = getDefaultName;
+      module.exports = intersection;
+    }
+  });
+  var require_assign = __commonJS2({
+    "src/lib/assign.js"(exports, module) {
+      function assign(x, y) {
+        for (var k in y) {
+          if (y.hasOwnProperty(k)) {
+            x[k] = y[k];
+          }
+        }
+        return x;
+      }
+      module.exports = assign;
+    }
+  });
+  var require_interface = __commonJS2({
+    "src/lib/interface.js"(exports, module) {
+      var assert2 = require_assert();
+      var isTypeName = require_isTypeName();
+      var String2 = require_String();
+      var Function2 = require_Function();
+      var isBoolean = require_isBoolean();
+      var isObject = require_isObject();
+      var isNil = require_isNil();
+      var create = require_create();
+      var getTypeName = require_getTypeName();
+      var dict = require_dict();
+      var getDefaultInterfaceName = require_getDefaultInterfaceName();
+      var isIdentity = require_isIdentity();
+      var is = require_is();
+      var extend = require_extend();
+      var assign = require_assign();
+      function extendInterface(mixins, name) {
+        return extend(inter, mixins, name);
+      }
+      function getOptions(options) {
+        if (!isObject(options)) {
+          options = isNil(options) ? {} : { name: options };
+        }
+        if (!options.hasOwnProperty("strict")) {
+          options.strict = inter.strict;
+        }
+        return options;
+      }
+      function inter(props, options) {
+        options = getOptions(options);
+        var name = options.name;
+        var strict = options.strict;
+        if (true) {
+          assert2(dict(String2, Function2).is(props), function() {
+            return "Invalid argument props " + assert2.stringify(props) + " supplied to interface(props, [options]) combinator (expected a dictionary String -> Type)";
+          });
+          assert2(isTypeName(name), function() {
+            return "Invalid argument name " + assert2.stringify(name) + " supplied to interface(props, [options]) combinator (expected a string)";
+          });
+          assert2(isBoolean(strict), function() {
+            return "Invalid argument strict " + assert2.stringify(strict) + " supplied to struct(props, [options]) combinator (expected a boolean)";
+          });
+        }
+        var displayName = name || getDefaultInterfaceName(props);
+        var identity = Object.keys(props).map(function(prop) {
+          return props[prop];
+        }).every(isIdentity);
+        function Interface(value, path) {
+          if (false) {
+            if (identity) {
+              return value;
+            }
+          }
+          if (true) {
+            path = path || [displayName];
+            assert2(!isNil(value), function() {
+              return "Invalid value " + value + " supplied to " + path.join("/");
+            });
+            if (strict) {
+              for (var k in value) {
+                assert2(props.hasOwnProperty(k), function() {
+                  return 'Invalid additional prop "' + k + '" supplied to ' + path.join("/");
+                });
+              }
+            }
+          }
+          var idempotent = true;
+          var ret = identity ? {} : assign({}, value);
+          for (var prop in props) {
+            var expected = props[prop];
+            var actual = value[prop];
+            var instance = create(expected, actual, true ? path.concat(prop + ": " + getTypeName(expected)) : null);
+            idempotent = idempotent && actual === instance;
+            ret[prop] = instance;
+          }
+          if (idempotent) {
+            ret = value;
+          }
+          if (true) {
+            Object.freeze(ret);
+          }
+          return ret;
+        }
+        Interface.meta = {
+          kind: "interface",
+          props,
+          name,
+          identity,
+          strict
+        };
+        Interface.displayName = displayName;
+        Interface.is = function(x) {
+          if (isNil(x)) {
+            return false;
+          }
+          if (strict) {
+            for (var k in x) {
+              if (!props.hasOwnProperty(k)) {
+                return false;
+              }
+            }
+          }
+          for (var prop in props) {
+            if (!is(x[prop], props[prop])) {
+              return false;
+            }
+          }
+          return true;
+        };
+        Interface.update = function(instance, patch) {
+          return Interface(assert2.update(instance, patch));
+        };
+        Interface.extend = function(xs, name2) {
+          return extendInterface([Interface].concat(xs), name2);
+        };
+        return Interface;
+      }
+      inter.strict = false;
+      inter.getOptions = getOptions;
+      inter.getDefaultName = getDefaultInterfaceName;
+      inter.extend = extendInterface;
+      module.exports = inter;
+    }
+  });
+  var require_update = __commonJS2({
+    "src/lib/update.js"(exports, module) {
+      var assert2 = require_assert();
+      var isObject = require_isObject();
+      var isFunction = require_isFunction();
+      var isArray2 = require_isArray();
+      var isNumber = require_isNumber();
+      var assign = require_assign();
+      function getShallowCopy(x) {
+        if (isObject(x)) {
+          if (x instanceof Date || x instanceof RegExp) {
+            return x;
+          }
+          return assign({}, x);
+        }
+        if (isArray2(x)) {
+          return x.concat();
+        }
+        return x;
+      }
+      function isCommand(k) {
+        return update.commands.hasOwnProperty(k);
+      }
+      function getCommand(k) {
+        return update.commands[k];
+      }
+      function update(instance, patch) {
+        if (true) {
+          assert2(isObject(patch), function() {
+            return "Invalid argument patch " + assert2.stringify(patch) + " supplied to function update(instance, patch): expected an object containing commands";
+          });
+        }
+        var value = instance;
+        var isChanged = false;
+        var newValue;
+        for (var k in patch) {
+          if (patch.hasOwnProperty(k)) {
+            if (isCommand(k)) {
+              newValue = getCommand(k)(patch[k], value);
+              if (newValue !== instance) {
+                isChanged = true;
+                value = newValue;
+              } else {
+                value = instance;
+              }
+            } else {
+              if (value === instance) {
+                value = getShallowCopy(instance);
+              }
+              newValue = update(value[k], patch[k]);
+              isChanged = isChanged || newValue !== value[k];
+              value[k] = newValue;
+            }
+          }
+        }
+        return isChanged ? value : instance;
+      }
+      function $apply(f, value) {
+        if (true) {
+          assert2(isFunction(f), "Invalid argument f supplied to immutability helper { $apply: f } (expected a function)");
+        }
+        return f(value);
+      }
+      function $push(elements, arr) {
+        if (true) {
+          assert2(isArray2(elements), "Invalid argument elements supplied to immutability helper { $push: elements } (expected an array)");
+          assert2(isArray2(arr), "Invalid value supplied to immutability helper $push (expected an array)");
+        }
+        if (elements.length > 0) {
+          return arr.concat(elements);
+        }
+        return arr;
+      }
+      function $remove(keys, obj) {
+        if (true) {
+          assert2(isArray2(keys), "Invalid argument keys supplied to immutability helper { $remove: keys } (expected an array)");
+          assert2(isObject(obj), "Invalid value supplied to immutability helper $remove (expected an object)");
+        }
+        if (keys.length > 0) {
+          obj = getShallowCopy(obj);
+          for (var i = 0, len = keys.length; i < len; i++) {
+            delete obj[keys[i]];
+          }
+        }
+        return obj;
+      }
+      function $set(value) {
+        return value;
+      }
+      function $splice(splices, arr) {
+        if (true) {
+          assert2(isArray2(splices) && splices.every(isArray2), "Invalid argument splices supplied to immutability helper { $splice: splices } (expected an array of arrays)");
+          assert2(isArray2(arr), "Invalid value supplied to immutability helper $splice (expected an array)");
+        }
+        if (splices.length > 0) {
+          arr = getShallowCopy(arr);
+          return splices.reduce(function(acc, splice) {
+            acc.splice.apply(acc, splice);
+            return acc;
+          }, arr);
+        }
+        return arr;
+      }
+      function $swap(config, arr) {
+        if (true) {
+          assert2(isObject(config), "Invalid argument config supplied to immutability helper { $swap: config } (expected an object)");
+          assert2(isNumber(config.from), "Invalid argument config.from supplied to immutability helper { $swap: config } (expected a number)");
+          assert2(isNumber(config.to), "Invalid argument config.to supplied to immutability helper { $swap: config } (expected a number)");
+          assert2(isArray2(arr), "Invalid value supplied to immutability helper $swap (expected an array)");
+        }
+        if (config.from !== config.to) {
+          arr = getShallowCopy(arr);
+          var element = arr[config.to];
+          arr[config.to] = arr[config.from];
+          arr[config.from] = element;
+        }
+        return arr;
+      }
+      function $unshift(elements, arr) {
+        if (true) {
+          assert2(isArray2(elements), "Invalid argument elements supplied to immutability helper {$unshift: elements} (expected an array)");
+          assert2(isArray2(arr), "Invalid value supplied to immutability helper $unshift (expected an array)");
+        }
+        if (elements.length > 0) {
+          return elements.concat(arr);
+        }
+        return arr;
+      }
+      function $merge(whatToMerge, value) {
+        var isChanged = false;
+        var result = getShallowCopy(value);
+        for (var k in whatToMerge) {
+          if (whatToMerge.hasOwnProperty(k)) {
+            result[k] = whatToMerge[k];
+            isChanged = isChanged || result[k] !== value[k];
+          }
+        }
+        return isChanged ? result : value;
+      }
+      update.commands = {
+        $apply,
+        $push,
+        $remove,
+        $set,
+        $splice,
+        $swap,
+        $unshift,
+        $merge
+      };
+      module.exports = update;
+    }
+  });
+  var require_match = __commonJS2({
+    "src/lib/match.js"(exports, module) {
+      var assert2 = require_assert();
+      var isFunction = require_isFunction();
+      var isType = require_isType();
+      var Any = require_Any();
+      module.exports = function match(x) {
+        var type, guard, f, count;
+        for (var i = 1, len = arguments.length; i < len; ) {
+          type = arguments[i];
+          guard = arguments[i + 1];
+          f = arguments[i + 2];
+          if (isFunction(f) && !isType(f)) {
+            i = i + 3;
+          } else {
+            f = guard;
+            guard = Any.is;
+            i = i + 2;
+          }
+          if (true) {
+            count = (count || 0) + 1;
+            assert2(isType(type), function() {
+              return "Invalid type in clause #" + count;
+            });
+            assert2(isFunction(guard), function() {
+              return "Invalid guard in clause #" + count;
+            });
+            assert2(isFunction(f), function() {
+              return "Invalid block in clause #" + count;
+            });
+          }
+          if (type.is(x) && guard(x)) {
+            return f(x);
+          }
+        }
+        assert2.fail("Match error");
+      };
+    }
+  });
+  var require_src = __commonJS2({
+    "src/index.js"(exports, module) {
+      var t = require_assert();
+      t.Any = require_Any();
+      t.Array = require_Array();
+      t.Boolean = require_Boolean();
+      t.Date = require_Date();
+      t.Error = require_Error();
+      t.Function = require_Function();
+      t.Nil = require_Nil();
+      t.Number = require_Number();
+      t.Integer = require_Integer();
+      t.IntegerT = t.Integer;
+      t.Object = require_Object();
+      t.RegExp = require_RegExp();
+      t.String = require_String();
+      t.Type = require_Type();
+      t.TypeT = t.Type;
+      t.Arr = t.Array;
+      t.Bool = t.Boolean;
+      t.Dat = t.Date;
+      t.Err = t.Error;
+      t.Func = t.Function;
+      t.Num = t.Number;
+      t.Obj = t.Object;
+      t.Re = t.RegExp;
+      t.Str = t.String;
+      t.dict = require_dict();
+      t.declare = require_declare();
+      t.enums = require_enums();
+      t.irreducible = require_irreducible();
+      t.list = require_list();
+      t.maybe = require_maybe();
+      t.refinement = require_refinement();
+      t.struct = require_struct();
+      t.tuple = require_tuple();
+      t.union = require_union();
+      t.func = require_func();
+      t.intersection = require_intersection();
+      t.subtype = t.refinement;
+      t.inter = require_interface();
+      t["interface"] = t.inter;
+      t.assert = t;
+      t.update = require_update();
+      t.mixin = require_mixin();
+      t.isType = require_isType();
+      t.is = require_is();
+      t.getTypeName = require_getTypeName();
+      t.match = require_match();
+      module.exports = t;
+    }
+  });
+  var tcomb_neutral_default = require_src();
+
   // src/students.js
+  var StudentData = tcomb_neutral_default.struct({
+    id: tcomb_neutral_default.String,
+    fullname: tcomb_neutral_default.String,
+    path: tcomb_neutral_default.String,
+    funding: tcomb_neutral_default.String,
+    created: tcomb_neutral_default.String
+  }, "StudentData");
   var _Student = class {
     static modifyFunding(sId, dtFrom2, sNewState) {
       if (typeof dtFrom2 === "string") {
@@ -1319,6 +3293,34 @@
   };
   var Student = _Student;
   __publicField(Student, "tbl_name", "students");
+  __publicField(Student, "ocmapper", async function(o) {
+    let bDebug2 = false;
+    try {
+      let _r2 = await _Student.getFundingFomDashboard(o.id);
+      if (bDebug2 === true)
+        console.log("%cocmapper() funding is %o", APP_DEBUG_STYLE, _r2);
+      let id = o.id.toString(10);
+      let fullname = o.displayName;
+      let _s = o.followedLearningPath.learningPathTitle;
+      let path;
+      if (_s.length == 0) {
+        path = "non d\xE9fini";
+      } else {
+        path = _s;
+      }
+      let funding = _r2.toLowerCase();
+      let created2 = dayjs().format("YYYY-MM-DDTHH:mm:ssZ[Z]");
+      return StudentData({
+        id,
+        fullname,
+        path,
+        funding,
+        created: created2
+      });
+    } catch (e) {
+      console.error("%c,IRRECOVERABLE ERROR in StudentData.ocmapper: %o", APP_ERROR_STYLE, e);
+    }
+  });
   __publicField(Student, "add", function(sStudentId, sStudentFullName = "noname", sStudentPath = "nopath", sStudentFunding = "unknown", created2) {
     let db = src_default.Cfg.dbase;
     var now = dayjs().format("YYYY-MM-DDTHH:mm:ssZ[Z]");
@@ -1492,14 +3494,13 @@
     var sPath = "table.crud-list tbody";
     if (bDebug === true)
       console.log("%c[getAll()] Enter function", APP_DEBUG_STYLE);
-    const oDom = await _fetch(`https://openclassrooms.com/fr/mentorship/dashboard/students`, 'script[id="mentorshipDashboardConfiguration"]');
-    var _r2 = JSON.parse(oDom.innerText.trim());
-    var aStudents = _r2.mentorStudents;
+    const oJson = await api_openclassrooms_default.getUserStudents();
+    var aStudents = JSON.parse(oJson);
     if (bDebug === true)
       console.log("%cgetAll() collect this array of stundent %o", APP_DEBUG_STYLE, aStudents);
     const now = dayjs().format("YYYY-MM-DDTHH:mm:ssZ[Z]");
     var t0 = performance.now();
-    await _Student.getFundingFomDashboard(aStudents[0].studentId);
+    await _Student.ocmapper(aStudents[0]);
     if (bDebug === true)
       console.log(`%cEstimated time for updating : ${(performance.now() - t0) * aStudents.length} ms`, APP_DEBUG_STYLE);
     Swal.fire({
@@ -1515,35 +3516,26 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     if (bDebug === true)
       console.log("%cWill process all students of board", APP_DEBUG_STYLE);
     for (const oStudent of aStudents) {
-      var sStudentId = oStudent.studentId.toString(10);
-      var sStudentFullName = oStudent.studentDisplayableName;
+      let theStudent = await _Student.ocmapper(oStudent);
       if (bDebug === true)
-        console.log('%c Working on student "%s"', APP_DEBUG_STYLE, sStudentFullName);
-      toastOk(`Collecte les donn\xE9es de l'\xE9tudiant : ${sStudentFullName}`);
-      var sStudentPath = oStudent.followedProjectSlug;
-      if (sStudentPath.length == 0) {
-        sStudentPath = "non d\xE9fini";
-      }
-      if (bDebug === true)
-        console.log('%cWill collect student "%s" funding', APP_DEBUG_STYLE, sStudentFullName);
-      let sStudentFunding = await _Student.getFundingFomDashboard(sStudentId);
-      assert(typeof sStudentId === "string", "sStudentId need to be a string.", TypeError);
-      var _r2 = _Student.m_findById(sStudentId, null);
+        console.log('%c Working on student "%s"', APP_DEBUG_STYLE, theStudent.fullname);
+      toastOk(`Collecte les donn\xE9es de l'\xE9tudiant : ${theStudent.fullname}`);
+      var _r2 = _Student.m_findById(theStudent.id, null);
       if (_r2 === void 0) {
         if (bDebug === true)
-          console.log(`%cStudent ${sStudentFullName} (id:${sStudentId}) not present in student database will create it`, APP_DEBUG_STYLE);
-        _Student.add(sStudentId, sStudentFullName, sStudentPath, sStudentFunding, now);
+          console.log(`%cStudent ${theStudent.fullname} (id:${theStudent.id}) not present in student database will create it`, APP_DEBUG_STYLE);
+        _Student.add(theStudent.id, theStudent.fullname, theStudent.path, theStudent.funding, theStudent.created);
         continue;
       }
-      if (sStudentFunding.toLowerCase() !== _r2.funding.toLowerCase()) {
-        db.get(_Student.tbl_name).find({ id: sStudentId }).assign({ funding: sStudentFunding.toLowerCase() }).write();
-        students_history_default.addFunding(sStudentId, _r2.funding.toLowerCase(), dayjs());
-        console.log(`%c[Student.getAll]Student ${sStudentFullName}(id:${sStudentId}) was already present in database but change of funding was detected (from ${_r2.funding.toLowerCase()} to ${sStudentFunding.toLowerCase()})`, APP_DEBUG_STYLE);
+      if (theStudent.funding.toLowerCase() !== _r2.funding.toLowerCase()) {
+        db.get(_Student.tbl_name).find({ id: theStudent.id }).assign({ funding: theStudent.funding }).write();
+        students_history_default.addFunding(theStudent.id, _r2.funding, dayjs());
+        console.log(`%c[Student.getAll]Student ${theStudent.fullname}(id:${theStudent.id}) was already present in database but change of funding was detected (from ${_r2.funding.toLowerCase()} to ${theStudent.funding.toLowerCase()})`, APP_DEBUG_STYLE);
       }
-      if (sStudentPath !== _r2.path) {
-        db.get(_Student.tbl_name).find({ id: sStudentId }).assign({ path: sStudentPath }).write();
-        students_history_default.addPath(sStudentId, _r2.path, dayjs());
-        console.log(`%c[Student.getAll]Student ${sStudentFullName}(id:${sStudentId}) was already present in database but change of path was detected (from ${_r2.path} to ${sStudentPath})`, APP_DEBUG_STYLE);
+      if (theStudent.path !== _r2.path) {
+        db.get(_Student.tbl_name).find({ id: theStudent.id }).assign({ path: theStudent.path }).write();
+        students_history_default.addPath(theStudent.id, _r2.path, dayjs());
+        console.log(`%c[Student.getAll]Student ${theStudent.fullname}(id:${theStudent.id}) was already present in database but change of path was detected (from ${_r2.path} to ${theStudent.path})`, APP_DEBUG_STYLE);
       }
     }
   });
@@ -1777,246 +3769,6 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
   var Meta = fMeta();
   var meta_default = Meta;
 
-  // src/api.openclassrooms.js
-  var fApi = function() {
-    let _header = {};
-    let _user = "0";
-    const VERBOSE = true;
-    const API_BASE_URL = "https://api.openclassrooms.com";
-    const LIFE_CYCLE_STATUS_PENDING = "pending";
-    const LIFE_CYCLE_STATUS_CANCELED = "canceled";
-    const LIFE_CYCLE_STATUS_COMPLETED = "completed";
-    const LIFE_CYCLE_STATUS_LATE_CANCELED = "late canceled";
-    const LIFE_CYCLE_STATUS_ABSENT = "marked student as absent";
-    const _setUser = async function() {
-      let _r2 = await getMe();
-      _r2 = JSON.parse(_r2);
-      _user = _r2.id;
-      return _user;
-    };
-    const _checkSupport = async function() {
-      if (_header.length == 0) {
-        throw new Error("_header is empty, no xhr have been trapped so could't do some api request");
-      }
-    };
-    const getMe = async function() {
-      const API_ME_URL = API_BASE_URL + "/me";
-      let _r2 = await _fetchGet(API_ME_URL);
-      return _r2;
-    };
-    const _getLimit = function(iFrom, iTo) {
-      return { "Range": `items=${iFrom}-${iTo}` };
-    };
-    const getPendingSessionAfter = async (dtDate = dayjs(), iFrom = 0, iTo = 19) => await _getSessionOnDate("AFTER", dtDate, [LIFE_CYCLE_STATUS_PENDING], iFrom, iTo);
-    const getPendingSessionBefore = async (dtDate = dayjs(), iFrom = 0, iTo = 19) => await _getSessionOnDate("BEFORE", dtDate, [LIFE_CYCLE_STATUS_PENDING], iFrom, iTo);
-    const getHistorySession = async (aFilter, iFrom = 0, iTo = 19) => await _getSession(aFilter, iFrom, iTo);
-    const _getSessionOnDate = async function(sPeriod = "BEFORE", dtDate, aFilter = [
-      LIFE_CYCLE_STATUS_CANCELED,
-      LIFE_CYCLE_STATUS_COMPLETED,
-      LIFE_CYCLE_STATUS_LATE_CANCELED,
-      LIFE_CYCLE_STATUS_ABSENT
-    ], iFrom = 0, iTo = 19) {
-      bDebug = true;
-      if (typeof dtDate === "string") {
-        dtDate = dayjs(dtDate);
-      }
-      assert(isArray(aFilter) === true, "You must provide an array as param aFilter.", TypeError);
-      assert(dtDate instanceof dayjs === true, "date must be a string or a dayjs object.", TypeError);
-      let sFilter = aFilter.join(",");
-      let sDate = encodeURIComponent(dtDate.format("YYYY-MM-DDTHH:MM:ss[Z]"));
-      sFilter = encodeURIComponent(sFilter);
-      let API_URL = "";
-      if (_user == 0) {
-        await _setUser();
-      }
-      if (sPeriod === "AFTER") {
-        API_URL = `${API_BASE_URL}/users/${_user}/sessions?actor=expert&after=${sDate}&life-cycle-status=${sFilter}`;
-        console.log("URL IS %s", API_URL);
-      } else {
-        API_URL = `${API_BASE_URL}/users/${_user}/sessions?actor=expert&before=${sDate}&life-cycle-status=${sFilter}`;
-        console.log("URL IS %s", API_URL);
-      }
-      let oLimit = _getLimit(iFrom, iTo);
-      if (bDebug) {
-        console.log("%c_getSessionOnDate url to call is:%s , params are %o", APP_DEBUG_STYLE, API_URL, oLimit);
-      }
-      let _r2 = await xGet(API_URL, _getLimit(iFrom, iTo));
-      return _r2;
-    };
-    const _getSession = async function(aFilter = [], iFrom = 0, iTo = 19) {
-      bDebug = true;
-      assert(isArray(aFilter) === true, "You must provide an array as param aFilter.", TypeError);
-      if (aFilter.length == 0) {
-        aFilter = [
-          LIFE_CYCLE_STATUS_CANCELED,
-          LIFE_CYCLE_STATUS_COMPLETED,
-          LIFE_CYCLE_STATUS_LATE_CANCELED,
-          LIFE_CYCLE_STATUS_ABSENT
-        ];
-      }
-      let sFilter = aFilter.join(",");
-      sFilter = encodeURIComponent(sFilter);
-      if (_user == 0) {
-        await _setUser();
-      }
-      const API_URL = `${API_BASE_URL}/users/${_user}/sessions?actor=expert&life-cycle-status=${sFilter}`;
-      let oLimit = _getLimit(iFrom, iTo);
-      if (bDebug) {
-        console.log("%cUrl to call is:%o , params are %o", APP_DEBUG_STYLE, API_URL, oLimit);
-      }
-      let _r2 = await xGet(API_URL, oLimit);
-      if (_r2 === null || _r2 === void 0) {
-        console.error("%cAPI have a problem returned value %o is null|undefined", APP_ERROR_STYLE, _r2);
-        throw new Error(`Request:${API_BASE_URL}/users/${_user}/sessions?actor=expert&life-cycle-status=${sFilter} have a problem`);
-      }
-      if (_r2.errors) {
-        console.log("%cAPI return an error %s", APP_ERROR_STYLE, _r2.errors.message);
-      }
-      return _r2;
-    };
-    const getUser = async function(iUser) {
-      const API_USER = `${API_BASE_URL}/users/${iUser}`;
-      let _r2 = await xGet(API_USER);
-      return _r2;
-    };
-    const getUserFollowedPath = async function(iUser) {
-      await _checkSupport();
-      const API_URL = `${API_BASE_URL}/users/${iUser}/paths/followed-path`;
-      let _r2 = await xGet(API_URL);
-      return _r2;
-    };
-    const getUserPath = async function(iUser) {
-      const API_USER_PATHS = `${API_BASE_URL}/users/${iUser}/paths`;
-      let _r2 = await xGet(API_USER_PATHS);
-      return _r2;
-    };
-    const xGet = async function(sUrl, oHeader = {}) {
-      await _checkSupport();
-      let _r2 = await _fetchGet(sUrl, oHeader);
-      return _r2;
-    };
-    const xPost = async function(sUrl) {
-      await _checkSupport();
-      let _r2 = await _fetchPost(sUrl, mData);
-      return _r2;
-    };
-    const forge = function(idUser) {
-      _user = idUser;
-    };
-    const _containsEncodedComponents = function(x) {
-      return decodeURI(x) !== decodeURIComponent(x);
-    };
-    const _fetchGet = async function(sUrl = "", oHeader = {}, sFormat = "json", sPath = "", bAll = true) {
-      let mHeader = Object.assign({ "User-Agent": "Mozilla/5.0" }, _header, oHeader);
-      if (sFormat.toLowerCase() === "json") {
-        const response = await GMC.XHR({
-          method: "GET",
-          url: sUrl,
-          responseType: "application/json",
-          headers: mHeader
-        }).catch((error) => {
-          console.error("%c[Api_fetchGer()]Error is %o", APP_ERROR_STYLE, error);
-        });
-        return response.responseText;
-      }
-      if (sFormat.toLowerCase === "html") {
-        const response = await GMC.XHR({
-          method: "GET",
-          url: sUrl,
-          responseType: "application/json",
-          headers: mHeader
-        }).catch((error) => {
-          console.error("%c[Api_fetchGer()]Error is %o", APP_ERROR_STYLE, error);
-        });
-        let domparser = new DOMParser();
-        let doc = domparser.parseFromString(response.responseText.replace(/\n/mg, ""), "text/html");
-        var oDom = {};
-        if (bAll === true) {
-          oDom = doc.querySelectorAll(sPath);
-        } else {
-          oDom = doc.querySelector(sPath);
-        }
-        return oDom;
-      }
-    };
-    const _fetchPost = async function(sUrl = "", oHeader = {}, oData = {}) {
-    };
-    const _bootstrap = function() {
-      const VERBOSE2 = false;
-      const FN_VERBOSE_STYLE = "color:DarkSalmon;background-color:AliceBlue;";
-      var open = window.XMLHttpRequest.prototype.open, send = window.XMLHttpRequest.prototype.send, setRequestHeader = window.XMLHttpRequest.prototype.setRequestHeader;
-      var openReplacement = function(method, url, async, user, password) {
-        if (VERBOSE2 === true)
-          console.log("%cmethod %o url:%o, async:%o, user %o, password:%o", FN_VERBOSE_STYLE, method, url, async, user, password);
-        this._url = url;
-        this._requestHeaders = {};
-        this._knox = [];
-        return open.apply(this, arguments);
-      };
-      var onReadyStateChangeReplacement = function() {
-        if (VERBOSE2 === true)
-          console.log("%cReady state changed to: %o", FN_VERBOSE_STYLE, this.readyState);
-        if (this.readyState === 4 && this.status && this.status >= 200 && this.status < 300) {
-          if (this._url.match(/^https:\/\/api.openclassrooms.com/g)) {
-            if (VERBOSE2 === true)
-              console.log("%cOPENCLASSROOMS API", FN_VERBOSE_STYLE);
-            for (var i in this._knox) {
-              _header[this._knox[i].key] = this._knox[i].value;
-            }
-            if (VERBOSE2 === true)
-              console.log("%c _header is %o", FN_VERBOSE_STYLE, _header);
-            if (VERBOSE2 === true) {
-              if (_containsEncodedComponents(this._url)) {
-                console.log("%cDECODED URL:%s", FN_VERBOSE_STYLE, decodeURIComponent(this._url));
-              } else {
-                console.log("%c DECODED URL:%s", FN_VERBOSE_STYLE, decodeURI(this._url));
-              }
-            }
-          }
-          if (VERBOSE2 === true)
-            console.log("%cResponse is :%o", FN_VERBOSE_STYLE, this.response);
-        }
-        if (this._onreadystatechange) {
-          return this._onreadystatechange.apply(this, arguments);
-        }
-      };
-      var sendReplacement = function(data) {
-        if (VERBOSE2 === true)
-          console.log("%csendReplacement(%o)", FN_VERBOSE_STYLE, data);
-        if (this.onreadystatechange) {
-          this._onreadystatechange = this.onreadystatechange;
-        }
-        this.onreadystatechange = onReadyStateChangeReplacement;
-        return send.apply(this, arguments);
-      };
-      var setRequestHeaderReplacement = function(header, value) {
-        if (this._url.match(/^https:\/\/api.openclassrooms.com/g)) {
-          this._knox.push({ key: header, value });
-        }
-        this._requestHeaders[header] = value;
-        return setRequestHeader.apply(this, arguments);
-      };
-      window.XMLHttpRequest.prototype.open = openReplacement;
-      window.XMLHttpRequest.prototype.send = sendReplacement;
-      window.XMLHttpRequest.prototype.setRequestHeader = setRequestHeaderReplacement;
-    };
-    _bootstrap();
-    return Object.freeze({
-      forge,
-      getPendingSessionAfter,
-      getPendingSessionBefore,
-      getHistorySession,
-      getUser,
-      getUserFollowedPath,
-      getUserPath,
-      getMe,
-      xGet,
-      xPost
-    });
-  };
-  var Api = fApi();
-  var api_openclassrooms_default = Api;
-
   // src/history.js
   var _HistoryDb = function fHistoryDb() {
     const TBL_NAME = "history_session_cache";
@@ -2231,6 +3983,19 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
   var history_default = History;
 
   // src/sessions.js
+  var SessionData = tcomb_neutral_default.struct({
+    id: tcomb_neutral_default.String,
+    cid: tcomb_neutral_default.maybe(tcomb_neutral_default.Integer),
+    who_id: tcomb_neutral_default.String,
+    who_name: tcomb_neutral_default.String,
+    type: tcomb_neutral_default.String,
+    lvl: tcomb_neutral_default.Integer,
+    when: tcomb_neutral_default.Date,
+    path: tcomb_neutral_default.String,
+    funding: tcomb_neutral_default.String
+  }, "SessionData");
+  SessionData.prototype.ocmapper = function(o) {
+  };
   var _Session = class {
     static getBetween(dtFrom2, dtTo2) {
       if (typeof dtFrom2 === "string") {
@@ -7042,6 +8807,15 @@ v5.3.0
 https://github.com/mholt/PapaParse
 License: MIT
 */
+/*! @preserve
+ *
+ * tcomb.js - Type checking and DDD for JavaScript
+ *
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014-2016 Giulio Canti
+ *
+ */
 /**
  * Fetch Inject module.
  *
