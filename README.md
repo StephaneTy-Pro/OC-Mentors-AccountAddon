@@ -27,8 +27,7 @@ Cette barre de menu peut être déplacée en positionnant votre curseur sur le r
 
 #### Première utilisation
 
-Dans l'interface de votre navigateur vous avez l'icône correpondant a Tapermonkey (ou violentmonkey...), un clic droit dessus permet d'ouvrir un menu. Dans ce menu vous trouverez le menu de paramétrage du Facturier. Dans cet écran de paramétrage, pour pouvoir faire fonctionner la collect automatique il faudra renseigner l'id utilisateur (votre numéro d'indentifiant chez openclassroms visible à chaque fois que vous cliquez sur votre avatar c'est le numéro qui apparait dans l'url).
-
+Dans l'interface de votre navigateur vous avez l'icône correpondant a Tapermonkey (ou violentmonkey...), un clic droit dessus permet d'ouvrir un menu. Dans ce menu vous trouverez le menu de paramétrage du Facturier.
 #### Utilisation futures
 
 
