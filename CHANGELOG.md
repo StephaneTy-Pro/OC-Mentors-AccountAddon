@@ -2,6 +2,9 @@
 
 C : Corrections(Fixes) / B : Corrections de Bug (BugFixes) / F : Ajout de fonctionnalité (Features) / D : Divers (Misc)
 
+## 1.10.0010 (11/01/2022)
+   - C: Prise en compte d'une évolution d'OpenClassrooms sur l'ui (modification du prefix de classe CSS)
+
 ## 1.10.0009 (23/10/2021)
 
 	-C: Prise en compte d'une évolution d'OpenClassrooms sur la gestion des étudiants (utilisation de l'API et non plus de l'url).

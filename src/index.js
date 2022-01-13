@@ -85,6 +85,8 @@ import View 			from './views.js';
 import Ref 				from './refs.js';
 import Api				from './api.openclassrooms.js';
 
+import SandBox_Google	from './sbox_google_sh.js'; // testing sheetrock in a sandbox
+
 
 const Facturier = {
 	
@@ -178,12 +180,82 @@ const Facturier = {
 		}
 		/* set size of content */
 		//GM_addStyle('.swal2-content{font-size:'+GM_config.get('sizeofcontentlist')+'}');
-		GM_addStyle('.swal2-title{font-size:1.275em)'); // set by default to 1.875em by CSS of SWAL
+		GM_addStyle('.swal2-title{font-size:1.275em}'); // set by default to 1.875em by CSS of SWAL
 		/* 
 		 * solution de contournement depuis le 01/06/2021 attente du 
 		 * chargement de l'historique sinon le tableau de l'historique
 		 * des sessions n'est pas disponible
 		 */
+		 
+		// perte du style du bouton
+		
+		GM_addStyle(`
+		.button {
+			display: inline-flex;
+			-webkit-box-align: center;
+			align-items: center;
+			-webkist-box-pack: center;
+			justify-content: center;
+			text-decoration: none;
+			cursor: pointer;
+			font-weight: 700;
+		}
+		.button--primary{
+			font-family: "Montserrat";
+			font-size: .875rem;
+			font-weight: 700;
+			text-align: center;
+			line-height: 1.5rem;
+			border-radius: 4px;
+			border-width: 1px;
+			border-style: solid;
+			outline: none;
+			padding: 8px 16px;
+			text-transform: uppercase;
+			position: relative;
+			overflow: hidden;
+			color: #fff;
+			background-color: #7451eb;
+			border-color: #7451eb;
+			box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1),0 1px 2px 0 rgba(0,0,0,0.2);
+		}
+		.button--primary:hover{
+			color: #fff;
+			background-color: #7451eb;
+			border-color: #7451eb;
+			box-shadow: 0 6px 6px 0 rgba(0,0,0,0.26),0 10px 20px 0 rgba(0,0,0,0.19);
+		}
+		.button--primary:active{
+			color: #fff;
+			background-color: #7451eb;
+			border-color: #7451eb;
+			-webkistbox-shadow: none;
+			box-shadow: none;
+		}
+		.button--primary:after{
+			content: '';
+			position: 'absolute';
+			top: 50%;
+			left: 50%;
+			width: 5px;
+			height: 5px;
+			background-color: #fff;
+			opacity: 0;
+			border-radius: 100%;
+			-webkit-transform:scale(1,1) translate(-50%);
+			transform:scale(1,1) translate(-50%);
+			-webkit-transform-origin: 50% 50%;
+			transform-origin: 50% 50%;
+		}
+		.button--primary:disabled{
+			color: #545454;
+			background-color: #d2d2d2;
+			border-color: #d2d2d2;
+			-webkit-box-shadow: none;
+			box-shadow: none;
+		}`);  
+		 
+		 
 		//var sCSSObserved = 'table#sessions_2'; // was .dom-services-4-MuiAvatar-img before
 		//var sCSSObserved = 'table#sessions_2 tbody tr > td > div > div+p'; // was .dom-services-4-MuiAvatar-img before
 		//var sCSSObserved = 'table[id*="sessions"] tbody tr > td > div > div+p';
@@ -220,9 +292,16 @@ const Facturier = {
 			//const _sOCMainCntClass = document.querySelector('#mainContentWithHeader')[0].firstChild.classList.value; // fonctionne mal
 			//const _sOCMainCntClass = document.querySelector('table[id*="session"]').classList.value; 
 			const _sOCMainCntClass = document.querySelector(Facturier.cssMainDataSelector).classList.value; 
+			/*
+			Update de l'interface OC, les classes du type "dom-services-1-dom-services2" deviennent du type "webapp-0-webapp5".
 			const _aOCMainSrvId = _sOCMainCntClass.match(/dom-services-(\d)/);
 			if(_aOCMainSrvId.length == 2)
 				return `dom-services-${_aOCMainSrvId[1]}`;
+			throw new Error("_aOCMainSrvId.length must be 2");
+			*/
+			const _aOCMainSrvId = _sOCMainCntClass.match(/webapp-(\d)/);
+			if(_aOCMainSrvId.length == 2)
+				return `webapp-${_aOCMainSrvId[1]}`;
 			throw new Error("_aOCMainSrvId.length must be 2");
 		} catch (error) {
 			console.error("%cError in _getOCMainClass():%s", APP_ERROR_STYLE, error);
@@ -446,7 +525,7 @@ const Facturier = {
 			//console.log("[index._addHeader()]check this %o", document.querySelector('table[id*="session"]'));
 			console.log("[index._addHeader()]check this %o", document.querySelector(Facturier.cssMainDataSelector));
 		}
-
+/*  NOTESTT: Obsolete 20220111
 		let sElement = `
 <a href="" class="${Facturier._sOCMainSrvClassName}-MuiButtonBase-root
  ${Facturier._sOCMainSrvClassName}-MuiTab-root
@@ -456,6 +535,7 @@ const Facturier = {
  <span class="${Facturier._sOCMainSrvClassName}-MuiTab-wrapper">En base de donnée (21/24)</span>
  <span class="${Facturier._sOCMainSrvClassName}-MuiTouchRipple-root"></span></a>
 `;
+*/
 		//selectionner les elements non vides enfants direct pour trouver les "onglets" historique...
 		let aDom = document.querySelector('#mainContent > :not(div:empty)').children;
 		// la barre contenant le pseudo menu se trouve avant la ligne section
@@ -472,8 +552,63 @@ const Facturier = {
 		// chercher le conteneur du menu
 		//    aDom[2].firstChild.lastChild.firstChild
 		// ou aDom[2].querySelector('a').parentElement
+		/* before 20220111
 		const oPanelSelectorContainer = aDom[i].querySelector('a').parentElement;
 		const oRefCSS = aDom[i].querySelector('a[aria-selected=false]');
+		*/
+		const oBase = document.querySelector('#mainContent[class*="webapp"]'); // note STT devenu inutile
+		//const oPanelSelectorContainer = oBase.querySelector('a').parentElement;
+		//const oRefCSS = oBase.querySelector('a[aria-selected=false]');
+		
+		const oPanelSelectorContainer = document.querySelector('[role="tablist"]'); // le conteneur du selecteur d'onglet
+		
+		
+		// ici il faut s'assurer que l'on ait chargé le panel
+		
+		var handleElementShown=function(oElem){
+			const oPanelSelectorContainer = document.querySelector('[role="tablist"]');
+			let oSpan_1 = document.createElement('span');
+			oSpan_1.innerText = "Facturier v."+GM.info.script.version;
+			//oSpan_1.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTab-wrapper`);
+			oSpan_1.classList.add(...oElem.children[0].classList);
+			oSpan_1.classList.add('Facturier__header');
+			let oSpan_2 = document.createElement('span');
+			//oSpan_2.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTouchRipple-root`);
+			oSpan_2.classList.add(...oElem.children[1].classList);
+			oSpan_2.classList.add('Facturier__header');
+			let oRoot = document.createElement('a');
+			oRoot.onclick = about;
+			//oRoot.alt = "tout séléctionner";
+			oRoot.classList.add(...oElem.classList);
+			oRoot.classList.add('Facturier__header');
+			oRoot.appendChild(oSpan_1);
+			oRoot.appendChild(oSpan_2);
+			oRoot.style = 'margin-left: auto'; // magic property to pull it (flex element)right	
+			oPanelSelectorContainer.appendChild(oRoot);
+		}
+		
+		var observer = new MutationObserver(function (mutations, me) {
+		  // `mutations` is an array of mutations that occurred
+		  // `me` is the MutationObserver instance
+		  const oRefCSS = oPanelSelectorContainer.querySelector('a[aria-selected=false]');
+		  if (oRefCSS.children) {
+			handleElementShown(oRefCSS);
+			me.disconnect(); // stop observing
+			return;
+		  }
+		});
+
+		// start observing
+		observer.observe(document, {
+		  childList: true,
+		  subtree: true
+		});		
+		
+		
+		return;
+		//anciennement
+		const oRefCSS = oPanelSelectorContainer.querySelector('a[aria-selected=false]'); // le css d'un onglet non sélectionné
+		
 		let oSpan_1 = document.createElement('span');
 		oSpan_1.innerText = "Facturier v."+GM.info.script.version;
 		//oSpan_1.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTab-wrapper`);
@@ -843,6 +978,11 @@ if(STT_VERSION) {
 		
 		// libs
 		unsafeWindow.Facturier.libs.push({id:'NProgress',ptr:NProgress});// unsafeWindow.Facturier.libs.find(o => o.id == 'NProgress').ptr pour le retrouver
+		SandBox_Google.test_1();
+		unsafeWindow.Facturier.klass.push({id:'SandBox_Google',ptr:SandBox_Google});// unsafeWindow.Facturier.libs.find(o => o.id == 'NProgress').ptr pour le retrouver
+		
+		
+		
 		
 		//
 if(STT_VERSION) {    
