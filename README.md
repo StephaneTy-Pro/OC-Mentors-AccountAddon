@@ -28,7 +28,10 @@ Cette barre de menu peut être déplacée en positionnant votre curseur sur le r
 #### Première utilisation
 
 Dans l'interface de votre navigateur vous avez l'icône correpondant a Tapermonkey (ou violentmonkey...), un clic droit dessus permet d'ouvrir un menu. Dans ce menu vous trouverez le menu de paramétrage du Facturier.
+<<<<<<< HEAD
 
+=======
+>>>>>>> 6c3bd04e3af1814c526feee90ba712292830eba9
 #### Utilisation futures
 
 
