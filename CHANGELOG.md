@@ -1,6 +1,10 @@
 # CHANGELOG
 
-C : Corrections(Fixes) / B : Corrections de Bug (BugFixes) / F : Ajout de fonctionnalité (Features) / D : Divers (Misc)
+LEGENDE: C: Corrections(Fixes) / B: Corrections de Bug (BugFixes) / F: Ajout de fonctionnalité (Features) / D: Divers (Misc)
+
+## 1.10.0011 (24/02/2022)
+   - F: Ajout de la possibilité de réserver une session
+   - C: Prise en compte d'une évolution d'OpenClassrooms sur l'ui case à cocher soutenance stockée en base qui n'apparaissaient plus dans le listing Historique
 
 ## 1.10.0010 (11/01/2022)
    - C: Prise en compte d'une évolution d'OpenClassrooms sur l'ui (modification du prefix de classe CSS)
@@ -22,8 +26,8 @@ C : Corrections(Fixes) / B : Corrections de Bug (BugFixes) / F : Ajout de foncti
    
 
 ## 1.10.0006 (02/07/2021)
-   C: Prise en compte d'une évolution d'OpenClassrooms sur l'ui de l'écran de contrôle mentor
-   C: Remise en fonction de la fonctionnalité COLLECTAUTO
+   - C: Prise en compte d'une évolution d'OpenClassrooms sur l'ui de l'écran de contrôle mentor
+   - C: Remise en fonction de la fonctionnalité COLLECTAUTO
 
 ## 1.10.0005 (09/06/2021)
   	- C: Prise en compte d'une évolution d'OpenClassrooms sur l'ui de l'écran de contrôle mentor
@@ -39,7 +43,7 @@ C : Corrections(Fixes) / B : Corrections de Bug (BugFixes) / F : Ajout de foncti
   	- D: Changement de nom pour la fonctionnalité export de base total qui est devenu sauvegarde
   	- D: Changement de nom pour la fonctionnalité import de base total qui est devenu chargement
 
-  ## 1.10.0002 (18/01/2021)
+## 1.10.0002 (18/01/2021)
   
   	- C: Correction d'un bug dans la partie ajout d'étudiant
 

@@ -59,6 +59,7 @@ import {
 import{
 	addCbox,
 	about,
+	patchSessionHistoryLineUI,
 } from './do.js';
 
 import{
@@ -331,18 +332,31 @@ const Facturier = {
 							//console.log("%cPaging on table was modified", APP_DEBUG_STYLE);
 						}
 						if(mutation.target.nodeName === 'TBODY' && mutation.target.parentElement.nodeName === 'TABLE'){
-							/**/
+							/*
 							console.log("%cTable data changed (TBODy,TABLE)",APP_DEBUG_STYLE);
 							console.log("%c=============> Changed data : %o", APP_DEBUG_STYLE,mutation);
-							
+							*/
 							debounce(Facturier._applyInjectionOnPathNameMutation());
 						}
+		
+
 						if(mutation.target.nodeName === 'OL'){// since 20211001
-							/**/
+							/*
 							console.log("%cTable data changed (OL)",APP_DEBUG_STYLE);
 							console.log("%c=============> Changed data : %o", APP_DEBUG_STYLE, mutation);
-							
-							debounce(Facturier._applyInjectionOnPathNameMutation());
+							*/
+							if (mutation.addedNodes.length === 1 &&
+							    mutation.addedNodes[0].style.cssText === '' &&
+							    mutation.addedNodes[0].nodeName === 'LI'
+							) {
+								/*
+								console.log("%cJE VEUX AJOUTER  UNE LIGNE AU TABLEAU DES SESSIONS", APP_DEBUG_STYLE);
+								* */
+								debounce(patchSessionHistoryLineUI(mutation.addedNodes[0].firstChild)); // contient une balise A qui contient toutes les colonnes de la ligne
+								Facturier._lastMutation = dayjs().valueOf();
+							} else {		
+								debounce(Facturier._applyInjectionOnPathNameMutation());
+							}
 						}
 						/* Since 20210623 
 						 * if button < is mutated 
@@ -354,10 +368,10 @@ const Facturier = {
 						 * */
 						if(mutation.target.nodeName === 'BUTTON' && 
 							mutation.target.parentElement.parentElement.parentElement.firstElementChild.nodeName === 'TABLE'){
-							/**/
+							/*
 							console.log("%cTable data changed (BUTTON, TABLE)",APP_DEBUG_STYLE);
 							console.log("%c=============> Changed data : %o", APP_DEBUG_STYLE,mutation);
-
+							*/
 							debounce(Facturier._applyInjectionOnPathNameMutation());
 						}
 						
@@ -572,17 +586,21 @@ const Facturier = {
 			//oSpan_1.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTab-wrapper`);
 			oSpan_1.classList.add(...oElem.children[0].classList);
 			oSpan_1.classList.add('Facturier__header');
-			let oSpan_2 = document.createElement('span');
-			//oSpan_2.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTouchRipple-root`);
-			oSpan_2.classList.add(...oElem.children[1].classList);
-			oSpan_2.classList.add('Facturier__header');
+			if(oElem.children.length>1){ // since 20220130 - semble ne plus etre tout le temps présent
+				let oSpan_2 = document.createElement('span');
+				//oSpan_2.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTouchRipple-root`);
+				oSpan_2.classList.add(...oElem.children[1].classList);
+				oSpan_2.classList.add('Facturier__header');
+			}
 			let oRoot = document.createElement('a');
 			oRoot.onclick = about;
 			//oRoot.alt = "tout séléctionner";
 			oRoot.classList.add(...oElem.classList);
 			oRoot.classList.add('Facturier__header');
 			oRoot.appendChild(oSpan_1);
-			oRoot.appendChild(oSpan_2);
+			if(oElem.children.length>1){ // since 20220130 - semble ne plus etre tout le temps présent
+				oRoot.appendChild(oSpan_2);
+			}
 			oRoot.style = 'margin-left: auto'; // magic property to pull it (flex element)right	
 			oPanelSelectorContainer.appendChild(oRoot);
 		}
@@ -724,7 +742,6 @@ if(STT_VERSION) {
 		dayjs.extend(dayjs_plugin_isSameOrAfter);
 		dayjs.extend(dayjs_plugin_isSameOrBefore);
 		dayjs.extend(dayjs_plugin_isBetween);
-		dayjs.extend(dayjs_plugin_localeData);
 		dayjs.extend(dayjs_plugin_localeData);
 		dayjs.extend(dayjs_plugin_customParseFormat);
 		dayjs.locale('fr');
@@ -888,7 +905,7 @@ if(STT_VERSION) {
 					 var appendFromHtmlStr = function(sHtml, oDom){
 							var  range = document.createRange();
 							var  fragment = range.createContextualFragment(sHtml);
-							console.log(fragment);
+							//console.log(fragment);
 							for (var  i = fragment.childNodes.length - 1; i >= 0; i--) {
 								var child = fragment.childNodes[i];
 								oDom.appendChild(child);
@@ -1018,15 +1035,27 @@ if(STT_VERSION) {
 	},
 	// add an option to oc menu to show hide the bar
 	_addLinkToMenu: function(){
-		console.log(`%cSide menu was added`, APP_DEBUG_STYLE);
+		console.log(`%cSide menu will be added`, APP_DEBUG_STYLE);
 		document.unbindArrive(Facturier._addLinkToMenu);
+		
+		// provisoire eviter double chargement
+		
+		if (document.querySelector("ul.Facturier__Menu-header") !== null){
+			console.log(`%cDirty Check no double launch`, APP_DEBUG_STYLE);
+			return ;
+		}
+		
+		
 		try{
 			let oMenu = document.querySelectorAll('nav:not([role])')[0];
 			// clone last li node from ul child list
 			let oCloneLI = oMenu.children[0].lastChild.cloneNode(true); // li element contain an a element
 			oCloneLI.firstChild.innerText = "Facturier";
 			elMenu = document.querySelector('.panel.draggable');//.setAttribute('style','display:show')
-			oCloneLI.firstChild.href = "javascript:function(){elMenu = document.querySelector('.panel.draggable');elMenu.style.display = (elMenu.style.display != 'block') ? 'block' : 'none';}";
+			// https://stackoverflow.com/questions/5003867/how-to-call-javascript-function-instead-of-href-in-html/25649344
+			// https://stackoverflow.com/questions/33533010/how-to-make-an-anchor-tags-href-invoke-an-anonymous-function
+			oCloneLI.firstChild.href = "javascript::void(0);";
+			oCloneLI.firstChild.onclick = function(e){ e.preventDefault();e.stopPropagation();elMenu = document.querySelector('.panel.draggable');elMenu.style.display = (elMenu.style.display != 'block') ? 'block' : 'none';};
 			// ajouter les sous elements non copies avec le clone ... le svg et les deux span
 			let el =  oMenu.children[0].lastChild.firstChild; // pointe sur le <a href"">
 			oCloneLI.firstChild.appendChild(el.children[0].cloneNode(true)); // to have path which is a subnode
@@ -1041,7 +1070,9 @@ if(STT_VERSION) {
 			* */
 			let oCloneUL = oMenu.children[0].cloneNode(false);
 			oCloneUL.appendChild(oCloneLI);
+			oCloneUL.classList.add('Facturier__Menu-header');
 			oMenu.appendChild(oCloneUL);
+			console.log(`%cSide menu will added`, APP_DEBUG_STYLE);
 		} catch(e){console.log('%cInjecting menu encounter an error: %o',APP_ERROR_STYLE, e)};
 	},
 	

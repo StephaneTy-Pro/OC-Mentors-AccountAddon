@@ -255,24 +255,141 @@ var fApi = function(){
 			iUser = _r.id;
 		}
 		const API_REQUEST = `${API_BASE_URL}/mentors/${iUser}/students`;
-		let _r = await xGet(API_REQUEST);
-        return _r;
+		let _r;
+		try {
+			_r = await xGet(API_REQUEST);
+		}
+		catch(e){console.error("%c[getUserStudents()] Trapped error %o",APP_ERROR_STYLE, e);}
+		finally { return _r; }
+        //return _r;
 	}
+	
+	// set a book
+	/*
+	 * @param (int) user
+	 * @param (int) project id
+	 * @param (int) student id
+	 * @param (string) date of the element to book UTC standard format
+	 * 
+	 * @return (object) the result of api call
+	 * 
+	 * URL : https://api.openclassrooms.com/mentoring-sessions
+	 */
+	const bookStudent = async function(iUser=null, iProjectId, iStudentId, sDate){
+		
+		// voir ici pour un parsing d'arguments https://gomakethings.com/my-preferred-way-to-pass-arguments-into-a-function-with-vanilla-javascript/
+		
+		if(iUser === null){
+			let _r = await getMe();
+			_r = JSON.parse(_r);
+			iUser = _r.id;
+		}
+		const API_REQUEST = `${API_BASE_URL}/mentoring-sessions`;
+		//const sDate = dtDate.format('YYYY-MM-DDTHH:MM:ss[Z]');
+		const mData = {"mentorId":iUser, "projectId":iProjectId, "studentId":iStudentId, "sessionDate": sDate}
+
+		let _r = await xPost(API_REQUEST, {}, mData);
+		if(typeof _r === 'string'){ 
+			// gestion des erreurs ... le retour est une chaine de caractere au format json
+			const data = JSON.parse(_r);
+			// check
+			// https://stackoverflow.com/a/10895432
+			if (//data.hasOwnProperty('errors') && 
+				'errors' in data  &&
+				data.errors.length == 1 &&
+				data.errors[0].code === 'SESSION_ALREADY_EXISTS'){
+				const e = data.errors[0];
+				console.error("%c[Api.bookStudent()] call bookStudent error[%s] :%s ", APP_ERROR_STYLE, e.code, e.message);
+			} else {
+				console.log("%c[Api.bookStudent()] return an unknow value :%o", APP_ERROR_STYLE, data);
+			}
+			return data;
+		}
+		const data = await _r.json();
+		console.log("%c[Api.bookStudent()] return :%o ", APP_DEBUG_STYLE, data);
+        //const properties = Object.keys(data);
+        //if (properties.includes('error') && properties.includes('body')) {console.log('bookStudent error');}
+        return;
+    }
     
     // -- use at your ownr risks
+    
+	/*
+	 * 
+	 * xGet
+	 * 	@param (string) url to call
+	 *  @param (object) header
+	 *  @return the text value of get
+	 *  @raise error if fail
+	 * 
+	 * 
+	 * NOTESTT: je devrais la réecrire je suis parti du principe que c'était toujours du json mais ce n'est pas certain
+	 */
     const xGet = async function(sUrl, oHeader={}){
 		// checking
 		await _checkSupport();
 		//console.log("%c[Api.xGet()] call _fetchGet with url :%s and with header:%o", APP_DEBUG_STYLE, sUrl, oHeader);
 		let _r = await _fetchGet(sUrl, oHeader);
-        return _r;
+		//console.log("%c[Api.xGet()] returned value by _fetchGet is %o", APP_DEBUG_STYLE, _r);
+		
+		if(typeof _r === 'string'){
+			// gestion des erreurs ... le retour est une chaine de caractere au format json
+			let _t = JSON.parse(_r);
+			if (typeof _t.errors !== 'undefined'){ // _t.hasOwnProperty('errors')
+				const e = _t.errors.reduce( (acc,v) => `${acc}{v.message}`);
+				console.error("%c[Api.xGet()] call _fetchGet error :%s ", APP_ERROR_STYLE, e.message);
+				throw new Error(`[Api.xGet()] Irrecoverable error :' ${e.message}'`);
+			}
+			// pas d'erreur
+			//console.log("%c[Api.xGet()] there is no propety error in data, will return %o", APP_DEBUG_STYLE, _r);
+			return _r;
+		}
+		throw new Error(`[Api.xGet()] Irrecoverable error result is not a string but a :' ${typeof _r}'`);
+		return;
+        //return _r;
 	};
-	
-	const xPost = async function(sUrl){
+	/*
+	 *  @raise error if fail
+	 */
+	const xPost = async function(sUrl, oHeader={}, mData={}, bThrowError = true){
 		// checking
 		await _checkSupport();
-		let _r = await _fetchPost(sUrl, mData);
-        return _r;
+		let _r = await _fetchPost(sUrl, oHeader, mData);
+		console.log("%c[Api.xPost()] call _fetchPost with url :%s and with data:%o", APP_DEBUG_STYLE, sUrl, mData);
+		if(typeof _r === 'string'){ // gestion des erreurs ... le retour est une chaine de caractere au format json
+			let _t = JSON.parse(_r);
+			if (typeof _t.errors !== 'undefined'){
+				// il est à noter qu'il existe certain code qui sont parfois rapporté dans le message on va le trouver dans _r.errors[].code
+				// mais ce n'est pas forcément très important
+				// pour l'instant je le gère comme ça, mais il faudra faire mieux
+				if (_t.errors.length == 1 &&
+				    _t.errors[0].code === 'SESSION_ALREADY_EXISTS'
+				    ){
+					return _r;	
+				}
+				// ERR: Cette valeur doit être supérieure ou égale à ....
+				if (_t.errors.length == 1 &&
+				    _t.errors[0].code === 'TOO_LOW_ERROR' &&
+				    _t.errors[0].field === 'sessionDate'
+				    ){
+					return _r;	
+				}
+				console.error("%c[Api.xPost()] raw list of error :%o ", APP_ERROR_STYLE, _t);
+				const e = _t.errors.reduce( (acc,v) => `${acc}{v.message}`);
+				console.error("%c[Api.xPost()] call _fetchPost error :%s ", APP_ERROR_STYLE, e.message);
+				if(bThrowError === true){
+					throw new Error(`[Api.xPost()] Irrecoverable error :' ${e.message}'`);
+				}
+				return;
+			}
+			// pas d'erreur
+			return _r;
+		}
+		if(bThrowError === true){
+			throw new Error(`[Api.xPost()] Irrecoverable error result is not a string but a :' ${typeof _r}'`);
+		}
+		return;
+        //return _r;
 	};
 	
 	/* this function only serve to force header to be build,
@@ -309,7 +426,7 @@ var fApi = function(){
 				//onload: (_e) => console.log("%c _fetchGet()->onload args:%o", APP_DEBUG_STYLE, _e),
 				//onerror: (_e) => console.error("%c _fetchGet()->onerror error is:%o", APP_ERROR_STYLE, _e),
 			}).catch((error) => {
-				console.error("%c[Api_fetchGer()]Error is %o",APP_ERROR_STYLE, error); // SRC copied from https://greasyfork.org/en/scripts/20423-patchouli/code script i use for xhr promises
+				console.error("%c[_fetchGet()]Error is %o",APP_ERROR_STYLE, error); // SRC copied from https://greasyfork.org/en/scripts/20423-patchouli/code script i use for xhr promises
 			});
 
 			//console.log("_fetch() ending proceed with response %o",response.responseText);
@@ -329,7 +446,7 @@ var fApi = function(){
 				//onload: (_e) => console.log("%c _fetchGet()->onload args:%o", APP_DEBUG_STYLE, _e),
 				//onerror: (_e) => console.error("%c _fetchGet()->onerror error is:%o", APP_ERROR_STYLE, _e),
 			}).catch((error) => {
-				console.error("%c[Api_fetchGer()]Error is %o",APP_ERROR_STYLE, error); // SRC copied from https://greasyfork.org/en/scripts/20423-patchouli/code script i use for xhr promises
+				console.error("%c[Api_fetchGet()]Error is %o",APP_ERROR_STYLE, error); // SRC copied from https://greasyfork.org/en/scripts/20423-patchouli/code script i use for xhr promises
 			});
 
 			//console.log("_fetch() ending proceed with response %o",response.responseText);
@@ -360,7 +477,36 @@ var fApi = function(){
 	/**
 	 * Need to complete after
 	 */
-	const _fetchPost = async function(sUrl="", oHeader={}, oData={}){}; 
+	const _fetchPost = async function(sUrl="", oHeader={}, oData={}){
+		console.info(`%c[Api._fetchPost()] waiting return from : ${sUrl}`, APP_DEBUG_STYLE, sUrl);
+		let mHeader =  Object.assign({"User-Agent":"Mozilla/5.0"}, _header, oHeader);
+		console.log("%c[Api._fetchPost()]final header is %o", APP_DEBUG_STYLE, mHeader);
+		console.log("%c[Api._fetchPost()]data is %o", APP_DEBUG_STYLE, oData);
+		
+		// pour plus d'information voir ici https://www.tampermonkey.net/documentation.php#GM_xmlhttpRequest
+		const response = await GMC.XHR({
+			method: 'POST',
+			url: sUrl,
+			responseType: 'application/json',
+			//binary: true,
+			headers: mHeader,
+			data: JSON.stringify(oData),
+			//onabort: (_e) => console.log("%c _fetchPost()->onabort  args:%o", APP_DEBUG_STYLE, _e),
+			//onloadstart: (_e) => console.log("%c _fetchPost()->onloadstart args:%o", APP_DEBUG_STYLE, _e),
+			//onprogress: (_e) => console.log("%c _fetchPost()->onprogress args:%o", APP_DEBUG_STYLE, _e),
+			//onreadystatechange: (_e) => console.log("%c _fetchPost()->onreadystatechange  args:%o", APP_DEBUG_STYLE, _e),
+			//onload: (_e) => console.log("%c _fetchPost()->onload args:%o", APP_DEBUG_STYLE, _e),
+			//onerror: (_e) => console.error("%c _fetchPost()->onerror error is:%o", APP_ERROR_STYLE, _e),
+		}).catch((error) => {
+			console.error("%c[Api_fetchPost()]Error is %o",APP_ERROR_STYLE, error); // SRC copied from https://greasyfork.org/en/scripts/20423-patchouli/code script i use for xhr promises
+		});
+
+		//console.log("_fetch() ending proceed with response %o",response.responseText);
+		return response.responseText;
+				
+		
+		
+	}; 
 
 	// 	https://dmitripavlutin.com/catch-the-xmlhttp-request-in-plain-javascript/
 	const _bootstrap = function(){
@@ -449,6 +595,7 @@ var fApi = function(){
 	_bootstrap();
 	
 	return Object.freeze({
+		bookStudent: bookStudent,
 		forge:forge,
 		getPendingSessionAfter: getPendingSessionAfter,
 		getPendingSessionBefore: getPendingSessionBefore,

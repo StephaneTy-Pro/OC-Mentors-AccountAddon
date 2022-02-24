@@ -10,13 +10,18 @@ Cet addon vise à aider le mentor à préparer sa facture mensuelle, mais aussi 
 
 ### Préalable
 
-Commencer par installer tampermonkey (greasmonkey ou violetmonkey devraient fonctionner mais je n'ai pas testé)
+Installer l'extension tampermonkey pour votre navigateur (greasmonkey ou violetmonkey devraient fonctionner mais je n'ai pas testé). Cette extension permet d'injecter un script ou un ensemble de script dans une page web affichée par le navigateur.
 
 ### Installation du script
 
-Aller dans le menu Tampermonkey et selectionner ajouter un nouveau script
-
-Prendre l'onglet Utilitaires dernière ligne "Install from URL" , coller l'url du script ( /!\ bien penser à prendre le format RAW du lien github ce qui donne https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/dist/app.min.js et non pas https://github.com/StephaneTy-Pro/OC-Mentors-AccountAddon/blob/master/dist/app.min.js)
+- Cliquer sur l'icone tampermonkey présent sur la page de votre navigateur et choisir l'option dashboard (ou l'activer depuis la gestion des plugins)
+- Deux options existent pour l'installation
+- Option 1: en mode automatique
+	- Prendre l'onglet Utilitaires ou Utilities dernière ligne "Install from URL" , coller l'url du script ( /!\ bien penser à prendre le format RAW du lien github ce qui donne https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/dist/app.min.js et non pas https://github.com/StephaneTy-Pro/OC-Mentors-AccountAddon/blob/master/dist/app.min.js) 
+- Option 2: à la main
+	- Cliquer sur le + présent dans la barre de menu à côté de l'onglet "Installed UserScripts"
+	- recopier le contenu du fichier github de l'[application](https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/dist/app.min.js)(en mode raw) dans la nouvelle page ainsi ouverte 
+	- Sauvegarder
 
 
 ### Utilisation
@@ -48,12 +53,26 @@ Dans l'interface de votre navigateur vous avez l'icône correpondant a Tapermonk
 
 Pour plus d'information voir la [documentation](https://stephanety-pro.github.io/OC-Mentors-AccountAddon/)
 
+## Configuration
+
+Si vous faites un click gauche sur l'icone présent dans la barre de votre navigateur vous devriez voir apparaitre un menu avec une option "OC- facturier- configure", vous pourrez notamment définir les temps passé par type de session pour calculer votre THM
+
 ## Mise à jour
+
+Elle devrait se faire en automatique depuis le dashboard de tampermonkey
 
 Après chaque mise à jour avant toute manipulation assurez vous par précaution de faire les choses suivantes
 
 - sauvegarde de la base
-- remise à zéro du mois de facturatione en cours (option database/épurer et cochez la case session et précisez le mois en cours) 
+- remise à zéro du mois de facturation en cours (option database/épurer et cochez la case session et précisez le mois en cours) 
+
+### Tester une mise à jour
+
+En ajoutant un nouveau script tampermonkey et en procédant comme une nouvelle installation de ce script je peux très bien conserver deux versions du script actuel
+
+## Désactiver la fonctionnalité
+
+Dans tampermonkey désactiver l'utilisation du script , cette action est aussi possible au travers du menu disponible sur l'icone tampermonkey du navigateur (icone : carré noir avec deux ronds blancs)
 
 ## FAQ
 
@@ -88,13 +107,5 @@ Depuis juin 2020 les auto financés sont traités différement des financés, il
 > Pourquoi ma collecte dans l'historique s'arrête inopinément ?
 
 Parce qu'Openclassrooms (via leur CDN) finit par blacklister des ip quand on fait trop de requête (captcha à compléter) généralement ça refonctionne quelques dix minutes plus tard. Pour contourner le probleme vous pouvez toujours essayer d'afficher l'historique il est alors possible que vous ayez à compléter le captcha.
-
-## Configuration
-
-Si vous faites un click gauche sur l'icone présent dans la barre de votre navigateur vous devriez voir apparaitre un menu avec une option "OC- facturier- configure", vous pourrez notamment définir les temps passé par type de session pour calculer votre THM
-
-## Mise à jour
-
-Elle devrait se faire en automatique depuis le dashboard de tampermonkey
 
 

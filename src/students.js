@@ -258,8 +258,61 @@ path: "81-expert-en-strategie-marketing-et-communication"
 	/*
 	 * find students in db (memoized version)	
 	 */
-	 static m_findById = moize.default(
+	static m_findById = moize.default(
 		Student._findById,
+		{ 	maxAge: 600000,
+			isSerialized: true,
+			//onCacheAdd: function(c,o,m){console.log("%c[m_findById]Add data to cache",APP_DEBUG_STYLE);/*console.dir(c.keys);console.dir(o);console.dir(m)*/;},
+			//onCacheHit: function(){console.log("%c[m_findById]Get data from cache", APP_DEBUG_STYLE);},
+			//onCacheChange: function(c,o,m){console.log("%c[m_findById]Change data from cache", APP_DEBUG_STYLE);/**/console.dir(c.keys);console.dir(o);console.dir(m);}
+		});
+	/*
+	 * 
+	 * name: find
+	 * @param needle the fullname of student
+	 * @param cache true or false, used because in some function like check forinsertion in must remove cache
+	 * @return
+	 * 
+	 * NOTESTT:
+	 * 
+	 */
+    static findByFullName = function(sNeedle){
+		//this option is used to desactivate cache so debugging is easier
+		//let bUseCache = true;
+		let bUseCache = GM_config.get("use_student_cache")
+		
+		if(bUseCache === false)console.log("%cache étudiant desactivé dans les options", APP_DEBUG_STYLE); 
+		
+		assert(
+			typeof sNeedle === 'string',
+			'You must provide a string.',
+			TypeError
+			);
+
+		//return Student.m_findById(sNeedle, dtFrom.format('YYYY-MM-DDTHH:mm:ssZZ')); // use cached version of function
+		if (bUseCache === false){return Student._findByFullName(sNeedle);}
+		return Student.m_findByFullName(sNeedle); // use cached version of function prefered string method
+	} 
+	/*
+	 * find student by fullname
+	 */
+	static _findByFullName = function(sNeedle){
+		let bDebug = false;
+		let db=App.Cfg.dbase; 
+		if(bDebug===true)console.log(`%c[_findByFullName()] searching student with name:(${typeof sNeedle})${sNeedle} in db`,APP_DEBUG_STYLE);
+		var _r = db.get(Student.tbl_name).find({fullname: sNeedle}).value();
+		if(bDebug===true)console.log("%c[_findByFullName()] student %o is found", APP_DEBUG_STYLE, _r);
+		 if (_r === undefined){
+			 return undefined;
+		 } else {
+			return _r;
+		}
+	}
+	/*
+	 * find students by fullname (memoized version)	
+	 */
+	static m_findByFullName = moize.default(
+		Student._findByFullName,
 		{ 	maxAge: 600000,
 			isSerialized: true,
 			//onCacheAdd: function(c,o,m){console.log("%c[m_findById]Add data to cache",APP_DEBUG_STYLE);/*console.dir(c.keys);console.dir(o);console.dir(m)*/;},
@@ -468,7 +521,7 @@ path: "81-expert-en-strategie-marketing-et-communication"
 	 * 
 	 */
 	static getAll = async (e,ctx) => { // mode JS2020
-		let dDebug = true;
+		let bDebug = true;
         var bForceUpdate = false; //TODO temporary
         let db=App.Cfg.dbase; 
         var sPath ="table.crud-list tbody";

@@ -136,15 +136,106 @@ var addCboxOld = function(){
 }
 
 // a priori je vais devoir attendre 
+
+/*
+ * @param object html element
+ */
+var _checkOrAddCbox = function(oEl){
+    if(oEl.querySelector(".Facturier__cbox input[type=checkbox]") === null){
+        //console.log('have to build');
+        oEl.appendChild(_buildCbox(oEl));
+    }else{
+        //console.log('have to check');
+        _checkCbox(oEl);}
+}
+//alias
+var patchSessionHistoryLineUI = function(oEl) {_checkOrAddCbox(oEl);}
+
+
+/*
+ * @param object html element
+ */
+ 
+
+var _buildCbox=function(oEl){
+	//console.log("nom de l'étudiant : %o",el.children[2].innerText)
+	// 0 - annulé|réalisé|absent & type mentorat|soutenance
+	// 1 - date
+	// 2 - zone nom étudiant + avatar
+	// 3 - niveau d'expertise
+	
+	// colonne 0
+	var sState = oEl.children[0].querySelector('svg').getAttribute('aria-label'); // Annulée...
+	var sSessionType =  oEl.children[0].querySelector('p').innerText; // Mentorat
+	// colonne 1
+	var sDateTime = oEl.children[1].querySelector('time').getAttribute('datetime').trim(); //  "2021-10-08T07:45:00+0000"
+	// colonne 2
+	var sStudentName =  oEl.children[2].querySelector('a').innerText;
+	//var sWho_id = getKey(_oEl.children[2],-2); // get the before last '/' element
+	var sWho_id = getKey(oEl.children[2],-2); // get the before last '/' element
+	var inputElem = document.createElement('input');
+	inputElem.type = "checkbox";
+	inputElem.name = "name";
+	var sWhen = dayjs(sDateTime).toISOString();
+	// the cid (calculate id is a combination of id of student and timetime)
+	var iHash = Session.getHashId(sWhen, sWho_id);
+	//console.log('%ciHash is (%o)%o',APP_DEBUG_STYLE, typeof iHash, iHash);
+	inputElem.value = iHash;
+	// because there is a global handler click on whole tr
+	inputElem.onclick = function(event){ event.stopPropagation(); };
+	bChecked = Session.exists(iHash);
+	//console.log(`%cIs the session with cid ${iHash} (this is the calculated id) in db ? ${bChecked}`, APP_DEBUG_STYLE);
+	if (bChecked === true) inputElem.checked = true;
+	/*
+	var td = document.createElement('td');
+	td.style = "text-align: center";
+	td.appendChild(inputElem);
+	*/
+	// get classlist from last element
+	const cls2ndChild = oEl.children[1].classList;
+	// get classlist from before lastelement
+	const clsLastChild = oEl.lastChild.classList;
+	//
+	oEl.lastChild.classList = cls2ndChild;
+	var oSubEl = document.createElement('div');
+	oSubEl.appendChild(inputElem);
+	oSubEl.classList.add(...clsLastChild);
+	oSubEl.classList.add('Facturier__cbox');	
+	return oSubEl;
+}
+
+/*
+ * @param object html element
+ */
+var _checkCbox = function(oEl){
+	try {
+		oInput = oEl.querySelector('input');
+	}catch(e){throw Error('IRRECOVERABLE ERROR: no input element');}
+	//console.log("%cCheckBox already displayed, i ve only to show checked on|off", APP_DEBUG_STYLE);
+	//var _t = sessions.querySelectorAll(".Facturier__cbox input[type=checkbox]"); // NOTESTT could be CPU Consumer ? so by precaution define it here
+	//var i = _t.length, aChkBox = new Array(i);for(; i--; aChkBox[i] = _t[i]); // NOTESTT those two lines are more optimized than ? var aChkBox = Array.prototype.slice.call(_t)
+	//for(var v in aChkBox){
+		let iHash = parseInt(oInput.value,10);
+		//console.log('%c....iHash is (%o)%o',APP_DEBUG_STYLE, typeof iHash, iHash);
+		bChecked = Session.exists(iHash);
+		//console.log(`is the session with id ${aChkBox[v].value} in db ? ${bChecked}`);
+		if (bChecked === true){
+			oInput.checked = true;
+		} else {
+			oInput.checked = false;
+		}
+	//}
+}
+
 /*
  * sessions.firstChild.querySelector('tr > td > div > div+p')
  * 
  * version 1.08.20211005 -> changement dans l'affichage
+ * version 1.10.0011 -> il faudrait pouvoir ajouter une cbox ce que ne permet pas de faire cette fonction
+ *  il va falloir que je compte les nombres de cbox potentielles et que je fasse le traitement si ce nombre est différent de l'actuel
  * */
 
 var addCbox = function(){
-	//var sPath ="table#sessions_2"; // obsolete since 20210624
-	//var sPath ='table[id*="session"]';
 	var sPath = OC_DASHBOARDCSSMAINDATASELECTOR;
 	var sessions = document.querySelector(sPath);// le All me retourne aussi le tableau des étudiants
 	var bChecked = false;
@@ -156,60 +247,13 @@ var addCbox = function(){
 	if (sessions.querySelector(".Facturier__cbox input[type=checkbox]") === null) {
 		//console.log("%cCheckBox NOT already displayed, i ve to build and show checked on|off", APP_DEBUG_STYLE);
 		//var sessions = document.querySelector(`${sPath} tbody`);// remarque attention le All me retourne aussi le tableau des étudiants
-		var sessions = document.querySelector(`${sPath}`);// remarque attention le All me retourne aussi le tableau des étudiants
-		for (const oEl of sessions.children) {
+		var sessions = document.querySelector(`${sPath}`).children;
+		for (let [key, oEl] of Object.entries(sessions)) {
 			// avoid month summary
 			// les sommaires sont directement contenues dans le div enfant
 			if(oEl.firstChild.nodeName !== 'A'){continue}
-			// une ligne d'un element du tableau qui continent des données est contenue dans une balise a
-			// les colonnes sont matérialisées par des div
 			const oLine = oEl.firstChild;
-			
-			//console.log("nom de l'étudiant : %o",el.children[2].innerText)
-			// 0 - annulé|réalisé|absent & type mentorat|soutenance
-			// 1 - date
-			// 2 - zone nom étudiant + avatar
-			// 3 - niveau d'expertise
-			
-			// colonne 0
-			var sState = oLine.children[0].querySelector('svg').getAttribute('aria-label'); // Annulée...
-			var sSessionType =  oLine.children[0].querySelector('p').innerText; // Mentorat
-			// colonne 1
-			var sDateTime = oLine.children[1].querySelector('time').getAttribute('datetime').trim(); //  "2021-10-08T07:45:00+0000"
-			// colonne 2
-			var sStudentName =  oLine.children[2].querySelector('a').innerText;
-			//var sWho_id = getKey(_oEl.children[2],-2); // get the before last '/' element
-			var sWho_id = getKey(oLine.children[2],-2); // get the before last '/' element
-			var inputElem = document.createElement('input');
-			inputElem.type = "checkbox";
-			inputElem.name = "name";
-			var sWhen = dayjs(sDateTime).toISOString();
-			// the cid (calculate id is a combination of id of student and timetime)
-			var iHash = Session.getHashId(sWhen, sWho_id);
-			//console.log('%ciHash is (%o)%o',APP_DEBUG_STYLE, typeof iHash, iHash);
-			inputElem.value = iHash;
-			// because there is a global handler click on whole tr
-			inputElem.onclick = function(event){ event.stopPropagation(); };
-			bChecked = Session.exists(iHash);
-			//console.log(`%cIs the session with cid ${iHash} (this is the calculated id) in db ? ${bChecked}`, APP_DEBUG_STYLE);
-			if (bChecked === true) inputElem.checked = true;
-			/*
-			var td = document.createElement('td');
-			td.style = "text-align: center";
-			td.appendChild(inputElem);
-			*/
-			// get classlist from last element
-			const cls2ndChild = oLine.children[1].classList;
-			// get classlist from before lastelement
-			const clsLastChild = oLine.lastChild.classList;
-			//
-			oLine.lastChild.classList = cls2ndChild;
-			var oSubEl = document.createElement('div');
-			oSubEl.appendChild(inputElem);
-			oSubEl.classList.add(...clsLastChild);
-			oSubEl.classList.add('Facturier__cbox');
-			oLine.appendChild(oSubEl);
-			//oEl.appendChild(td);
+			oLine.appendChild(_buildCbox(oLine));
 		}
 		// ajout d'une case selectionner tout
 		// 1 - ajout du thead si nécessaire
@@ -239,18 +283,20 @@ var addCbox = function(){
 		}
 	} else {
 		//console.log("%cCheckBox already displayed, i ve only to show checked on|off", APP_DEBUG_STYLE);
-		var _t = sessions.querySelectorAll(".Facturier__cbox input[type=checkbox]"); // NOTESTT could be CPU Consumer ? so by precaution define it here
-		var i = _t.length, aChkBox = new Array(i);for(; i--; aChkBox[i] = _t[i]); // NOTESTT those two lines are more optimized than ? var aChkBox = Array.prototype.slice.call(_t)
-		for(var v in aChkBox){
-			let iHash = parseInt(aChkBox[v].value,10);
-			//console.log('%c....iHash is (%o)%o',APP_DEBUG_STYLE, typeof iHash, iHash);
-			bChecked = Session.exists(iHash);
-			//console.log(`is the session with id ${aChkBox[v].value} in db ? ${bChecked}`);
-			if (bChecked === true){
-				aChkBox[v].checked = true;
-			} else {
-				aChkBox[v].checked = false;
-			}
+		//var _t = sessions.querySelectorAll(".Facturier__cbox input[type=checkbox]"); // NOTESTT could be CPU Consumer ? so by precaution define it here
+		//var i = _t.length, aChkBox = new Array(i);for(; i--; aChkBox[i] = _t[i]); // NOTESTT those two lines are more optimized than ? var aChkBox = Array.prototype.slice.call(_t)
+		var sessions = document.querySelector(`${sPath}`).children;
+		//for (const oEl2 of sessions.children) {
+		for (let [key, oEl] of Object.entries(sessions)) {
+			if(oEl.firstChild.nodeName !== 'A'){continue}
+			const oLine = oEl.firstChild;
+			//console.log("working on line %o",oLine);
+		if(oLine.querySelector(".Facturier__cbox input[type=checkbox]") === null){
+			//console.log('have to build');
+			oLine.appendChild(_buildCbox(oLine));
+		}else{
+			//console.log('have to check');
+			_checkCbox(oLine);}
 		}
 	}
 }
@@ -2841,6 +2887,7 @@ export {
 	collectChecked,
 	debugMode,
 	mgtDbase,
+	patchSessionHistoryLineUI,
 	pdf,
 	razDbase,
 	sandbox,
