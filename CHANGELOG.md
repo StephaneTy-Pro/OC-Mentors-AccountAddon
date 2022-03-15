@@ -2,6 +2,10 @@
 
 LEGENDE: C: Corrections(Fixes) / B: Corrections de Bug (BugFixes) / F: Ajout de fonctionnalité (Features) / D: Divers (Misc)
 
+## 1.10.0012 (15/03/2022)
+   - F: Ajout d'un élément du menu (tampermonkey) pour déplacer la barre de menu de l'application en haut de l'écran
+   - C: Prise en compte des évolutions d'interface utilisateur openclassrooms
+
 ## 1.10.0011 (24/02/2022)
    - F: Ajout de la possibilité de réserver une session
    - C: Prise en compte d'une évolution d'OpenClassrooms sur l'ui case à cocher soutenance stockée en base qui n'apparaissaient plus dans le listing Historique

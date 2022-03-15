@@ -15,7 +15,7 @@ import {
 	
 import GMC from "./gmc.polyfills.js";
 import { assert } from './utils.js';
-import { isArray } from './helpers.js';
+import { isArray,isNullOrUndefined } from './helpers.js';
 
 var fApi = function(){
 	
@@ -89,6 +89,12 @@ var fApi = function(){
 {"displayName":"Stephane Torchy","email":"stephane.ty.missions@gmail.com","enrollment":"Free","firstName":"Stephane","id":7688561,"identityLocked":true,"language":"fr","lastName":"Torchy","openClassroomsProfileUrl":"https:\/\/openclassrooms.com\/fr\/members\/17kt5784hnq7","organization":null,"premium":true,"profilePicture":"https:\/\/s3.eu-west-1.amazonaws.com\/user.oc-static.com\/users\/avatars\/15123790592942_Working-1focushead.png"}
 */	
 
+	/**
+	 * get the current user
+	 * 
+	 * NOTESTT a priori c'est pareil que de faire getUser(avec l'id retourné dans me)
+	 */
+
 	const getMe = async function(){
 		//const bDebug = true;
 		const API_ME_URL = API_BASE_URL + "/me";
@@ -96,6 +102,21 @@ var fApi = function(){
 		//if (bDebug){ console.log("%cUrl to call is:%o , result is are %o", APP_DEBUG_STYLE, URL, _r);}
 		return _r;
 	}
+	
+	/**
+	 * return a long object with properties from mentor
+	 * notamment les locales ce dont je me servirais bien pour la partie calendrier
+	 */
+	
+	const getMentor = async function(iUser){
+		//const bDebug = true;
+		const FINAL_URL = `${API_BASE_URL}/mentors/${iUser}`;
+		let _r = await _fetchGet(FINAL_URL); // here we must not use xGet else we as xGet use getME it was an infinite recursion
+		//if (bDebug){ console.log("%cUrl to call is:%o , result is are %o", APP_DEBUG_STYLE, URL, _r);}
+		return _r;
+	}
+	
+	
 	
 	// {key: "Range", value: "items=0-19"}
 	
@@ -109,10 +130,19 @@ var fApi = function(){
 	 * renvoi vide
 	 */
 	
+	/**
+	 * helper getPendingSessionAfter
+	 */
 	const getPendingSessionAfter = async (dtDate=dayjs(), iFrom=0, iTo=19) =>  
 		await _getSessionOnDate ("AFTER", dtDate, [LIFE_CYCLE_STATUS_PENDING], iFrom, iTo);
+	/**
+	 * helper getPendingSessionBefore
+	 */
 	const getPendingSessionBefore = async (dtDate=dayjs(), iFrom=0, iTo=19) =>
 		await _getSessionOnDate("BEFORE", dtDate, [LIFE_CYCLE_STATUS_PENDING], iFrom, iTo);
+	/**
+	 * helper getHistorySession
+	 */
 	const getHistorySession = async (aFilter, iFrom=0, iTo=19) =>
 		await _getSession(aFilter, iFrom, iTo);
 		// /!\ c'est pas tout à fait du isoString
@@ -120,6 +150,12 @@ var fApi = function(){
 		// ISO STRING : 2021-06-06T21:09:27.915Z
 		// dans dayjs[] -> escape so [Z] allow us to write Z letter else was the template 
 		// a priori il faut juste encoder la date
+	
+	/**
+	 * _getSessionOnDate 
+	 * 
+	 *   return a list of sessions corresponding to filters
+	 */
 		
 	const _getSessionOnDate = async function(sPeriod="BEFORE", dtDate, 
 		aFilter=[
@@ -233,6 +269,67 @@ var fApi = function(){
 		let _r = await xGet(API_USER);
 		return _r;
     };
+    /**
+     * return list of availabilities
+     * 
+     *
+     */
+	const getUserAvailabilities = async function(iUser){
+		const API_USER = `${API_BASE_URL}/users/${iUser}/availabilities`;
+		let _r = await xGet(API_USER);
+		return _r;
+    };
+    /**
+     * return list of events
+     * 
+     *
+     */
+	/*const getUserEvents = async function(iUser){
+		const API_USER = `${API_BASE_URL}/users/${iUser}/events`;
+		let _r = await xGet(API_USER);
+		return _r;
+    }; */   
+    // fonctionne on en fait qu'une seule au final
+ 	//const getUserEventsLim = async function(iUser,iFrom=0, iTo=19){
+ 	const getUserEvents = async function(iUser,iFrom=0, iTo=19){
+		const API_USER = `${API_BASE_URL}/users/${iUser}/events`;
+		let _r = await xGet(API_USER,_getLimit(iFrom,iTo));
+		return _r;
+    };    
+    
+    
+    // on tente avec une date 
+    // semble ne pas fonctionner
+ 	const getUserEventsAfter = async function(iUser, dtDate){
+		if(typeof dtDate === 'string'){
+			dtDate = dayjs(dtDate);
+		}
+		assert(
+			dtDate instanceof dayjs === true,
+			'date must be a string or a dayjs object.',
+			TypeError
+		);
+		let sDate = encodeURIComponent(dtDate.format('YYYY-MM-DDTHH:MM:ss[Z]'));
+		const FINAL_URL = `${API_BASE_URL}/users/${iUser}/events?after=${sDate}`;
+		let _r = await xGet(FINAL_URL);
+		return _r;
+    };  
+    
+ 	const getUserEventsBefore = async function(iUser, dtDate){
+		if(typeof dtDate === 'string'){
+			dtDate = dayjs(dtDate);
+		}
+		assert(
+			dtDate instanceof dayjs === true,
+			'date must be a string or a dayjs object.',
+			TypeError
+		);
+		let sDate = encodeURIComponent(dtDate.format('YYYY-MM-DDTHH:MM:ss[Z]'));
+		const FINAL_URL = `${API_BASE_URL}/users/${iUser}/events?before=${sDate}`;
+		let _r = await xGet(FINAL_URL);
+		return _r;
+    };     
+    
 	const getUserFollowedPath = async function(iUser){
 		// checking
 		await _checkSupport();
@@ -407,7 +504,7 @@ var fApi = function(){
 		return (decodeURI(x) !== decodeURIComponent(x));
 	}
 	
-	const _fetchGet = async function(sUrl="", oHeader={}, sFormat='json', sPath="", bAll=true){
+	const _fetchGet = async function(sUrl="", oHeader={}, sFormat='json', sPath="", bAll=true, bThrowError=false){
 		//console.info(`%c[Api._fetchGet()] waiting return from : ${sUrl}`, APP_DEBUG_STYLE, sUrl);
 		let mHeader =  Object.assign({"User-Agent":"Mozilla/5.0"}, _header, oHeader);
 		//console.log("%c[Api._fetchGet()]final header is %o", APP_DEBUG_STYLE, mHeader);
@@ -426,7 +523,16 @@ var fApi = function(){
 				//onload: (_e) => console.log("%c _fetchGet()->onload args:%o", APP_DEBUG_STYLE, _e),
 				//onerror: (_e) => console.error("%c _fetchGet()->onerror error is:%o", APP_ERROR_STYLE, _e),
 			}).catch((error) => {
+				// dans le catch error on trouve des "response" à NULL
+				if (isNullOrUndefined(response)){
+					if(bThrowError === true){
+						throw new Error(`[Api._fetchGet()] Repsponse is undefined : ${error}'`);
+					}
+					return null;
+				}
+				
 				console.error("%c[_fetchGet()]Error is %o",APP_ERROR_STYLE, error); // SRC copied from https://greasyfork.org/en/scripts/20423-patchouli/code script i use for xhr promises
+				return null;
 			});
 
 			//console.log("_fetch() ending proceed with response %o",response.responseText);
@@ -510,7 +616,54 @@ var fApi = function(){
 
 	// 	https://dmitripavlutin.com/catch-the-xmlhttp-request-in-plain-javascript/
 	const _bootstrap = function(){
+		const REG_FILTER = /^https:\/\/api.openclassrooms.com/g;
+		var open = window.XMLHttpRequest.prototype.open,
+			send = window.XMLHttpRequest.prototype.send,
+			setRequestHeader = window.XMLHttpRequest.prototype.setRequestHeader;
+		// monkey patch function
+		var openReplacement = function(method, url, async, user, password) {
+			this._url = url;
+			this._requestHeaders = {};
+			this._knox = [];
+			return open.apply(this, arguments);
+		};
+		var onReadyStateChanged = function() {
+			// Process the response
+			if (
+				this.readyState === 4 &&
+				this.status &&
+				this.status >= 200 &&
+				this.status < 300
+			) {
+				if(this._url.match(REG_FILTER)){
+					//Put all keys,value to header
+                    for(var i in this._knox){
+                        _header[this._knox[i].key] = this._knox[i].value;
+                    }
+				}
+			}
+		};
+		// monkey patch function
+		var sendReplacement = function(data) {
+			this.onreadystatechange = onReadyStateChanged;
+			return send.apply(this, arguments);
+		};
+		// monkey patch function
+		var setRequestHeaderReplacement = function(header, value){
+			if(this._url.match(REG_FILTER)){
+				this._knox.push( {key:header, value:value} );
+			}
+			this._requestHeaders[header] = value;
+			return setRequestHeader.apply(this, arguments);
+		};
+		window.XMLHttpRequest.prototype.open = openReplacement;
+		window.XMLHttpRequest.prototype.send = sendReplacement;
+		window.XMLHttpRequest.prototype.setRequestHeader = setRequestHeaderReplacement;
+	}
+	// La même mais avec du deboggage possible
+	const _bootstrapDbg = function(){
 		const VERBOSE = false;
+		const REG_FILTER = /^https:\/\/api.openclassrooms.com/g;
 		const FN_VERBOSE_STYLE =  'color:DarkSalmon;background-color:AliceBlue;';
 		var open = window.XMLHttpRequest.prototype.open,
 			send = window.XMLHttpRequest.prototype.send,
@@ -525,7 +678,8 @@ var fApi = function(){
 			return open.apply(this, arguments);
 		};
 		// monkey patch function
-		var onReadyStateChangeReplacement = function() {
+		//var onReadyStateChangeReplacement = function() {
+		var onReadyStateChanged = function() {
 			if(VERBOSE === true)console.log('%cReady state changed to: %o', FN_VERBOSE_STYLE, this.readyState);
 			// from https://github.com/cferdinandi/atomic/blob/master/src/js/atomic/atomic.js
 			// Process the response
@@ -536,7 +690,7 @@ var fApi = function(){
 				this.status < 300
 			) {
 				//console.log('URL %s send us a response', this._url);
-				if(this._url.match(/^https:\/\/api.openclassrooms.com/g)){
+				if(this._url.match(REG_FILTER)){
 					if(VERBOSE === true)console.log("%cOPENCLASSROOMS API", FN_VERBOSE_STYLE);
 					//Put all keys,value to header
                     for(var i in this._knox){
@@ -558,23 +712,26 @@ var fApi = function(){
 		  /**
 		   * RETURN TO ORIGINAL
 		   */
-		  if(this._onreadystatechange) {
+		  /*if(this._onreadystatechange) {
 			return this._onreadystatechange.apply(this, arguments);
 		  }
+		  * */
 		};
 		// monkey patch function
 		var sendReplacement = function(data) {
 			if(VERBOSE === true)console.log('%csendReplacement(%o)', FN_VERBOSE_STYLE, data);
-			if(this.onreadystatechange) {
+			/*if(this.onreadystatechange) {
 				this._onreadystatechange = this.onreadystatechange;
 			}
-			this.onreadystatechange = onReadyStateChangeReplacement;
+			* */
+			//this.onreadystatechange = onReadyStateChangeReplacement;
+			this.onreadystatechange = onReadyStateChanged;
 			return send.apply(this, arguments);
 		};
 		// monkey patch function
 		var setRequestHeaderReplacement = function(header, value){
 			//will trap all request which concerne openclassrooms api
-			if(this._url.match(/^https:\/\/api.openclassrooms.com/g)){
+			if(this._url.match(REG_FILTER)){
 				//console.log('OPENCLASSROOMS');
 				this._knox.push( {key:header, value:value} );
 			}
@@ -594,17 +751,29 @@ var fApi = function(){
 	
 	_bootstrap();
 	
+	//_bootstrapDbg();
+	
 	return Object.freeze({
 		bookStudent: bookStudent,
 		forge:forge,
+        // -- Logged user
+		getMe:getMe,
+		// -- Mentor
+		getMentor:getMentor,
 		getPendingSessionAfter: getPendingSessionAfter,
 		getPendingSessionBefore: getPendingSessionBefore,
 		getHistorySession: getHistorySession,
-		getUserStudents: getUserStudents,
+		//-- Users
         getUser:getUser,
+        getUserAvailabilities: getUserAvailabilities,
+        getUserEvents: getUserEvents,
+        //getUserEventsLim, mélangé avec celle du dessus.
+        getUserEventsAfter,
+        getUserEventsBefore,
         getUserFollowedPath:getUserFollowedPath,
         getUserPath:getUserPath,
-        getMe:getMe,
+		getUserStudents: getUserStudents,
+        //--Reserved generic get/post
         xGet:xGet,
         xPost:xPost,
  	});

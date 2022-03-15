@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Facturier
 // @namespace    http://tampermonkey.net/
-// @version      1.10.0011
+// @version      1.10.0012.20220314
 // @description  Un addon pour vous aider dans votre facturation
 // @author       Stéphane TORCHY
 // @updateURL    https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/dist/app.min.js
@@ -978,6 +978,9 @@
   };
 
   // src/helpers.js
+  var isNullOrUndefined = (value) => {
+    return value === null || value === void 0;
+  };
   var isArray = (_2) => Array.isArray(_2);
   var isEmptyFunction = (_2) => _2.toString().trim().length <= "function(){}".length;
   var debounce = function(fn) {
@@ -1305,6 +1308,11 @@
       let _r2 = await _fetchGet(API_ME_URL);
       return _r2;
     };
+    const getMentor = async function(iUser) {
+      const FINAL_URL = `${API_BASE_URL}/mentors/${iUser}`;
+      let _r2 = await _fetchGet(FINAL_URL);
+      return _r2;
+    };
     const _getLimit = function(iFrom, iTo) {
       return { "Range": `items=${iFrom}-${iTo}` };
     };
@@ -1378,6 +1386,36 @@
     const getUser = async function(iUser) {
       const API_USER = `${API_BASE_URL}/users/${iUser}`;
       let _r2 = await xGet(API_USER);
+      return _r2;
+    };
+    const getUserAvailabilities = async function(iUser) {
+      const API_USER = `${API_BASE_URL}/users/${iUser}/availabilities`;
+      let _r2 = await xGet(API_USER);
+      return _r2;
+    };
+    const getUserEvents = async function(iUser, iFrom = 0, iTo = 19) {
+      const API_USER = `${API_BASE_URL}/users/${iUser}/events`;
+      let _r2 = await xGet(API_USER, _getLimit(iFrom, iTo));
+      return _r2;
+    };
+    const getUserEventsAfter = async function(iUser, dtDate) {
+      if (typeof dtDate === "string") {
+        dtDate = dayjs(dtDate);
+      }
+      assert(dtDate instanceof dayjs === true, "date must be a string or a dayjs object.", TypeError);
+      let sDate = encodeURIComponent(dtDate.format("YYYY-MM-DDTHH:MM:ss[Z]"));
+      const FINAL_URL = `${API_BASE_URL}/users/${iUser}/events?after=${sDate}`;
+      let _r2 = await xGet(FINAL_URL);
+      return _r2;
+    };
+    const getUserEventsBefore = async function(iUser, dtDate) {
+      if (typeof dtDate === "string") {
+        dtDate = dayjs(dtDate);
+      }
+      assert(dtDate instanceof dayjs === true, "date must be a string or a dayjs object.", TypeError);
+      let sDate = encodeURIComponent(dtDate.format("YYYY-MM-DDTHH:MM:ss[Z]"));
+      const FINAL_URL = `${API_BASE_URL}/users/${iUser}/events?before=${sDate}`;
+      let _r2 = await xGet(FINAL_URL);
       return _r2;
     };
     const getUserFollowedPath = async function(iUser) {
@@ -1479,7 +1517,7 @@
     const _containsEncodedComponents = function(x) {
       return decodeURI(x) !== decodeURIComponent(x);
     };
-    const _fetchGet = async function(sUrl = "", oHeader = {}, sFormat = "json", sPath = "", bAll = true) {
+    const _fetchGet = async function(sUrl = "", oHeader = {}, sFormat = "json", sPath = "", bAll = true, bThrowError = false) {
       let mHeader = Object.assign({ "User-Agent": "Mozilla/5.0" }, _header, oHeader);
       if (sFormat.toLowerCase() === "json") {
         const response = await GMC.XHR({
@@ -1488,7 +1526,14 @@
           responseType: "application/json",
           headers: mHeader
         }).catch((error) => {
+          if (isNullOrUndefined(response)) {
+            if (bThrowError === true) {
+              throw new Error(`[Api._fetchGet()] Repsponse is undefined : ${error}'`);
+            }
+            return null;
+          }
           console.error("%c[_fetchGet()]Error is %o", APP_ERROR_STYLE, error);
+          return null;
         });
         return response.responseText;
       }
@@ -1529,7 +1574,41 @@
       return response.responseText;
     };
     const _bootstrap = function() {
+      const REG_FILTER = /^https:\/\/api.openclassrooms.com/g;
+      var open = window.XMLHttpRequest.prototype.open, send = window.XMLHttpRequest.prototype.send, setRequestHeader = window.XMLHttpRequest.prototype.setRequestHeader;
+      var openReplacement = function(method, url, async, user, password) {
+        this._url = url;
+        this._requestHeaders = {};
+        this._knox = [];
+        return open.apply(this, arguments);
+      };
+      var onReadyStateChanged = function() {
+        if (this.readyState === 4 && this.status && this.status >= 200 && this.status < 300) {
+          if (this._url.match(REG_FILTER)) {
+            for (var i2 in this._knox) {
+              _header[this._knox[i2].key] = this._knox[i2].value;
+            }
+          }
+        }
+      };
+      var sendReplacement = function(data) {
+        this.onreadystatechange = onReadyStateChanged;
+        return send.apply(this, arguments);
+      };
+      var setRequestHeaderReplacement = function(header, value) {
+        if (this._url.match(REG_FILTER)) {
+          this._knox.push({ key: header, value });
+        }
+        this._requestHeaders[header] = value;
+        return setRequestHeader.apply(this, arguments);
+      };
+      window.XMLHttpRequest.prototype.open = openReplacement;
+      window.XMLHttpRequest.prototype.send = sendReplacement;
+      window.XMLHttpRequest.prototype.setRequestHeader = setRequestHeaderReplacement;
+    };
+    const _bootstrapDbg = function() {
       const VERBOSE2 = false;
+      const REG_FILTER = /^https:\/\/api.openclassrooms.com/g;
       const FN_VERBOSE_STYLE = "color:DarkSalmon;background-color:AliceBlue;";
       var open = window.XMLHttpRequest.prototype.open, send = window.XMLHttpRequest.prototype.send, setRequestHeader = window.XMLHttpRequest.prototype.setRequestHeader;
       var openReplacement = function(method, url, async, user, password) {
@@ -1540,11 +1619,11 @@
         this._knox = [];
         return open.apply(this, arguments);
       };
-      var onReadyStateChangeReplacement = function() {
+      var onReadyStateChanged = function() {
         if (VERBOSE2 === true)
           console.log("%cReady state changed to: %o", FN_VERBOSE_STYLE, this.readyState);
         if (this.readyState === 4 && this.status && this.status >= 200 && this.status < 300) {
-          if (this._url.match(/^https:\/\/api.openclassrooms.com/g)) {
+          if (this._url.match(REG_FILTER)) {
             if (VERBOSE2 === true)
               console.log("%cOPENCLASSROOMS API", FN_VERBOSE_STYLE);
             for (var i2 in this._knox) {
@@ -1563,21 +1642,15 @@
           if (VERBOSE2 === true)
             console.log("%cResponse is :%o", FN_VERBOSE_STYLE, this.response);
         }
-        if (this._onreadystatechange) {
-          return this._onreadystatechange.apply(this, arguments);
-        }
       };
       var sendReplacement = function(data) {
         if (VERBOSE2 === true)
           console.log("%csendReplacement(%o)", FN_VERBOSE_STYLE, data);
-        if (this.onreadystatechange) {
-          this._onreadystatechange = this.onreadystatechange;
-        }
-        this.onreadystatechange = onReadyStateChangeReplacement;
+        this.onreadystatechange = onReadyStateChanged;
         return send.apply(this, arguments);
       };
       var setRequestHeaderReplacement = function(header, value) {
-        if (this._url.match(/^https:\/\/api.openclassrooms.com/g)) {
+        if (this._url.match(REG_FILTER)) {
           this._knox.push({ key: header, value });
         }
         this._requestHeaders[header] = value;
@@ -1591,14 +1664,19 @@
     return Object.freeze({
       bookStudent,
       forge,
+      getMe,
+      getMentor,
       getPendingSessionAfter,
       getPendingSessionBefore,
       getHistorySession,
-      getUserStudents,
       getUser,
+      getUserAvailabilities,
+      getUserEvents,
+      getUserEventsAfter,
+      getUserEventsBefore,
       getUserFollowedPath,
       getUserPath,
-      getMe,
+      getUserStudents,
       xGet,
       xPost
     });
@@ -5508,20 +5586,40 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
   };
   var _checkOrAddCbox = function(oEl) {
     if (oEl.querySelector(".Facturier__cbox input[type=checkbox]") === null) {
-      oEl.appendChild(_buildCbox(oEl));
+      var _oElt = _buildCbox(oEl);
+      if (typeof _oElt !== "undefined") {
+        oEl.appendChild(_oElt);
+      }
     } else {
       _checkCbox(oEl);
     }
   };
-  var patchSessionHistoryLineUI = function(oEl) {
-    _checkOrAddCbox(oEl);
-  };
-  var _buildCbox = function(oEl) {
+  var _buildCbox = function(oEl, bUsePathToFilrer = true) {
+    if (oEl.childElementCount === 1) {
+      return;
+    }
+    ;
+    if (bUsePathToFilrer === true) {
+      const sPath = window.location.pathname.split("/");
+      if (sPath[sPath.length - 1] !== "mentorship-sessions-history") {
+        return;
+      }
+    }
+    var sSessionSaved = null;
     var sState = oEl.children[0].querySelector("svg").getAttribute("aria-label");
     var sSessionType = oEl.children[0].querySelector("p").innerText;
+    if (oEl.children[0].childElementCount === 2) {
+      sSessionSaved = oEl.children[2].getAttribute("aria-label");
+    }
     var sDateTime = oEl.children[1].querySelector("time").getAttribute("datetime").trim();
     var sStudentName = oEl.children[2].querySelector("a").innerText;
     var sWho_id = getKey(oEl.children[2], -2);
+    var sLvl = null;
+    if (oEl.childElementCount > 3 && oEl.children[3].childElementCount !== 0) {
+      if (oEl.children[3].querySelector("span") !== null) {
+        sLvl = oEl.children[3].querySelector("span").innerText;
+      }
+    }
     var inputElem = document.createElement("input");
     inputElem.type = "checkbox";
     inputElem.name = "name";
@@ -5613,6 +5711,9 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
         }
       }
     }
+  };
+  var addOneCbox = function(oEl) {
+    return _checkOrAddCbox(oEl);
   };
   var billInDetails = async function() {
     var [dtFrom2, dtTo2] = await popupDateSelector(dayjs().startOf("month"), dayjs().endOf("month"));
@@ -9189,7 +9290,13 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
     cssMainDataSelector: OC_DASHBOARDCSSMAINDATASELECTOR,
     ID_MENU_FORCE_LOADING: null,
     ID_MENU_FORCE_ADDTOLEFTMENU: null,
+    ID_MENU_FORCE_BAR_ON_TOP: null,
+    _isStarted: false,
     start: async function() {
+      console.log(`%cIn start check Facturier._isStarted: ${Facturier._isStarted}`, APP_DEBUG_STYLE);
+      if (Facturier._isStarted === true) {
+        return;
+      }
       await domReady();
       const bSupport = Facturier.checkSupport();
       console.log(`%cAre all functions supported ? : ${bSupport}`, APP_DEBUG_STYLE);
@@ -9208,8 +9315,11 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
       return true;
     },
     _warmup: function() {
-      console.log("%c in _warmup", APP_DEBUG_STYLE);
       document.unbindArrive(Facturier._warmup);
+      if (Facturier._isStarted === true) {
+        return;
+      }
+      Facturier._isStarted = true;
       GM_unregisterMenuCommand(Facturier.ID_MENU_FORCE_LOADING);
       if (GM === void 0) {
         console.log("%cI am not in a tamper env", APP_DEBUG_STYLE);
@@ -9225,6 +9335,9 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
       GM_config.init(appmenu);
       GM_registerMenuCommand("collectauto", opencfg, "a");
       GM_registerMenuCommand("configure", opencfg, "a");
+      Facturier.ID_MENU_FORCE_BAR_ON_TOP = GM_registerMenuCommand("Menu Bar on Top", function() {
+        document.querySelector(".panel.draggable").scrollIntoView();
+      });
       if (GM_config.get("hackheaderzindex") === true) {
         document.getElementById("header").style.zIndex = 0;
       }
@@ -9329,13 +9442,17 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
             debounce(Facturier._applyInjectionOnPathNameMutation());
           }
           if (mutation.target.nodeName === "OL") {
-            if (mutation.addedNodes.length === 1 && mutation.addedNodes[0].style.cssText === "" && mutation.addedNodes[0].nodeName === "LI") {
-              debounce(patchSessionHistoryLineUI(mutation.addedNodes[0].firstChild));
-              Facturier._lastMutation = dayjs().valueOf();
-            } else {
-              debounce(Facturier._applyInjectionOnPathNameMutation());
-            }
+            debounce(Facturier._applyInjectionOnPathNameMutation());
           }
+          const addCboxIfNeeded = function(oNode2) {
+            if (typeof oNode2 === "undefined")
+              return null;
+            if (oNode2.nodeName === "A" && oNode2.children[0].querySelector("p") !== null && oNode2.children[0].querySelector("p").innerText.toUpperCase().trim() == "SOUTENANCE") {
+              debounce(addOneCbox(oNode2));
+              Facturier._lastMutation = dayjs().valueOf();
+            }
+          };
+          addCboxIfNeeded(mutation.addedNodes[0]);
           if (mutation.target.nodeName === "BUTTON" && mutation.target.parentElement.parentElement.parentElement.firstElementChild.nodeName === "TABLE") {
             debounce(Facturier._applyInjectionOnPathNameMutation());
           }
@@ -9459,7 +9576,7 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
         const oPanelSelectorContainer2 = document.querySelector('[role="tablist"]');
         let oSpan_12 = document.createElement("span");
         oSpan_12.innerText = "Facturier v." + GM.info.script.version;
-        oSpan_12.classList.add(...oElem.children[0].classList);
+        oSpan_12.classList.add(...oElem.classList);
         oSpan_12.classList.add("Facturier__header");
         if (oElem.children.length > 1) {
           let oSpan_22 = document.createElement("span");

@@ -58,6 +58,7 @@ import {
 
 import{
 	addCbox,
+	addOneCbox,
 	about,
 	patchSessionHistoryLineUI,
 } from './do.js';
@@ -104,7 +105,13 @@ const Facturier = {
 	// menu
 	ID_MENU_FORCE_LOADING: null,
 	ID_MENU_FORCE_ADDTOLEFTMENU: null,
+	ID_MENU_FORCE_BAR_ON_TOP: null,
 
+    // visiblemenet l'element donc je me servait pour définir si l'application était chargée ou non est chargée deux fois
+    // je suis donc contraint de définir une variable pour supprimer le double chargement
+	//_isWarmingUp: false,
+	_isStarted: false,
+	
 	/*
 	 * 
 	 * name: inconnu
@@ -112,7 +119,10 @@ const Facturier = {
 	 * @return
 	 * 
 	 */
+	 
     start: async function () {
+		console.log(`%cIn start check Facturier._isStarted: ${Facturier._isStarted}`,APP_DEBUG_STYLE);
+		if(Facturier._isStarted === true){ return;}
 		await domReady();
 		const bSupport = Facturier.checkSupport(); //TODO better use it
 		console.log(`%cAre all functions supported ? : ${bSupport}`,APP_DEBUG_STYLE);
@@ -152,8 +162,15 @@ const Facturier = {
 	
 	_warmup : function(){
 		// 'this' refers to the newly created element
-		console.log("%c in _warmup",APP_DEBUG_STYLE);
+		//console.log("%c in _warmup chek if already started :%o",APP_DEBUG_STYLE, Facturier._isStarted);
 		document.unbindArrive(Facturier._warmup);
+		if(Facturier._isStarted === true){ 
+			// on ne devrait pas arriver là mais pourtant ça arrive merci oc de tout charger en double
+			return;
+			//throw Error('already started, something is wrong');
+		}		
+
+		Facturier._isStarted = true; // application have started
 		GM_unregisterMenuCommand(Facturier.ID_MENU_FORCE_LOADING);
 		// -- seem not to be used GM_disableMenuCommand('force - loading');
 		if(GM === undefined){
@@ -174,6 +191,11 @@ const Facturier = {
 		GM_config.init(appmenu);
 		GM_registerMenuCommand('collectauto', opencfg, "a");
 		GM_registerMenuCommand('configure', opencfg, "a");
+		/* mettre la barre en haut */
+			
+		Facturier.ID_MENU_FORCE_BAR_ON_TOP = 
+			GM_registerMenuCommand('Menu Bar on Top', 
+				function(){document.querySelector(".panel.draggable").scrollIntoView()});
 		//GM_registerMenuCommand('force - cbox', Facturier._forceCbox);
 		/* hacks */
 		if(GM_config.get('hackheaderzindex') === true){
@@ -324,8 +346,33 @@ const Facturier = {
 						console.log("%c target mutation nodeName.: %o", APP_DEBUG_STYLE, mutation.target.nodeName);
 						console.log("%c target mutation id.......: %o", APP_DEBUG_STYLE, mutation.target.id);
 						console.log("%c target mutation class....: %o", APP_DEBUG_STYLE, mutation.target.classList);
+						
+						// certaines insertion se faisant a posteriori il faut que je puisse detecter quand elles se font
+						
+						const getTypeOfElement = function(oNode){
+							if (typeof oNode === 'undefined') return null;
+							if (oNode.children[0]){
+								if (oNode.children[0].children[0]){
+									if (oNode.children[0].children[0].querySelector('p') !== null){
+										return oNode.children[0].children[0].querySelector('p').innerText;
+									} else { console.log('oNode.children[0].children[0] %o', oNode.children[0].children[0]); }
+								} else { console.log('oNode.children[0] :%o', oNode.children[0]); }
+							} else { console.log('oNode :%o', oNode); }
+							
+							if (oNode.children[0]){
+								if (oNode.children[0].querySelector('p')!== null){
+									console.log('je suis dans une insertion partielle :%o', oNode);
+									return oNode.children[0].querySelector('p').innerText;
+								}
+							}
+							
+
+						}
+						
+						console.log("%c target is ....: %o", APP_DEBUG_STYLE, getTypeOfElement(mutation.addedNodes[0]));
 						console.groupEnd();
 						*/
+	
 						// use classList.contains() or className ===
 						//if(mutation.target.classList.contains('dom-services-3-MuiTouchRipple-root')){ // click on next page wich target '<span class="dom-services-3-MuiTouchRipple-root"></span>'
 						if(mutation.target.classList.contains(`${Facturier._sOCMainSrvClassName}-MuiTouchRipple-root`)){ // click on next page wich target '<span class="dom-services-3-MuiTouchRipple-root"></span>'
@@ -341,23 +388,23 @@ const Facturier = {
 		
 
 						if(mutation.target.nodeName === 'OL'){// since 20211001
-							/*
-							console.log("%cTable data changed (OL)",APP_DEBUG_STYLE);
-							console.log("%c=============> Changed data : %o", APP_DEBUG_STYLE, mutation);
-							*/
-							if (mutation.addedNodes.length === 1 &&
-							    mutation.addedNodes[0].style.cssText === '' &&
-							    mutation.addedNodes[0].nodeName === 'LI'
-							) {
-								/*
-								console.log("%cJE VEUX AJOUTER  UNE LIGNE AU TABLEAU DES SESSIONS", APP_DEBUG_STYLE);
-								* */
-								debounce(patchSessionHistoryLineUI(mutation.addedNodes[0].firstChild)); // contient une balise A qui contient toutes les colonnes de la ligne
-								Facturier._lastMutation = dayjs().valueOf();
-							} else {		
-								debounce(Facturier._applyInjectionOnPathNameMutation());
+							debounce(Facturier._applyInjectionOnPathNameMutation());
+						}
+						const addCboxIfNeeded = function(oNode){
+							if (typeof oNode === 'undefined') return null;
+							// si je suis dans une insertion partielle je dois ajouter une cbox
+							if (
+								oNode.nodeName === 'A' &&
+								oNode.children[0].querySelector('p')!== null &&
+								oNode.children[0].querySelector('p').innerText.toUpperCase().trim() == 'SOUTENANCE'
+								)
+								{	
+									//console.log("%c When found a SOUTENANCE, mannually have to add a cbox to node : %o", APP_DEBUG_STYLE, oNode);
+									debounce(addOneCbox(oNode));
+									Facturier._lastMutation = dayjs().valueOf();
 							}
 						}
+						addCboxIfNeeded(mutation.addedNodes[0]);
 						/* Since 20210623 
 						 * if button < is mutated 
 						 * parent is a li contained in an ul himself second child of a div with first child is the table
@@ -584,7 +631,11 @@ const Facturier = {
 			let oSpan_1 = document.createElement('span');
 			oSpan_1.innerText = "Facturier v."+GM.info.script.version;
 			//oSpan_1.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTab-wrapper`);
-			oSpan_1.classList.add(...oElem.children[0].classList);
+			
+			// dans la version avant celle du 20220314 on passait par des sous elements
+			//oSpan_1.classList.add(...oElem.children[0].classList);
+			// depuis la version 20220314 prendre 
+			oSpan_1.classList.add(...oElem.classList);	
 			oSpan_1.classList.add('Facturier__header');
 			if(oElem.children.length>1){ // since 20220130 - semble ne plus etre tout le temps présent
 				let oSpan_2 = document.createElement('span');
@@ -784,7 +835,6 @@ if(STT_VERSION) {
 		console.log(`%cWait for side menu to add element to it`, APP_DEBUG_STYLE);
 		sCSSObserved = 'nav:not([role])'
 		document.arrive(sCSSObserved, Facturier._addLinkToMenu);
-		
 		
 		//// Patch to add new tbl
 		/*

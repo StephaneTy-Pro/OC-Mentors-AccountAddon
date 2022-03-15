@@ -143,7 +143,10 @@ var addCboxOld = function(){
 var _checkOrAddCbox = function(oEl){
     if(oEl.querySelector(".Facturier__cbox input[type=checkbox]") === null){
         //console.log('have to build');
-        oEl.appendChild(_buildCbox(oEl));
+        var _oElt = _buildCbox(oEl);
+        if (typeof _oElt !== 'undefined'){
+			oEl.appendChild(_oElt);
+		}
     }else{
         //console.log('have to check');
         _checkCbox(oEl);}
@@ -154,25 +157,54 @@ var patchSessionHistoryLineUI = function(oEl) {_checkOrAddCbox(oEl);}
 
 /*
  * @param object html element
+ * bUsePathToFilrer filter on location path (note STT 20220313 à améliorer pas tres propre)
  */
- 
-
-var _buildCbox=function(oEl){
+var _buildCbox=function(oEl, bUsePathToFilrer = true){
 	//console.log("nom de l'étudiant : %o",el.children[2].innerText)
 	// 0 - annulé|réalisé|absent & type mentorat|soutenance
 	// 1 - date
 	// 2 - zone nom étudiant + avatar
 	// 3 - niveau d'expertise
 	
-	// colonne 0
+	// si pas d'enfant c'est une ligne de libellé
+	if (oEl.childElementCount===1){return};
+	if (bUsePathToFilrer === true ){
+			// regexp \/(\w|-)*$
+			const sPath = window.location.pathname.split('/');
+			if (sPath[sPath.length-1] !== 'mentorship-sessions-history'){ return; }
+		}
+	
+	// colonne 0 composée
+	// -- d'une icone
+	// -- d'un texte
+	// -- si soutenance d'un symbole enregistrement
+	var sSessionSaved = null;
 	var sState = oEl.children[0].querySelector('svg').getAttribute('aria-label'); // Annulée...
 	var sSessionType =  oEl.children[0].querySelector('p').innerText; // Mentorat
+	if (oEl.children[0].childElementCount === 2 ){ // pour infor le nodeName est svg
+		// svg enregistré
+		sSessionSaved = oEl.children[2].getAttribute('aria-label');
+	}
 	// colonne 1
 	var sDateTime = oEl.children[1].querySelector('time').getAttribute('datetime').trim(); //  "2021-10-08T07:45:00+0000"
-	// colonne 2
+	// colonne 2 composée
+	// -- d'ue photo
+	// -- d'un nom
 	var sStudentName =  oEl.children[2].querySelector('a').innerText;
 	//var sWho_id = getKey(_oEl.children[2],-2); // get the before last '/' element
 	var sWho_id = getKey(oEl.children[2],-2); // get the before last '/' element
+	// colonne 3 le niveau d'experstise uniquement en mode historique
+	var sLvl = null;
+	if(oEl.childElementCount > 3 && oEl.children[3].childElementCount !== 0){ // si annulé pas de level
+	// mot expertise : oEl.children[3].querySelector('p').innerText
+	// niv 
+		// en fait ce level n'est pas mis à jour tout de suite visiblement
+		// ça se voit en mode debuggage on a pas cette zone de remplie les deux div sont là (la colonne existe)
+		// mais on a pas de span à l'intérieur
+		if (oEl.children[3].querySelector('span') !== null){
+			sLvl = oEl.children[3].querySelector('span').innerText;
+		}
+	}
 	var inputElem = document.createElement('input');
 	inputElem.type = "checkbox";
 	inputElem.name = "name";
@@ -321,7 +353,11 @@ var addCbox = function(){
             timer: 1500
         });
     } */ 
- 
+
+// called when element dynamically added 
+var addOneCbox = function(oEl){
+	return _checkOrAddCbox(oEl);
+} 
 /**
  * 
  */
@@ -2882,6 +2918,7 @@ var showBillPhase2 = function (dtFrom, dtTo, data){
 export {
 	about,
 	addCbox,
+	addOneCbox,
 	billInDetails,
 	collectAuto,
 	collectChecked,
