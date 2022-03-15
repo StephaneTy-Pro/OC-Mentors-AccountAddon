@@ -32,10 +32,14 @@ Cette barre de menu peut être déplacée en positionnant votre curseur sur le r
 
 #### Première utilisation
 
-Dans l'interface de votre navigateur vous avez l'icône correpondant a Tapermonkey (ou violentmonkey...), un clic droit dessus permet d'ouvrir un menu. Dans ce menu vous trouverez le menu de paramétrage du Facturier.
+Avant toute chose il faut savoir que ans l'interface de votre navigateur vous avez un icône correpondant a Tapermonkey (ou violentmonkey...), un clic droit sur cet icône permet d'ouvrir un menu. Dans ce menu vous trouverez le menu de paramétrage de l'extension tampermonkey.Par convention j'appellerais ce menu le menu de l'extension
+
+**Menu de l'extension**
+- configure: permet de jouer sur les options de configuration
+- menu bar on the top: permet de réafficher la barre de menu en haut de l'écran (compte tenu de la manière avec laquelle OC a codé l'application il est difficile de maintenir la barre en haut de la fenêtre)
 
 
-**Boutons**
+**Boutons de la barre d'actions**
 - COLLECTCHECKED :Permet d'ajouter les élements cochés à la bdd
 - COLLECTAUTO : Permet de spécifier une période et de collecter automatiquement les sessions pour les ajouter en base
 - SHOWBILL : Afficher la facture
