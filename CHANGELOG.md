@@ -2,6 +2,10 @@
 
 LEGENDE: C: Corrections(Fixes) / B: Corrections de Bug (BugFixes) / F: Ajout de fonctionnalité (Features) / D: Divers (Misc)
 
+## 1.10.0013 (01/04/2023)
+	- C: Prise en compte des évolutions d'interface utilisateur openclassrooms
+	- B: Correction sur l'apparition d'étudiants en création alors qu'ils venaient d'être crées
+
 ## 1.10.0012 (15/03/2022)
    - F: Ajout d'un élément du menu (tampermonkey) pour déplacer la barre de menu de l'application en haut de l'écran
    - C: Prise en compte des évolutions d'interface utilisateur openclassrooms

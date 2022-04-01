@@ -152,12 +152,14 @@ class Session {
 	 */
 	static add = async function(oSession){
 		const iRefreshStudentDataBaseTreshold = 30 // limite pour un nouveau refresh de la base étudiante 30 minutes
-		let bDebug = true;
+		let bCheckExistsBeforAdd = false;
+		let bDebug = false;
+		if(bDebug===true)console.log("%c[Session.add()].................................. Start", APP_DEBUG_STYLE);
 		if(bDebug===true)console.log("%cSession.add() so you wanna add a session %o to database", APP_DEBUG_STYLE, oSession);
 		let db=App.Cfg.dbase;
 		if(GM_config.get("checksessionalreadyexists") === true) {
 			//console.info(`%cRemark: i NEED to check existence before adding it to db`, APP_DEBUG_STYLE);
-			var bCheckExistsBeforAdd = true;
+			bCheckExistsBeforAdd = true;
 		}
 		if(bDebug===true)console.log("%cSession.add() will search if session %o is already in database", APP_DEBUG_STYLE, oSession);
 		if (oSession.id.length > 0){ 
@@ -170,8 +172,9 @@ class Session {
 				if(bDebug===true)console.info(`%cSession.add() session cid:${oSession.cid} already present in database table sessions, skip it!`, APP_DEBUG_STYLE);
 				return;
 		}}
-		
-		
+		if(bCheckExistsBeforAdd === false){
+			if(bDebug===true)console.info(`%cSession.add() you have choose not to verify if session exist in database before adding it so !`, APP_DEBUG_STYLE);
+		}
 		//console.log('%c[Session.add] have check id: %s', APP_DEBUG_STYLE, oSession.id);
 		//console.log('%c[Session.add] have check cid: %d', APP_DEBUG_STYLE, oSession.cid)
 		
@@ -210,48 +213,81 @@ class Session {
 		} else {
 			//console.log(`%cWhich type is the session ${oSession.type.toLowerCase()}`, APP_DEBUG_STYLE)
 			if (oSession.type.toLowerCase() === 'soutenance'){// type defense = nothing to do, they always be funding
-				//console.log("%cThis is a defense nothing to do specially for now", APP_DEBUG_STYLE);
+				if(bDebug===true)console.log("%c[Session.add()]This is a defense nothing to do specially for now", APP_DEBUG_STYLE);
 				oSession.funding = OC_FUNDED;
 				oSession.path = "n/a (defense)";
 			} else {// this is not a defense
 				//console.log(`%cThis is NOT a defense we have to check if students with id:${oSession.who_id}  is in database and eventually add it`, APP_DEBUG_STYLE)
 				//var bOldStudent = Student.exists(oSession.who_id);
 				if (Student.exists(oSession.who_id) === false){// have to update database
-					//if(bDebug === true)console.warn('%cStudent %s not in Db, will updating student db by fetching students list from dashboard', APP_WARN_STYLE, oSession.who_id);
-					console.warn('%cStudent %s not in Db, will updating student db by fetching students list from dashboard', APP_WARN_STYLE, oSession.who_id);
-					// prevent multiple request at same time wait 30 minutes between to update of student database
-					if(bDebug === true)console.log('%cLast Update of Student BDD was %i min ago', APP_DEBUG_STYLE, dayjs(Meta.getStudentListUpd()).diff(dayjs(),'m'));
+				
+					console.warn('%c[Session.add()]Student %s[%s] not in Db, will updating student db by fetching students list from dashboard',
+						 APP_WARN_STYLE,
+						 oSession.who_name,
+						 oSession.who_id);
 					
+					// prevent multiple request at same time wait 30 minutes between to update of student database
+					/*
+					if(bDebug === true)console.log('%c[Session.add()]Last Update of Student BDD was at %s so %i min ago',
+						APP_DEBUG_STYLE, 
+						Meta.getStudentListUpd(),
+						dayjs(Meta.getStudentListUpd()).diff(dayjs(),'m'));
+					*/
+					// verifer la date de la derniere mise à jour
 					if(dayjs(Meta.getStudentListUpd()).diff(dayjs(),'m') < -iRefreshStudentDataBaseTreshold){
-						// https://gist.github.com/selfish/fef2c0ba6cdfe07af76e64cecd74888b
-						//const _uuid = (()=>([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,a=>(a^Math.random()*16>>a/4).toString(16)))()
+						//const _uuid = (()=>([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,a=>(a^Math.random()*16>>a/4).toString(16)))()// https://gist.github.com/selfish/fef2c0ba6cdfe07af76e64cecd74888b
 						//console.log('%cASYNC FUNCTION Student.getAll()%s START', APP_ERROR_STYLE, _uuid);
+						if(bDebug === true)console.log('%c[Session.add()]Last Update of Student BDD was %i min ago which was more than treshold for update:%i, so will start to do a full update of student base', 
+							APP_DEBUG_STYLE, 
+							dayjs(Meta.getStudentListUpd()).diff(dayjs(),'m'),
+							iRefreshStudentDataBaseTreshold,
+							);
 						await Student.getAll();
 						//console.log('%cASYNC FUNCTION Student.getAll():%s END', APP_ERROR_STYLE, _uuid);
+						if(bDebug === true)console.log('%c[Session.add()]Student database updated set lastupdate value to:%s', APP_DEBUG_STYLE, dayjs().toISOString());
+						// puisque j'ai fait une maj je dois forcément reconstituer le cache qui a pu changer (étudiants, modificiation sur les financement...)
+						
+
+						
+						
+						if(bDebug === true)console.log('%c[Session.add()]Delete cache of student', APP_DEBUG_STYLE);
 						Meta.setStudentListUpd(dayjs().toISOString()); 
 					}else{
-						console.log('%c[Session.add()]last Update of database DB was less than %i min ago', APP_DEBUG_STYLE, iRefreshStudentDataBaseTreshold);
+						console.log('%c[Session.add()]last Update of database DB was less than %i min ago so will not update it', APP_DEBUG_STYLE, iRefreshStudentDataBaseTreshold);
 						// NOTE STT je pourrais ne pas lancer la fonction et attendre le prochain if mais dans ce cas là je vais me prendre un warn
+						if(bDebug === true)console.log('%c[Session.add()]student %s[%s] not exists, bd was updated less than %i, i have to manually create student',
+							APP_DEBUG_STYLE, oSession.who_name, oSession.who_id, iRefreshStudentDataBaseTreshold);
+						/*if (oSession.who_id !== '10335525'){
+							var dummy = Student; // to play with var
+							var o = Student.exists(oSession.who_id);
+							 debugger;
+						}*/
 						await Student.createManually(oSession.who_id, oSession.who_name, oSession.when);
 						// NOTE STT experimental : remove it from the cache else we re ask for create student next time
+						
+						// Attention cf la document Student.m_findById fait reference à la fonction mémorisée 
+						// https://planttheidea.github.io/moize/#haskey
+						
 						if(
 							moize.default.isMoized(Student.m_findById) &&
 							Student.m_findById.has([oSession.who_id, null])
 						){
 							//console.log('avant est ce que la clé est enregistrée %o ', Student.m_findById.has([oSession.who_id, null]));
 							//console.log('	liste des clés %o ', Student.m_findById.keys());
+							if(bDebug === true)console.log('%c[Session.add()]student %s[%s] is in cache have to delete it', APP_DEBUG_STYLE, oSession.who_name, oSession.who_id);
 							Student.m_findById.remove([oSession.who_id, null]); 
-							if(bDebug === true)console.log('%c[Session.add()]student %s removed from the m_findById function cache', APP_DEBUG_STYLE, oSession.who_id);
+							if(bDebug === true)console.log('%c[Session.add()]student %s[%s] removed from the m_findById function cache', APP_DEBUG_STYLE, oSession.who_name, oSession.who_id);
 							//console.log('apres est ce que la clé est enregistrée %o ', Student.m_findById.has([oSession.who_id, null]));
 							//console.log('	 liste des clés %o ', Student.m_findById.keys());
 						}
 					}
 					//var bPass2 = Student.exists(oSession.who_id, oSession.when);
-					console.log("%c[Student.add()] précédemment notre étudiant %o  n'existait pas existe t'il maintenant ?", APP_DEBUG_STYLE, oSession.who_id);
+					console.log("%c[Student.add()] précédemment notre étudiant %s[%s]  n'existait pas existe t'il maintenant ?", APP_DEBUG_STYLE, oSession.who_name, oSession.who_id);
 					console.log("%c[Student.add()] la réponse est :%o", APP_DEBUG_STYLE, Student.exists(oSession.who_id, oSession.when));
 					
 					if(Student.exists(oSession.who_id, oSession.when) == false){// still not exists, have to add student manually
-						console.warn(`%c[Session.add()] Student ${oSession.who_id} which exists at ${oSession.when} still not exit in Db, have to manually create him/her`, APP_WARN_STYLE);
+						console.warn(`%c[Session.add()] Student ${oSession.who_name}[${oSession.who_id}] which exists at ${oSession.when} still not exit in Db, have to manually create him/her`, APP_WARN_STYLE);
+						
 						await Student.createManually(oSession.who_id, oSession.who_name, oSession.when);
 						// remove it from the cache else we re ask for create student next time
 						if(
@@ -290,6 +326,7 @@ class Session {
 		//console.log("%cSession.add() final object is %o", APP_DEBUG_STYLE, oSession);
 		
 		Session._save(oSession);
+		if(bDebug===true)console.log("%c[Session.add()].................................. End", APP_DEBUG_STYLE);
 	};
 	// save session in db
 	static _save = function(oSession){

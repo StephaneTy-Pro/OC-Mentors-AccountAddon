@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Facturier
-// @namespace    http://tampermonkey.net/
-// @version      1.10.0012
+// @namespace    https://stephanety-pro.github.io/OC-Mentors-AccountAddon/
+// @version      1.10.0013
 // @description  Un addon pour vous aider dans votre facturation
 // @author       Stéphane TORCHY
 // @updateURL    https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/dist/app.min.js
@@ -823,6 +823,103 @@
       }
     });
   };
+  var toString = Object.prototype.toString;
+  function getTag(value) {
+    if (value == null) {
+      return value === void 0 ? "[object Undefined]" : "[object Null]";
+    }
+    return toString.call(value);
+  }
+  function isSymbol(value) {
+    const type = typeof value;
+    return type == "symbol" || type === "object" && value != null && getTag(value) == "[object Symbol]";
+  }
+  function toKey(value) {
+    if (typeof value === "string" || isSymbol(value)) {
+      return value;
+    }
+    const result = `${value}`;
+    return result == "0" && 1 / value == -INFINITY ? "-0" : result;
+  }
+  function memoize(func, resolver) {
+    if (typeof func !== "function" || resolver != null && typeof resolver !== "function") {
+      throw new TypeError("Expected a function");
+    }
+    const memoized = function(...args) {
+      const key = resolver ? resolver.apply(this, args) : args[0];
+      const cache = memoized.cache;
+      if (cache.has(key)) {
+        return cache.get(key);
+      }
+      const result = func.apply(this, args);
+      memoized.cache = cache.set(key, result) || cache;
+      return result;
+    };
+    memoized.cache = new (memoize.Cache || Map)();
+    return memoized;
+  }
+  memoize.Cache = Map;
+  var MAX_MEMOIZE_SIZE = 500;
+  function memoizeCapped(func) {
+    const result = memoize(func, (key) => {
+      const { cache } = result;
+      if (cache.size === MAX_MEMOIZE_SIZE) {
+        cache.clear();
+      }
+      return key;
+    });
+    return result;
+  }
+  var charCodeOfDot = ".".charCodeAt(0);
+  var reEscapeChar = /\\(\\)?/g;
+  var rePropName = RegExp(`[^.[\\]]+|\\[(?:([^"'][^[]*)|(["'])((?:(?!\\2)[^\\\\]|\\\\.)*?)\\2)\\]|(?=(?:\\.|\\[\\])(?:\\.|\\[\\]|$))`, "g");
+  var stringToPath = memoizeCapped((string) => {
+    const result = [];
+    if (string.charCodeAt(0) === charCodeOfDot) {
+      result.push("");
+    }
+    string.replace(rePropName, (match, expression, quote, subString) => {
+      let key = match;
+      if (quote) {
+        key = subString.replace(reEscapeChar, "$1");
+      } else if (expression) {
+        key = expression.trim();
+      }
+      result.push(key);
+    });
+    return result;
+  });
+  var reIsDeepProp = /\.|\[(?:[^[\]]*|(["'])(?:(?!\1)[^\\]|\\.)*?\1)\]/;
+  var reIsPlainProp = /^\w*$/;
+  function isKey(value, object) {
+    if (Array.isArray(value)) {
+      return false;
+    }
+    const type = typeof value;
+    if (type === "number" || type === "boolean" || value == null || isSymbol(value)) {
+      return true;
+    }
+    return reIsPlainProp.test(value) || !reIsDeepProp.test(value) || object != null && value in Object(object);
+  }
+  function castPath(value, object) {
+    if (Array.isArray(value)) {
+      return value;
+    }
+    return isKey(value, object) ? [value] : stringToPath(value);
+  }
+  function baseGet(object, path) {
+    path = castPath(path, object);
+    let index = 0;
+    const length = path.length;
+    while (object != null && index < length) {
+      object = object[toKey(path[index++])];
+    }
+    return index && index == length ? object : void 0;
+  }
+  function get(object, path, defaultValue) {
+    const result = object == null ? void 0 : baseGet(object, path);
+    return result === void 0 ? defaultValue : result;
+  }
   var _fetch = async function(sUrl = "", sPath = "", bAll = false) {
     console.info(`%cfetch() waiting return from : ${sUrl}`, APP_DEBUG_STYLE);
     const response = await GMC.XHR({
@@ -843,6 +940,17 @@
     if (sCaptcha !== null) {
       console.error(`%cError CloudFlare CAPTCHA : ${doc.querySelector("title").innerText}`, APP_DEBUG_STYLE);
       throw new Error("Must Respond to Cloudflare Captcha or waiting....");
+    }
+    if (sPath.length > 0 && sPath.toUpperCase().startsWith("JSON:")) {
+      var _args = sPath.split(":");
+      var sId = _args[1];
+      var sJsonPath = _args[2] || "";
+      var sDefault = _args[3] || "";
+      if (sId.length > 0) {
+        var jsonData = JSON.parse(doc.getElementById(sId).textContent);
+        var _r2 = get(jsonData, sJsonPath, sDefault);
+        return _r2;
+      }
     }
     var oDom = {};
     if (bAll === true) {
@@ -3524,10 +3632,17 @@
       }
       return _Student.m_findById(sNeedle, "null");
     }
+    let _r2;
     if (bUseCache === false) {
-      return _Student._findById(sNeedle, dtFrom2.toISOString());
+      console.log("%cfindById() (without cache) searching student %s at date %s", APP_DEBUG_STYLE, sNeedle, dtFrom2.toISOString());
+      _r2 = _Student._findById(sNeedle, dtFrom2.toISOString());
+      console.log("%cfindById() (without cache) found student %o", APP_DEBUG_STYLE, _r2);
+    } else {
+      console.log("%cfindById() (with cache) searching student %s at date %s", APP_DEBUG_STYLE, sNeedle, dtFrom2.toISOString());
+      _r2 = _Student.m_findById(sNeedle, dtFrom2.toISOString());
+      console.log("%cfindById() (with cache) found student %o", APP_DEBUG_STYLE, _r2);
     }
-    return _Student.m_findById(sNeedle, dtFrom2.toISOString());
+    return _r2;
   });
   __publicField(Student, "_findById", function(sNeedle, dtFrom2 = null) {
     let bDebug2 = false;
@@ -3539,7 +3654,7 @@
       console.log(`%c_findById() searching student with id:(${typeof sNeedle})${sNeedle} in db`, APP_DEBUG_STYLE);
     var _r2 = db.get(_Student.tbl_name).find({ id: sNeedle }).value();
     if (bDebug2 === true)
-      console.log("%c_findById() student %o is found", APP_DEBUG_STYLE, _r2);
+      console.log("%c_findById() searching student:%s (date not used at this stade of process) in db result in :%o", APP_DEBUG_STYLE, sNeedle, _r2);
     if (_r2 === void 0) {
       return void 0;
     } else {
@@ -3620,8 +3735,12 @@
     return _Student.getFunded(iStudentId).toLowerCase() === OC_AUTOFUNDED;
   });
   __publicField(Student, "getFundingFomDashboard", async function(id) {
-    const oDom = await _fetch(`https://openclassrooms.com/fr/mentorship/students/${id}/dashboard`, ".mentorshipStudent__details > p");
-    return oDom.innerText.trim();
+    const sData = await _fetch(`https://openclassrooms.com/fr/mentorship/students/${id}/dashboard`, "JSON:studentDetailsConfiguration:configStudent.isFinancialAidStudent:PAS DE MODE DE FINANCEMENT");
+    if (sData === null) {
+      console.error("%c[Student.getFundingFomDashboard()]Student probleme with css path ui have changed since last version", APP_ERROR_STYLE);
+      throw new Error("Application need an update, UI Change please post a ticket on github");
+    }
+    return sData === true ? OC_FUNDED : OC_AUTOFUNDED;
   });
   __publicField(Student, "getPath", async function(sId, dtFrom2 = null) {
     let _r2 = _Student.findById(sId, dtFrom2);
@@ -3671,7 +3790,7 @@
     console.log(`%cAll students with id:${sId} are removed from DataBase`, APP_DEBUG_STYLE);
   });
   __publicField(Student, "getAll", async (e, ctx) => {
-    let bDebug2 = true;
+    let bDebug2 = false;
     var bForceUpdate = false;
     let db = src_default.Cfg.dbase;
     var sPath = "table.crud-list tbody";
@@ -3721,6 +3840,19 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
         console.log(`%c[Student.getAll]Student ${theStudent.fullname}(id:${theStudent.id}) was already present in database but change of path was detected (from ${_r2.path} to ${theStudent.path})`, APP_DEBUG_STYLE);
       }
     }
+    if (moize.default.isMoized(_Student.m_findById)) {
+      _Student.m_findById.clear();
+    }
+    ;
+    if (moize.default.isMoized(_Student.m_findByFullName)) {
+      _Student.m_findByFullName.clear();
+    }
+    ;
+    if (moize.default.isMoized(_Student.m_getFunding)) {
+      _Student.m_getFunding.clear();
+    }
+    ;
+    console.log("%c[Student.getAll]Student cache cleared", APP_DEBUG_STYLE);
   });
   __publicField(Student, "showList", function() {
     let db = src_default.Cfg.dbase;
@@ -4213,12 +4345,15 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
   });
   __publicField(Session, "add", async function(oSession2) {
     const iRefreshStudentDataBaseTreshold = 30;
-    let bDebug2 = true;
+    let bCheckExistsBeforAdd = false;
+    let bDebug2 = false;
+    if (bDebug2 === true)
+      console.log("%c[Session.add()].................................. Start", APP_DEBUG_STYLE);
     if (bDebug2 === true)
       console.log("%cSession.add() so you wanna add a session %o to database", APP_DEBUG_STYLE, oSession2);
     let db = src_default.Cfg.dbase;
     if (GM_config.get("checksessionalreadyexists") === true) {
-      var bCheckExistsBeforAdd = true;
+      bCheckExistsBeforAdd = true;
     }
     if (bDebug2 === true)
       console.log("%cSession.add() will search if session %o is already in database", APP_DEBUG_STYLE, oSession2);
@@ -4235,6 +4370,10 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
         return;
       }
     }
+    if (bCheckExistsBeforAdd === false) {
+      if (bDebug2 === true)
+        console.info(`%cSession.add() you have choose not to verify if session exist in database before adding it so !`, APP_DEBUG_STYLE);
+    }
     if (oSession2.type.toLowerCase() === "presentation") {
       oSession2.type = "soutenance";
     }
@@ -4247,29 +4386,39 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       }
     } else {
       if (oSession2.type.toLowerCase() === "soutenance") {
+        if (bDebug2 === true)
+          console.log("%c[Session.add()]This is a defense nothing to do specially for now", APP_DEBUG_STYLE);
         oSession2.funding = OC_FUNDED;
         oSession2.path = "n/a (defense)";
       } else {
         if (students_default.exists(oSession2.who_id) === false) {
-          console.warn("%cStudent %s not in Db, will updating student db by fetching students list from dashboard", APP_WARN_STYLE, oSession2.who_id);
-          if (bDebug2 === true)
-            console.log("%cLast Update of Student BDD was %i min ago", APP_DEBUG_STYLE, dayjs(meta_default.getStudentListUpd()).diff(dayjs(), "m"));
+          console.warn("%c[Session.add()]Student %s[%s] not in Db, will updating student db by fetching students list from dashboard", APP_WARN_STYLE, oSession2.who_name, oSession2.who_id);
           if (dayjs(meta_default.getStudentListUpd()).diff(dayjs(), "m") < -iRefreshStudentDataBaseTreshold) {
+            if (bDebug2 === true)
+              console.log("%c[Session.add()]Last Update of Student BDD was %i min ago which was more than treshold for update:%i, so will start to do a full update of student base", APP_DEBUG_STYLE, dayjs(meta_default.getStudentListUpd()).diff(dayjs(), "m"), iRefreshStudentDataBaseTreshold);
             await students_default.getAll();
+            if (bDebug2 === true)
+              console.log("%c[Session.add()]Student database updated set lastupdate value to:%s", APP_DEBUG_STYLE, dayjs().toISOString());
+            if (bDebug2 === true)
+              console.log("%c[Session.add()]Delete cache of student", APP_DEBUG_STYLE);
             meta_default.setStudentListUpd(dayjs().toISOString());
           } else {
-            console.log("%c[Session.add()]last Update of database DB was less than %i min ago", APP_DEBUG_STYLE, iRefreshStudentDataBaseTreshold);
+            console.log("%c[Session.add()]last Update of database DB was less than %i min ago so will not update it", APP_DEBUG_STYLE, iRefreshStudentDataBaseTreshold);
+            if (bDebug2 === true)
+              console.log("%c[Session.add()]student %s[%s] not exists, bd was updated less than %i, i have to manually create student", APP_DEBUG_STYLE, oSession2.who_name, oSession2.who_id, iRefreshStudentDataBaseTreshold);
             await students_default.createManually(oSession2.who_id, oSession2.who_name, oSession2.when);
             if (moize.default.isMoized(students_default.m_findById) && students_default.m_findById.has([oSession2.who_id, null])) {
+              if (bDebug2 === true)
+                console.log("%c[Session.add()]student %s[%s] is in cache have to delete it", APP_DEBUG_STYLE, oSession2.who_name, oSession2.who_id);
               students_default.m_findById.remove([oSession2.who_id, null]);
               if (bDebug2 === true)
-                console.log("%c[Session.add()]student %s removed from the m_findById function cache", APP_DEBUG_STYLE, oSession2.who_id);
+                console.log("%c[Session.add()]student %s[%s] removed from the m_findById function cache", APP_DEBUG_STYLE, oSession2.who_name, oSession2.who_id);
             }
           }
-          console.log("%c[Student.add()] pr\xE9c\xE9demment notre \xE9tudiant %o  n'existait pas existe t'il maintenant ?", APP_DEBUG_STYLE, oSession2.who_id);
+          console.log("%c[Student.add()] pr\xE9c\xE9demment notre \xE9tudiant %s[%s]  n'existait pas existe t'il maintenant ?", APP_DEBUG_STYLE, oSession2.who_name, oSession2.who_id);
           console.log("%c[Student.add()] la r\xE9ponse est :%o", APP_DEBUG_STYLE, students_default.exists(oSession2.who_id, oSession2.when));
           if (students_default.exists(oSession2.who_id, oSession2.when) == false) {
-            console.warn(`%c[Session.add()] Student ${oSession2.who_id} which exists at ${oSession2.when} still not exit in Db, have to manually create him/her`, APP_WARN_STYLE);
+            console.warn(`%c[Session.add()] Student ${oSession2.who_name}[${oSession2.who_id}] which exists at ${oSession2.when} still not exit in Db, have to manually create him/her`, APP_WARN_STYLE);
             await students_default.createManually(oSession2.who_id, oSession2.who_name, oSession2.when);
             if (moize.default.isMoized(students_default.m_findById) && students_default.m_findById.has([oSession2.who_id, oSession2.when])) {
               students_default.m_findById.remove([oSession2.who_id, oSession2.when]);
@@ -4296,6 +4445,8 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       oSession2.id = _r.key1.toString();
     }
     _Session._save(oSession2);
+    if (bDebug2 === true)
+      console.log("%c[Session.add()].................................. End", APP_DEBUG_STYLE);
   });
   __publicField(Session, "_save", function(oSession2) {
     var dDebug = false;
@@ -9138,7 +9289,7 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
     }
   };
   var import_cross_fetch = __toModule2(require_cross_fetch());
-  function get(response, callback) {
+  function get2(response, callback) {
     const transportOptions = {
       headers: {
         "X-DataSource-Auth": "true"
@@ -9161,7 +9312,7 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
     });
   }
   var callbackIndex = 0;
-  function get2(response, callback) {
+  function get22(response, callback) {
     const headElement = window.document.getElementsByTagName("head")[0];
     const scriptElement = window.document.createElement("script");
     const callbackName = `_sheetrock_callback_${callbackIndex}`;
@@ -9217,9 +9368,9 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
       response.loadData(data, handleError);
     } else if (options && request && response) {
       if (typeof window === "object" && "document" in window) {
-        get2(response, handleError);
+        get22(response, handleError);
       } else {
-        get(response, handleError);
+        get2(response, handleError);
       }
     }
     return this;

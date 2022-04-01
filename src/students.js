@@ -218,8 +218,19 @@ path: "81-expert-en-strategie-marketing-et-communication"
 			return Student.m_findById(sNeedle, "null"); // stringify for safety 
 			}
 		//return Student.m_findById(sNeedle, dtFrom.format('YYYY-MM-DDTHH:mm:ssZZ')); // use cached version of function
-		if (bUseCache === false){return Student._findById(sNeedle, dtFrom.toISOString());}
-		return Student.m_findById(sNeedle, dtFrom.toISOString()); // use cached version of function prefered string method
+		let _r;
+		if (bUseCache === false){
+			console.log("%cfindById() (without cache) searching student %s at date %s", APP_DEBUG_STYLE, sNeedle, dtFrom.toISOString());
+			_r = Student._findById(sNeedle, dtFrom.toISOString());
+			console.log("%cfindById() (without cache) found student %o", APP_DEBUG_STYLE, _r);
+		} else {
+			console.log("%cfindById() (with cache) searching student %s at date %s", APP_DEBUG_STYLE, sNeedle, dtFrom.toISOString());
+			_r =  Student.m_findById(sNeedle, dtFrom.toISOString()); // use cached version of function prefered string method
+			console.log("%cfindById() (with cache) found student %o", APP_DEBUG_STYLE, _r);
+		
+		}
+		return _r;
+		
 	} 
 	/*
 	 * 
@@ -233,7 +244,10 @@ path: "81-expert-en-strategie-marketing-et-communication"
 		if (typeof dtFrom === 'string'){dtFrom = dayjs(dtFrom);}
 		if(bDebug===true)console.log(`%c_findById() searching student with id:(${typeof sNeedle})${sNeedle} in db`,APP_DEBUG_STYLE);
 		var _r = db.get(Student.tbl_name).find({id: sNeedle}).value();
-		if(bDebug===true)console.log("%c_findById() student %o is found", APP_DEBUG_STYLE, _r);
+		if(bDebug===true)console.log("%c_findById() searching student:%s (date not used at this stade of process) in db result in :%o",
+			APP_DEBUG_STYLE,
+			sNeedle,
+			 _r);
 		 if (_r === undefined){
 			 return undefined;
 		 } else {
@@ -262,9 +276,9 @@ path: "81-expert-en-strategie-marketing-et-communication"
 		Student._findById,
 		{ 	maxAge: 600000,
 			isSerialized: true,
-			//onCacheAdd: function(c,o,m){console.log("%c[m_findById]Add data to cache",APP_DEBUG_STYLE);/*console.dir(c.keys);console.dir(o);console.dir(m)*/;},
-			//onCacheHit: function(){console.log("%c[m_findById]Get data from cache", APP_DEBUG_STYLE);},
-			//onCacheChange: function(c,o,m){console.log("%c[m_findById]Change data from cache", APP_DEBUG_STYLE);/**/console.dir(c.keys);console.dir(o);console.dir(m);}
+			//onCacheAdd: function(c,o,m){console.log("%c[m_findById]Add data to cache",APP_DEBUG_STYLE); /*console.log("c.keys: %o, o:%o, m:%o", c.keys,o,m);*/},
+			//onCacheHit: function(...args){console.log("%c[m_findById]Get data from cache", APP_DEBUG_STYLE);/*console.log("arguments: %o", args)*/},
+			//onCacheChange: function(c,o,m){console.log("%c[m_findById]Change data from cache", APP_DEBUG_STYLE);/*console.log("c.keys: %o, o:%o, m:%o", c.keys,o,m);*/}
 		});
 	/*
 	 * 
@@ -378,11 +392,17 @@ path: "81-expert-en-strategie-marketing-et-communication"
 	
     /*
      * browse dashboard of students to get financial mode
+     * depuis la derniere version switch sur les données en json
      * */
     static getFundingFomDashboard = async function(id){
-        const oDom = await _fetch(`https://openclassrooms.com/fr/mentorship/students/${id}/dashboard`, ".mentorshipStudent__details > p");
-        //console.log("oDom",oDom.innerText);
-        return oDom.innerText.trim();
+        // before 1.10.00013 const oDom = await _fetch(`https://openclassrooms.com/fr/mentorship/students/${id}/dashboard`, ".mentorshipStudent__details > p");
+        //const oDom = await _fetch(`https://openclassrooms.com/fr/mentorship/students/${id}/dashboard`, "h3 + div + div > p");
+        const sData = await _fetch(`https://openclassrooms.com/fr/mentorship/students/${id}/dashboard`, "JSON:studentDetailsConfiguration:configStudent.isFinancialAidStudent:PAS DE MODE DE FINANCEMENT");
+        if(sData === null){
+			console.error('%c[Student.getFundingFomDashboard()]Student probleme with css path ui have changed since last version',APP_ERROR_STYLE);
+			throw new Error('Application need an update, UI Change please post a ticket on github');
+		}
+        return sData === true ? OC_FUNDED : OC_AUTOFUNDED ;
 	}
 	
 	/*
@@ -521,7 +541,7 @@ path: "81-expert-en-strategie-marketing-et-communication"
 	 * 
 	 */
 	static getAll = async (e,ctx) => { // mode JS2020
-		let bDebug = true;
+		let bDebug = false;
         var bForceUpdate = false; //TODO temporary
         let db=App.Cfg.dbase; 
         var sPath ="table.crud-list tbody";
@@ -680,6 +700,48 @@ path: "81-expert-en-strategie-marketing-et-communication"
 			*/
 
         }
+        
+        // delete from cache
+		// je dois passer tous les étudiant en revue
+		// regarder chacune des clés
+		// vu qu'a priori je ne gère en cache qu'une fonction.... ça ne devrait pas me poser de probleme mais bon
+		
+		// constituer la liste des id à supprimer
+		/*
+		const idToDelete = []
+		for(oStudent in aStudents){
+			idToDelete.push(oStudent.who_id);
+		}
+		if( moize.default.isMoized( Student.m_findById) ){
+			const keys = Student.m_findById.keys(); 
+			console.warn("~~~~~~~~~~~ moize keys %o", keys);
+			const values = Student.m_findById.values();
+			console.warn("~~~~~~~~~~~ moize values %o", values);
+			Student.m_findById.clear();
+			console.warn("~~~~~~~~~~~ moize clear chache");
+		} else { console.warn("~~~~~~~~~~~ Student.m_findById not moized not have to clear chache") };
+		*/
+		if( moize.default.isMoized( Student.m_findById) ){Student.m_findById.clear() };
+		
+		// a reproduire avec m_findByFullName
+		if( moize.default.isMoized( Student.m_findByFullName) ){Student.m_findByFullName.clear() };
+		
+		// a reproduire avec m_getFunding
+		if( moize.default.isMoized( Student.m_getFunding) ){Student.m_getFunding.clear() };
+		console.log('%c[Student.getAll]Student cache cleared',APP_DEBUG_STYLE);
+		/*
+		for (const element of keys) {
+			for (_iCnt=0, _iMax=element.length; _iCnt < _iMax; _iCnt++){
+				console.log(element[_iCnt]);
+				for(oStudent in aStudents){
+					if sValue.startWith('|${oStudent.who_id}')){
+						// have to delete
+						
+					}
+				}
+			}
+		}
+		* */
     };
 	
 	/*

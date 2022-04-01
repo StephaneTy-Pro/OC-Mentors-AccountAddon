@@ -20,6 +20,170 @@ var  domReady = function () {
 	})
 };
 
+
+
+/////////// borrowed from loadash
+
+const toString = Object.prototype.toString
+
+function getTag(value) {
+  if (value == null) {
+    return value === undefined ? '[object Undefined]' : '[object Null]'
+  }
+  return toString.call(value)
+}
+
+function isSymbol(value) {
+  const type = typeof value
+  return type == 'symbol' || (type === 'object' && value != null && getTag(value) == '[object Symbol]')
+}
+
+function toKey(value) {
+  if (typeof value === 'string' || isSymbol(value)) {
+    return value
+  }
+  const result = `${value}`
+  return (result == '0' && (1 / value) == -INFINITY) ? '-0' : result
+}
+
+function memoize(func, resolver) {
+  if (typeof func !== 'function' || (resolver != null && typeof resolver !== 'function')) {
+    throw new TypeError('Expected a function')
+  }
+  const memoized = function(...args) {
+    const key = resolver ? resolver.apply(this, args) : args[0]
+    const cache = memoized.cache
+
+    if (cache.has(key)) {
+      return cache.get(key)
+    }
+    const result = func.apply(this, args)
+    memoized.cache = cache.set(key, result) || cache
+    return result
+  }
+  memoized.cache = new (memoize.Cache || Map)
+  return memoized
+}
+
+memoize.Cache = Map
+
+const MAX_MEMOIZE_SIZE = 500
+function memoizeCapped(func) {
+  const result = memoize(func, (key) => {
+    const { cache } = result
+    if (cache.size === MAX_MEMOIZE_SIZE) {
+      cache.clear()
+    }
+    return key
+  })
+
+  return result
+}
+
+const charCodeOfDot = '.'.charCodeAt(0)
+const reEscapeChar = /\\(\\)?/g
+const rePropName = RegExp(
+  // Match anything that isn't a dot or bracket.
+  '[^.[\\]]+' + '|' +
+  // Or match property names within brackets.
+  '\\[(?:' +
+    // Match a non-string expression.
+    '([^"\'][^[]*)' + '|' +
+    // Or match strings (supports escaping characters).
+    '(["\'])((?:(?!\\2)[^\\\\]|\\\\.)*?)\\2' +
+  ')\\]'+ '|' +
+  // Or match "" as the space between consecutive dots or empty brackets.
+  '(?=(?:\\.|\\[\\])(?:\\.|\\[\\]|$))'
+  , 'g')
+
+const stringToPath = memoizeCapped((string) => {
+  const result = []
+  if (string.charCodeAt(0) === charCodeOfDot) {
+    result.push('')
+  }
+  string.replace(rePropName, (match, expression, quote, subString) => {
+    let key = match
+    if (quote) {
+      key = subString.replace(reEscapeChar, '$1')
+    }
+    else if (expression) {
+      key = expression.trim()
+    }
+    result.push(key)
+  })
+  return result
+})
+
+/** Used to match property names within property paths. */
+const reIsDeepProp = /\.|\[(?:[^[\]]*|(["'])(?:(?!\1)[^\\]|\\.)*?\1)\]/
+const reIsPlainProp = /^\w*$/
+
+function isKey(value, object) {
+  if (Array.isArray(value)) {
+    return false
+  }
+  const type = typeof value
+  if (type === 'number' || type === 'boolean' || value == null || isSymbol(value)) {
+    return true
+  }
+  return reIsPlainProp.test(value) || !reIsDeepProp.test(value) ||
+    (object != null && value in Object(object))
+}
+
+function castPath(value, object) {
+  if (Array.isArray(value)) {
+    return value
+  }
+  return isKey(value, object) ? [value] : stringToPath(value)
+}
+
+function baseGet(object, path) {
+  path = castPath(path, object)
+
+  let index = 0
+  const length = path.length
+
+  while (object != null && index < length) {
+    object = object[toKey(path[index++])]
+  }
+  return (index && index == length) ? object : undefined
+}
+/**
+ * Gets the value at `path` of `object`. If the resolved value is
+ * `undefined`, the `defaultValue` is returned in its place.
+ *
+ * @since 3.7.0
+ * @category Object
+ * @param {Object} object The object to query.
+ * @param {Array|string} path The path of the property to get.
+ * @param {*} [defaultValue] The value returned for `undefined` resolved values.
+ * @returns {*} Returns the resolved value.
+ * @see has, hasIn, set, unset
+ * @example
+ *
+ * const object = { 'a': [{ 'b': { 'c': 3 } }] }
+ *
+ * get(object, 'a[0].b.c')
+ * // => 3
+ *
+ * get(object, ['a', '0', 'b', 'c'])
+ * // => 3
+ *
+ * get(object, 'a.b.c', 'default')
+ * // => 'default'
+ */
+function get(object, path, defaultValue) {
+  const result = object == null ? undefined : baseGet(object, path)
+  return result === undefined ? defaultValue : result
+}
+
+/*
+ *  Pour des raison de comptabilité
+ *  si sPath commence par JSON:ID:path:defaultvalue // last params could be empty
+ *  alors je dois chercher un element du [type="application/json"] qui a pour id 
+ */
+
+
 var _fetch = async function(sUrl="", sPath="", bAll=false){
 	/*setTimeout(function() {
 		Toastify({
@@ -56,6 +220,7 @@ var _fetch = async function(sUrl="", sPath="", bAll=false){
 	}).catch((error) => {
 		console.error(`%cError ${error}`,APP_ERROR_STYLE); // SRC copied from https://greasyfork.org/en/scripts/20423-patchouli/code script i use for xhr promises
 	});
+	
 
 	//
 	//console.log("_fetch() proceed domparser");
@@ -70,7 +235,32 @@ var _fetch = async function(sUrl="", sPath="", bAll=false){
 	if (sCaptcha !==null ){
 		console.error(`%cError CloudFlare CAPTCHA : ${doc.querySelector('title').innerText}`, APP_DEBUG_STYLE);
 		throw new Error("Must Respond to Cloudflare Captcha or waiting....");
-	}        
+	}      
+	// https://stackoverflow.com/questions/13515141/html-javascript-how-to-access-json-data-loaded-in-a-script-tag-with-src-set
+	if(sPath.length > 0 &&
+	sPath.toUpperCase().startsWith('JSON:')
+	){
+		
+		var _args = sPath.split(':');
+		//extract id
+		var sId = _args[1];
+		var sJsonPath = _args[2] || '';
+		var sDefault = _args[3] || '';
+		if (sId.length>0){
+		//extract data
+			// document.querySelectorAll('[type="application/json"]')
+			// jsonData = JSON.parse(document.getElementById("studentDetailsConfiguration").textContent);
+			var jsonData = JSON.parse(doc.getElementById(sId).textContent);
+			//console.log('jsonData of student found at id:%s are : %o', sId, jsonData);
+			var _r =  get(jsonData, sJsonPath, sDefault);
+			//console.log('jsonData of student of path :%s  is: %o', sJsonPath, _r);
+			return _r;
+		}
+		
+		
+	}
+	
+	  
 	var oDom = {}
 	if (bAll===true){
 		oDom = doc.querySelectorAll(sPath);
