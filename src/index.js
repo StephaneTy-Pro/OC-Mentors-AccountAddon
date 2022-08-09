@@ -1,7 +1,7 @@
 /*
- * 
+ *
 2020-07-15  Ajout de fonctionnalité sur le pdf  <pwyll@Pwyll>
-* 
+*
 
 2020-09-01  Unknown  <pwyll@Pwyll>
 
@@ -13,29 +13,29 @@
 
 /**
  * A FAIRE
- * 
- * 
+ *
+ *
  * AJouter
- * 
+ *
  * <a href="" class="dom-services-3-MuiButtonBase-root dom-services-3-MuiTab-root dom-services-3-dom-services73 dom-services-3-MuiTab-textColorInherit" style="
     margin-left: auto;
 "><span class="dom-services-3-MuiTab-wrapper">En base de donnée (21/24)</span><span class="dom-services-3-MuiTouchRipple-root"></span></a>
-* 
+*
 * Dans le panel pour avoir par exemple le total d'element de la base de donnée
-* 
+*
 * Puis sur la ligne du tableau ajouter le nombre d'enregistrement stocké dans la page, proposer de cocher toute la page
 * je pense que la with minimum doit etre la sommes des autres, et que le td suivant doit etre en flex avec la formule magique : https://medium.com/@iamryanyu/how-to-align-last-flex-item-to-right-73512e4e5912
 *   soit un td à 700px min, puis un autre en flex a envion 200
 *  un clic sur ce td permet de cocher toutes les cases de la grille, pour valider il faut encore cliquer sur collectchecked
 *   collect auto va disparaitre un moment, il faut que je capture le bearer et que je l'utilise pour mes propres requetes api pour pouvoir télécharger des informations
-* 
-* 
+*
+*
 * projet a regarder scoop bucket dans v chat alextwothousand/sccop-bucket
 * ça permet de découvrir 0x0.st
 * ainsi que sqls
-* 
-* deno a aussi un super ouveau packager packup 
-* 
+*
+* deno a aussi un super ouveau packager packup
+*
 * // le bandeau A compléter se cible comme suit
 * le premier div de main content est vide et le second et le bon
 *   $('#mainContent > :not(div:empty')
@@ -47,20 +47,21 @@
 
 import { domReady, readFile, getKey } from './utils.js';
 import { debounce } from './helpers.js';
-import { APP_DEBUG_STYLE, APP_WARN_STYLE, APP_ERROR_STYLE, 
+import { APP_DEBUG_STYLE, APP_WARN_STYLE, APP_ERROR_STYLE,
 	OC_DASHBOARDCSSMAINDATASELECTOR
 	} from './constants.js';
 import UI from './ui.js';
-import { 
+import {
 	appmenu,
 	opencfg,
-} from "./gmc.lib.js" ; 
+} from "./gmc.lib.js" ;
 
 import{
 	addCbox,
 	addOneCbox,
 	about,
 	patchSessionHistoryLineUI,
+	updCboxValue,
 } from './do.js';
 
 import{
@@ -91,17 +92,17 @@ import SandBox_Google	from './sbox_google_sh.js'; // testing sheetrock in a sand
 
 
 const Facturier = {
-	
+
 	Cfg: {
 		dbase: null,
 	},
 	// request animation frame id
 	raf:null,
-	
+
 	// SINCE 20210630
-	
+
 	 cssMainDataSelector: OC_DASHBOARDCSSMAINDATASELECTOR, // before 'table[id*="session"]
-	 
+
 	// menu
 	ID_MENU_FORCE_LOADING: null,
 	ID_MENU_FORCE_ADDTOLEFTMENU: null,
@@ -111,15 +112,15 @@ const Facturier = {
     // je suis donc contraint de définir une variable pour supprimer le double chargement
 	//_isWarmingUp: false,
 	_isStarted: false,
-	
+
 	/*
-	 * 
+	 *
 	 * name: inconnu
 	 * @param
 	 * @return
-	 * 
+	 *
 	 */
-	 
+
     start: async function () {
 		console.log(`%cIn start check Facturier._isStarted: ${Facturier._isStarted}`,APP_DEBUG_STYLE);
 		if(Facturier._isStarted === true){ return;}
@@ -129,46 +130,46 @@ const Facturier = {
 		// when avatar is loaded start application
 		// var sCSSObserved = '.dom-services-4-MuiAvatar-img'; // was .MuiAvatar-img before
 		var sCSSObserved = 'header [class*=MuiAvatar-img]'; // was .dom-services-4-MuiAvatar-img before
-		if (document.querySelector(sCSSObserved) === null){ 
-			console.log(`%c All condition not met, waiting element '${sCSSObserved}' `, APP_DEBUG_STYLE); 
-			document.arrive(sCSSObserved, Facturier._warmup); 
+		if (document.querySelector(sCSSObserved) === null){
+			console.log(`%c All condition not met, waiting element '${sCSSObserved}' `, APP_DEBUG_STYLE);
+			document.arrive(sCSSObserved, Facturier._warmup);
 			/* hack */
 			Facturier.ID_MENU_FORCE_LOADING = GM_registerMenuCommand('force - loading', Facturier._warmup);
 			Facturier.ID_MENU_FORCE_ADDTOLEFTMENU = GM_registerMenuCommand('force - populate menuleft', Facturier._addLinkToMenu);
-		} else { 
+		} else {
 			console.log(`%c All condition already met go`, APP_DEBUG_STYLE);
-			Facturier._warmup(); 
+			Facturier._warmup();
 		}
 	},
-	
+
 	/*
-	 * 
+	 *
 	 * name: inconnu
 	 * @param
 	 * @return
-	 * 
+	 *
 	 */
-	
+
 	checkSupport: function(){
 		return true;
 	},
 	/*
-	 * 
+	 *
 	 * name: inconnu
 	 * @param
 	 * @return
-	 * 
+	 *
 	 */
-	
+
 	_warmup : function(){
 		// 'this' refers to the newly created element
 		//console.log("%c in _warmup chek if already started :%o",APP_DEBUG_STYLE, Facturier._isStarted);
 		document.unbindArrive(Facturier._warmup);
-		if(Facturier._isStarted === true){ 
+		if(Facturier._isStarted === true){
 			// on ne devrait pas arriver là mais pourtant ça arrive merci oc de tout charger en double
 			return;
 			//throw Error('already started, something is wrong');
-		}		
+		}
 
 		Facturier._isStarted = true; // application have started
 		GM_unregisterMenuCommand(Facturier.ID_MENU_FORCE_LOADING);
@@ -192,9 +193,9 @@ const Facturier = {
 		GM_registerMenuCommand('collectauto', opencfg, "a");
 		GM_registerMenuCommand('configure', opencfg, "a");
 		/* mettre la barre en haut */
-			
-		Facturier.ID_MENU_FORCE_BAR_ON_TOP = 
-			GM_registerMenuCommand('Menu Bar on Top', 
+
+		Facturier.ID_MENU_FORCE_BAR_ON_TOP =
+			GM_registerMenuCommand('Menu Bar on Top',
 				function(){document.querySelector(".panel.draggable").scrollIntoView()});
 		//GM_registerMenuCommand('force - cbox', Facturier._forceCbox);
 		/* hacks */
@@ -204,14 +205,14 @@ const Facturier = {
 		/* set size of content */
 		//GM_addStyle('.swal2-content{font-size:'+GM_config.get('sizeofcontentlist')+'}');
 		GM_addStyle('.swal2-title{font-size:1.275em}'); // set by default to 1.875em by CSS of SWAL
-		/* 
-		 * solution de contournement depuis le 01/06/2021 attente du 
+		/*
+		 * solution de contournement depuis le 01/06/2021 attente du
 		 * chargement de l'historique sinon le tableau de l'historique
 		 * des sessions n'est pas disponible
 		 */
-		 
+
 		// perte du style du bouton
-		
+
 		GM_addStyle(`
 		.button {
 			display: inline-flex;
@@ -276,45 +277,45 @@ const Facturier = {
 			border-color: #d2d2d2;
 			-webkit-box-shadow: none;
 			box-shadow: none;
-		}`);  
-		 
-		 
+		}`);
+
+
 		//var sCSSObserved = 'table#sessions_2'; // was .dom-services-4-MuiAvatar-img before
 		//var sCSSObserved = 'table#sessions_2 tbody tr > td > div > div+p'; // was .dom-services-4-MuiAvatar-img before
 		//var sCSSObserved = 'table[id*="sessions"] tbody tr > td > div > div+p';
 		var sCSSObserved = Facturier.cssMainDataSelector;
-		if (document.querySelector(sCSSObserved) === null){ 
-			console.log(`%c All condition not met, waiting element '${sCSSObserved}' `, APP_DEBUG_STYLE); 
-			document.arrive(sCSSObserved, Facturier._main); 
-		} else { 
+		if (document.querySelector(sCSSObserved) === null){
+			console.log(`%c All condition not met, waiting element '${sCSSObserved}' `, APP_DEBUG_STYLE);
+			document.arrive(sCSSObserved, Facturier._main);
+		} else {
 			console.log(`%c All condition already met go`, APP_DEBUG_STYLE);
-			Facturier._main(); 
+			Facturier._main();
 		}
-		
-		
+
+
 		//Facturier._main();
 	},
 	// this fonction force the
 	_forceCbox: function(){
 		Facturier._applyInjectionForSessionsHistory()
 	},
-	
-	/** 
+
+	/**
 	 * on href change detection
 	 * https://stackoverflow.com/questions/3522090/event-when-window-location-href-changes
-	 * 
+	 *
 	 * NOTESTT changed to pathname change because of #param which sometimes follow href
 	 */
 	pathname: document.location.pathname,
-	
+
 	/*
 	 * must return STRING else detection will failed
 	 */
 	_getOCMainClass: function(){
 		try {
 			//const _sOCMainCntClass = document.querySelector('#mainContentWithHeader')[0].firstChild.classList.value; // fonctionne mal
-			//const _sOCMainCntClass = document.querySelector('table[id*="session"]').classList.value; 
-			const _sOCMainCntClass = document.querySelector(Facturier.cssMainDataSelector).classList.value; 
+			//const _sOCMainCntClass = document.querySelector('table[id*="session"]').classList.value;
+			const _sOCMainCntClass = document.querySelector(Facturier.cssMainDataSelector).classList.value;
 			/*
 			Update de l'interface OC, les classes du type "dom-services-1-dom-services2" deviennent du type "webapp-0-webapp5".
 			const _aOCMainSrvId = _sOCMainCntClass.match(/dom-services-(\d)/);
@@ -346,9 +347,9 @@ const Facturier = {
 						console.log("%c target mutation nodeName.: %o", APP_DEBUG_STYLE, mutation.target.nodeName);
 						console.log("%c target mutation id.......: %o", APP_DEBUG_STYLE, mutation.target.id);
 						console.log("%c target mutation class....: %o", APP_DEBUG_STYLE, mutation.target.classList);
-						
+
 						// certaines insertion se faisant a posteriori il faut que je puisse detecter quand elles se font
-						
+
 						const getTypeOfElement = function(oNode){
 							if (typeof oNode === 'undefined') return null;
 							if (oNode.children[0]){
@@ -358,21 +359,21 @@ const Facturier = {
 									} else { console.log('oNode.children[0].children[0] %o', oNode.children[0].children[0]); }
 								} else { console.log('oNode.children[0] :%o', oNode.children[0]); }
 							} else { console.log('oNode :%o', oNode); }
-							
+
 							if (oNode.children[0]){
 								if (oNode.children[0].querySelector('p')!== null){
 									console.log('je suis dans une insertion partielle :%o', oNode);
 									return oNode.children[0].querySelector('p').innerText;
 								}
 							}
-							
+
 
 						}
-						
+
 						console.log("%c target is ....: %o", APP_DEBUG_STYLE, getTypeOfElement(mutation.addedNodes[0]));
 						console.groupEnd();
 						*/
-	
+
 						// use classList.contains() or className ===
 						//if(mutation.target.classList.contains('dom-services-3-MuiTouchRipple-root')){ // click on next page wich target '<span class="dom-services-3-MuiTouchRipple-root"></span>'
 						if(mutation.target.classList.contains(`${Facturier._sOCMainSrvClassName}-MuiTouchRipple-root`)){ // click on next page wich target '<span class="dom-services-3-MuiTouchRipple-root"></span>'
@@ -385,35 +386,89 @@ const Facturier = {
 							*/
 							debounce(Facturier._applyInjectionOnPathNameMutation());
 						}
-		
+
 
 						if(mutation.target.nodeName === 'OL'){// since 20211001
 							debounce(Facturier._applyInjectionOnPathNameMutation());
 						}
 						const addCboxIfNeeded = function(oNode){
+
+							//console.log('addCboxIfNeeded node is %o', oNode);
+
 							if (typeof oNode === 'undefined') return null;
+							if(oNode.nodeName === "#text"){
+								return null;
+							}
+
+							if(oNode.nodeName === "IFRAME"){
+								 return null;
+							 }
+
+							if(oNode.children.length == 0 ){
+								 return null;
+							 }
+							// pour pouvoir faire le query sur l'element je suis obligé de paser par le parent
+							if(
+								oNode.parentElement &&
+									(   oNode.parentElement.querySelector(".Facturier__cbox") ||
+										oNode.parentElement.querySelector(".Facturier__cbox_all")||
+										oNode.parentElement.querySelector(".Facturier__header")
+									)
+							){
+								// i m in one on my added input
+								return null;
+							}
+							// menu OC sur la gauche
+							if(oNode.nodeName === "UL"){
+								 return null;
+							 }
+
+							//console.log('addCboxIfNeeded i need to do something and node is %o', oNode);
+
 							// si je suis dans une insertion partielle je dois ajouter une cbox
 							if (
-								oNode.nodeName === 'A' &&
-								oNode.children[0].querySelector('p')!== null &&
-								oNode.children[0].querySelector('p').innerText.toUpperCase().trim() == 'SOUTENANCE'
+								oNode.nodeName === 'LI'
 								)
-								{	
-									//console.log("%c When found a SOUTENANCE, mannually have to add a cbox to node : %o", APP_DEBUG_STYLE, oNode);
+								{
+									//console.log("%c found a LI NODE : %o", APP_DEBUG_STYLE, oNode);
+
 									debounce(addOneCbox(oNode));
 									Facturier._lastMutation = dayjs().valueOf();
+									return;
 							}
+
+							// depuis la prise en compte RGPD, les données liées à l'utilisateur ne sont pas récupérée tout de suite
+							// les lients session et utilisateur sont mises à jour apres
+
+							// ajoute un noeud qui contient le lien
+							// ajoute un noeud qui contient les references de la session
+							if(oNode.nodeName === 'A' &&
+								oNode.href.includes('/users/')
+							){
+								//console.log('%c  MAJ du lien utilisateur (soutenance)', APP_DEBUG_STYLE);
+								if( oNode.parentElement.parentElement !== null){
+									//console.log('%c  travaille sur %o', APP_DEBUG_STYLE, oNode.parentElement.parentElement);
+									debounce(updCboxValue(oNode.parentElement.parentElement));
+								}else{
+									console.warn('OC a changé la manière avec laquelles les lignes sont crées');
+								}
+								return;
+							}
+
+
+							//console.log('addCboxIfNeeded i REACH END and have not proceed node %o', oNode);
+
 						}
 						addCboxIfNeeded(mutation.addedNodes[0]);
-						/* Since 20210623 
-						 * if button < is mutated 
+						/* Since 20210623
+						 * if button < is mutated
 						 * parent is a li contained in an ul himself second child of a div with first child is the table
 						 * je ne peux pas regarder son label car c'est un svg
-						 * eventuellement je peux comparer 
+						 * eventuellement je peux comparer
 						 * .children[0].firstElementChild.innerHTML à '<path d=\"M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z\"></path>'
 						 * qui est la représentation de <
 						 * */
-						if(mutation.target.nodeName === 'BUTTON' && 
+						if(mutation.target.nodeName === 'BUTTON' &&
 							mutation.target.parentElement.parentElement.parentElement.firstElementChild.nodeName === 'TABLE'){
 							/*
 							console.log("%cTable data changed (BUTTON, TABLE)",APP_DEBUG_STYLE);
@@ -421,7 +476,7 @@ const Facturier = {
 							*/
 							debounce(Facturier._applyInjectionOnPathNameMutation());
 						}
-						
+
 						if(mutation.target.ariaLabel === 'Page précédente'){
 							//console.log("%cPaging < was modified", APP_DEBUG_STYLE);
 						}
@@ -432,7 +487,7 @@ const Facturier = {
 							/* Changed ! your code here */
 							//console.log("%cpathname has changed", APP_DEBUG_STYLE);
 							debounce(Facturier._applyInjectionOnPathNameMutation());
-							
+
 						}
 					});
 				});
@@ -443,7 +498,7 @@ const Facturier = {
 			observer.observe(bodyList, config);
 		//};
 	},
-	
+
 	_applyInjectionOnPathNameMutation:function(){
 		let bStop = false;
 		if(bStop === false && document.location.pathname.match(/\/sessions$/)){
@@ -467,9 +522,9 @@ const Facturier = {
 		if (bStop === false){
 			console.log("%cUnknow Route so could't guess what to do", APP_ERROR_STYLE);
 		}
-	
+
 	},
-	
+
 	_lastMutation: 0, // timestamp in milliseconds //.unix() if in seconds
 	_applyInjectionForSessionsToComplete:function(){
 		// have to clean or hide the header
@@ -480,7 +535,7 @@ const Facturier = {
 		//var btns = Array.from(document.querySelectorAll('table[id*="session"] tbody a[href*=sessions]'));
 		// all elements are in an a element first then into div for column
 		// so catching a a => get the button himself
-		console.log("%cWill Patch All Buttons corresponding to this CSS PATH %s",APP_DEBUG_STYLE, `${Facturier.cssMainDataSelector} a a[href*=sessions]`); 
+		console.log("%cWill Patch All Buttons corresponding to this CSS PATH %s",APP_DEBUG_STYLE, `${Facturier.cssMainDataSelector} a a[href*=sessions]`);
 		var btns = Array.from(document.querySelectorAll(`${Facturier.cssMainDataSelector} a a[href*=sessions]`));
 		/*btns.forEach(btn => btn.onclick = function(event) {
 				console.log("click");
@@ -493,7 +548,7 @@ const Facturier = {
 		var _handler;
 		// tester la mise en place d'un overlay qui permet de savoir si c'est patché ou pas
 		btns.forEach( function(btn){
-			console.log("%cWill Patch Button %o",APP_DEBUG_STYLE, btn);  
+			console.log("%cWill Patch Button %o",APP_DEBUG_STYLE, btn);
 			//let oBtnText = btn.querySelector('div+div+div+div'); // 4eme colonne
 			//oBtnText.innerText = ".:"+oBtnText.innerText+":."; // show it was patched
 			btn.innerText = ".:"+btn.innerText+":."; // show it was patched
@@ -502,7 +557,7 @@ const Facturier = {
 				e.stopPropagation();
 				e.preventDefault(); // must be as soon as possible
 				var oLine = btn.parentElement.parentElement.parentElement; // tjhe full row which contain data
-				var sDateTime = oLine.children[1].querySelector('time').getAttribute('datetime').trim(); 
+				var sDateTime = oLine.children[1].querySelector('time').getAttribute('datetime').trim();
 				//var sWhen = oLine.children[1].querySelector('time').dateTime.trim();
 				var sWho_id = getKey(oLine.children[2],-2);
 				// extract the key
@@ -516,14 +571,14 @@ const Facturier = {
 				// check if exist
 				let bExistsSessionId = Ref.exists(iSessionId, 1, Ref.TYPE.SESSIONID_DATEREFID);
 				let bExistsHashId    = Ref.exists(iHash, 2, Ref.TYPE.SESSIONID_DATEREFID);
-				
+
 				if(bExistsSessionId){
 					if(!bExistsHashId){
 						console.log(`[SESSIONID_DATEREFID] iSessionId ${iSessionId} est connu mais pas iHash${iHash}`);
 						Ref.updKey2(iSessionId, iHash, Ref.TYPE.SESSIONID_DATEREFID);
 					}
 					// nothing to do
-				} 
+				}
 				if(bExistsHashId){
 					if(!bExistsSessionId){
 						console.log(`[SESSIONID_DATEREFID] iHash${iHash} est connu mais pas iSessionId ${iSessionId}`);
@@ -544,7 +599,7 @@ const Facturier = {
 			btn.removeAttribute("href");
 		});
 	},
-	
+
 	_applyInjectionForSessionsBooked:function(){
 		// have to clean or hide the header
 		if(document.querySelector(`${Facturier.cssMainDataSelector} .Facturier__cbox_all`) !== null){
@@ -574,13 +629,13 @@ const Facturier = {
 		//console.log('%c[index._applyInjectionForSessionsHistory()] maj de la dernière mutation à %o',APP_DEBUG_STYLE, Facturier._lastMutation);
 		//} // add checkbox to element in history
 	},
-	
+
 	_addHeader: function(){
 		/* set main SrvClassName*/
 		if (Facturier._sOCMainSrvClassName.length === 0){
 			Facturier._sOCMainSrvClassName = Facturier._getOCMainClass();
 		}
-		
+
 		if (Facturier._sOCMainSrvClassName.length === 0){
 			console.error('%c[index._addHeader()] _sOCMainSrvClassName is still unknow', APP_ERROR_STYLE);
 			//console.log("[index._addHeader()]check this %o", document.querySelector('table[id*="session"]'));
@@ -620,22 +675,22 @@ const Facturier = {
 		const oBase = document.querySelector('#mainContent[class*="webapp"]'); // note STT devenu inutile
 		//const oPanelSelectorContainer = oBase.querySelector('a').parentElement;
 		//const oRefCSS = oBase.querySelector('a[aria-selected=false]');
-		
+
 		const oPanelSelectorContainer = document.querySelector('[role="tablist"]'); // le conteneur du selecteur d'onglet
-		
-		
+
+
 		// ici il faut s'assurer que l'on ait chargé le panel
-		
+
 		var handleElementShown=function(oElem){
 			const oPanelSelectorContainer = document.querySelector('[role="tablist"]');
 			let oSpan_1 = document.createElement('span');
 			oSpan_1.innerText = "Facturier v."+GM.info.script.version;
 			//oSpan_1.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTab-wrapper`);
-			
+
 			// dans la version avant celle du 20220314 on passait par des sous elements
 			//oSpan_1.classList.add(...oElem.children[0].classList);
-			// depuis la version 20220314 prendre 
-			oSpan_1.classList.add(...oElem.classList);	
+			// depuis la version 20220314 prendre
+			oSpan_1.classList.add(...oElem.classList);
 			oSpan_1.classList.add('Facturier__header');
 			if(oElem.children.length>1){ // since 20220130 - semble ne plus etre tout le temps présent
 				let oSpan_2 = document.createElement('span');
@@ -652,10 +707,10 @@ const Facturier = {
 			if(oElem.children.length>1){ // since 20220130 - semble ne plus etre tout le temps présent
 				oRoot.appendChild(oSpan_2);
 			}
-			oRoot.style = 'margin-left: auto'; // magic property to pull it (flex element)right	
+			oRoot.style = 'margin-left: auto'; // magic property to pull it (flex element)right
 			oPanelSelectorContainer.appendChild(oRoot);
 		}
-		
+
 		var observer = new MutationObserver(function (mutations, me) {
 		  // `mutations` is an array of mutations that occurred
 		  // `me` is the MutationObserver instance
@@ -671,13 +726,13 @@ const Facturier = {
 		observer.observe(document, {
 		  childList: true,
 		  subtree: true
-		});		
-		
-		
+		});
+
+
 		return;
 		//anciennement
 		const oRefCSS = oPanelSelectorContainer.querySelector('a[aria-selected=false]'); // le css d'un onglet non sélectionné
-		
+
 		let oSpan_1 = document.createElement('span');
 		oSpan_1.innerText = "Facturier v."+GM.info.script.version;
 		//oSpan_1.classList.add(`${Facturier._sOCMainSrvClassName}-MuiTab-wrapper`);
@@ -717,7 +772,7 @@ text-transform: inherit;
 		oRoot.style = 'margin-left: auto'; // magic property to pull it (flex element)right
 		//aDom[2].appendChild(oRoot);
 		//aDom[1].querySelector('div:nth-child(2) > div').appendChild(oRoot); contient le text Sessions et le bouton créer pour créer une session
-		
+
 		/* pour être OC résilient il faudrait chercher parmi aDom tout ce qui contient muiTabs*/
 		/* classList.toString().match(/MuiTabs/) */
 		/*
@@ -729,17 +784,17 @@ text-transform: inherit;
 			_z = (_z2 !== undefined) ? _z2 : _z;
 			//console.log(_z);
 		}
-		
+
 		//aDom[2].querySelector('div:nth-child(2) > div').appendChild(oRoot);
 		_z.appendChild(oRoot);
 		*/
 		oPanelSelectorContainer.appendChild(oRoot);
 	},
-	
+
 	/*
-	 * 
-	 * 
-	 * autre option pour la partie facturation 
+	 *
+	 *
+	 * autre option pour la partie facturation
 <thead style="
     display: block;
 "><tr style="
@@ -758,32 +813,32 @@ text-transform: inherit;
     margin-left: auto;
 ">Fact.(o/n)</td></tr>
 </thead>
-	 * 
+	 *
 	 */
-	
+
 	/*
-	 * 
+	 *
 	 * name: inconnu
 	 * @param
 	 * @return
 	 * This function is used when i'm not in a UserScript env (no tampermonkey...)
 	 */
-		
+
 	_userscriptless(){
 		console.log(`%cIm'not in a Tamper environment so i need to load js scripts`, APP_DEBUG_STYLE);
 	},
-	
+
 	_main : function(){
 		console.log('​​​%c[index._main()]MainLoaded​​​',APP_DEBUG_STYLE);
 		document.unbindArrive(Facturier._main);
-		
-		// Attention avec l'ordre des choses, ici on lance trop vite l'event monitor puisque la base est pas encore théoriquement connectée		
+
+		// Attention avec l'ordre des choses, ici on lance trop vite l'event monitor puisque la base est pas encore théoriquement connectée
 		Facturier._eventMonitor();
-if(STT_VERSION) { 
+if(STT_VERSION) {
 		Performance.paintTiming();
 		Performance.longTaskTiming();
 }
-		
+
 		let adapter = new LocalStorage('db');
 		var db = low(adapter);
 		db.defaults({ students: [], sessions: [], f_archives:[], history_session_cache:[], meta:[], refs:[], students_history:[], }).write();
@@ -796,11 +851,11 @@ if(STT_VERSION) {
 		dayjs.extend(dayjs_plugin_localeData);
 		dayjs.extend(dayjs_plugin_customParseFormat);
 		dayjs.locale('fr');
-		
+
 		// checks -- must be after db init
 		Ref.checkSupport();
 		Meta.checkSupport();
-		
+
 		//Monitor
 		/*
 		if(GM_config.get('userid') != 0){
@@ -810,32 +865,32 @@ if(STT_VERSION) {
 			console.log("%cVotre numéro d'utilisateur openclassrooms n'a pas ete renseigné dans la configuration vous ne pourrez pas utiliser la collecte automatique d'information", APP_ERROR_STYLE);
 		}
 		* */
-		
+
 		//Api.forge(7688561); // pour le bien devrait sortir de la configuration
 		//Api.getPendingSessionFrom(dayjs());
-		
-		
+
+
 		//dayjs.extend(dayjs_locale_fr);
 		// https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.28/plugin/localeData.min.js
 		if (document.querySelector(".panel.menuBar.flex.draggable") === null){
 			UI.init();
 		}
-				
+
 		// patch current UI
 		// 1-
 		Facturier._addHeader();
 		// 2-
 		Facturier._applyInjectionOnPathNameMutation();
-		
+
 		// 3 - Add element on menu
 		//// Select all element with no role only one
-		
+
 		// le menu s'affiche plus tard ça ne va pas fonctionner aussi simplement
 		// TODO corriger la partie svg qui ne s'affiche pas quand bien meme elle est presente
 		console.log(`%cWait for side menu to add element to it`, APP_DEBUG_STYLE);
 		sCSSObserved = 'nav:not([role])'
 		document.arrive(sCSSObserved, Facturier._addLinkToMenu);
-		
+
 		//// Patch to add new tbl
 		/*
 		if( db.get("meta").value() === undefined) {
@@ -868,7 +923,7 @@ if(STT_VERSION) {
 			]
 		).then( async function (e) {
 			//console.log('%cHTMX fetched', APP_DEBUG_STYLE);
-			
+
 			//htmx.logAll();
 			/*
 			htmx.defineExtension('get-dirty', {
@@ -877,32 +932,32 @@ if(STT_VERSION) {
 					console.log("%cPatched htmx htmx:configRequest", APP_DEBUG_STYLE);
 					//evt.detail.headers['Content-Type'] = "application/json";
 					}
-				
+
 				if (name === "htmx:loadstart") {
 					console.log("%cPatched htmx htmx:loadstart", APP_DEBUG_STYLE);
 					xhr.addEventListener("abort", function(){console.log("Patched Abort", APP_WARN_STYLE)});
 					xhr.abort();
 					}
 				},
-				
+
 			});
-			
+
 			htmx.defineExtension('stt-get', {
 				onEvent: function (name, evt) {
 					if (name === "htmx:afterProcessNode") {
 						console.log("%cExtension 'stt-get' htmx htmx:afterProcessNode", APP_WARN_STYLE);
 						//evt.detail.headers['Content-Type'] = "application/json";
-					
+
 					}
-				
-					if (name === "htmx:beforeRequest") { 
+
+					if (name === "htmx:beforeRequest") {
 						console.log("%cExtension 'stt-get' htmx htmx:beforeRequest", APP_WARN_STYLE);
 						htmx.ajax('GET', 'http://127.0.0.1/views/dummy.html', '#myDiv');
 					}
 				}
 			});
 			*/
-			
+
 			// htmx broker
 			htmx.on("htmx:configRequest", function(evt){
 				//console.log("%cBroker htmx:configRequest event received", APP_DEBUG_STYLE);
@@ -910,11 +965,11 @@ if(STT_VERSION) {
 			htmx.on("htmx:beforeRequest", function(evt){
 				//console.log("%cBroker htmx:beforeRequest event received", APP_DEBUG_STYLE);
 				/*
-				 * i first try to use xhr.abort() but it won't works 
+				 * i first try to use xhr.abort() but it won't works
 				 * think it was already started
 				 */
-				if (evt.detail.pathInfo.finalPath 
-					&& getFileExtension(evt.detail.pathInfo.finalPath) 
+				if (evt.detail.pathInfo.finalPath
+					&& getFileExtension(evt.detail.pathInfo.finalPath)
 					!== "html"){
 					//console.log("%cIntercept path without .html need to route it to function", APP_DEBUG_STYLE);
 					//console.log(`%cWanna load ${evt.detail.pathInfo.finalPath}`, APP_DEBUG_STYLE);
@@ -925,16 +980,16 @@ if(STT_VERSION) {
 							} // patch on load start to autocancel
 					let sHtml = View.load(evt.detail.pathInfo.finalPath);
 					let oTarget = evt.detail.target
-					
+
 					// if target a node
-					
+
 					//console.log(evt.detail);
 					//console.log(evt.detail.elt.getAttribute('hx-select'));
-					
+
 					var sTargetSelect = evt.detail.elt.getAttribute('hx-select');
-					
+
 					if(sTargetSelect){
-						let oDom = new DOMParser().parseFromString(sHtml, "text/html"); 
+						let oDom = new DOMParser().parseFromString(sHtml, "text/html");
 						oNode = oDom.querySelector(sTargetSelect);
 						if(oNode){
 							//console.log(`%cfound not ${sTargetSelect} in data received from calling ${evt.detail.pathInfo.finalPath}`, APP_DEBUG_STYLE);
@@ -944,7 +999,7 @@ if(STT_VERSION) {
 							console.log(`%cWanna select target ${sTargetSelect} in data received from calling ${evt.detail.pathInfo.finalPath} but this node could'nt be found so return the whole string`, APP_ERROR_STYLE);
 						}
 					}
-					
+
 					//console.log(sHtml);
 					/*
 					 * appendFromHtmlStr
@@ -967,14 +1022,14 @@ if(STT_VERSION) {
 					appendFromHtmlStr(sHtml, evt.detail.target);
 				}
 			});
-			
+
 			htmx.on('htmx:xhr:loadstart' , function(evt){
 				//console.log("%cBroker htmx:xhr:loadstart event received", APP_DEBUG_STYLE);
 				// ne contient aucune reference sur xhr
 			});
 
 		}); // end of htmx injection
-		
+
 		// inject
 		fetchInject(
 			['https://cdn.jsdelivr.net/npm/sweetalert2@10']
@@ -982,14 +1037,14 @@ if(STT_VERSION) {
 			console.log('%cSweetAlert fetched', APP_DEBUG_STYLE)
 			}
 		);
-		
-		
+
+
 		if (GM_config.get("use_custom_css") === true) {
 			let sDependencies = GM_config.get("custom_css_url");
 			/*
 			fetchInject(['https://raw.githubusercontent.com/brettz9/load-stylesheets/master/dist/index-umd.min.js'])
 				.then( async function (e) {
-					console.log(e); 
+					console.log(e);
 					await (async () => {
 						const stylesheetElements = await loadStylesheets([
 				'https://min.gitcdn.link/repo/StephaneTy-Pro/OC-Mentors-AccountAddon/master/skins/skin_1.css',
@@ -999,11 +1054,11 @@ if(STT_VERSION) {
 
 			});
 			*/
-			
+
 			//console.log(sDependencies, typeof(sDependencies));
 			let aDependencies = sDependencies.split(','); // always return one element even if separator not found
 			//console.log(rDependencies, typeof(rDependencies));
-			
+
 			if (aDependencies.length !== 0){
 				console.log(`%cWanna inject Custom CSS from URL:${aDependencies}`, APP_DEBUG_STYLE);
 				fetchInject(aDependencies).then(() => {
@@ -1019,11 +1074,11 @@ if(STT_VERSION) {
 					const styleTag = document.createElement("style");
 					styleTag.innerHTML = sData;
 					document.head.insertAdjacentElement('beforeend', styleTag);
-					
-					
+
+
 				}
 			}
-		}   
+		}
 
 		/* exportation des fonctions requises pour dbgmode*/
 		unsafeWindow.Facturier = {libs:[],cfg:{dbase:null},klass:[]}
@@ -1041,61 +1096,61 @@ if(STT_VERSION) {
 		unsafeWindow.Facturier.klass.push({id:'Meta',ptr:Meta});
 		unsafeWindow.Facturier.klass.push({id:'Ref',ptr:Ref});
 		unsafeWindow.Facturier.klass.push({id:'Api',ptr:Api});
-		//console.log("%cImportants values are exported in unsafeWindow.Facturier", APP_DEBUG_STYLE);   
-		
+		//console.log("%cImportants values are exported in unsafeWindow.Facturier", APP_DEBUG_STYLE);
+
 		// libs
 		unsafeWindow.Facturier.libs.push({id:'NProgress',ptr:NProgress});// unsafeWindow.Facturier.libs.find(o => o.id == 'NProgress').ptr pour le retrouver
 		SandBox_Google.test_1();
 		unsafeWindow.Facturier.klass.push({id:'SandBox_Google',ptr:SandBox_Google});// unsafeWindow.Facturier.libs.find(o => o.id == 'NProgress').ptr pour le retrouver
-		
-		
-		
-		
+
+
+
+
 		//
-if(STT_VERSION) {    
-		document.body.appendChild(document.createElement('div')).innerHTML='<iframe id="temoin" style="display:none"></iframe>'; 
+if(STT_VERSION) {
+		document.body.appendChild(document.createElement('div')).innerHTML='<iframe id="temoin" style="display:none"></iframe>';
 		console.groupCollapsed('liste de variable de la page');
-		Object.keys(window).filter(a=>!(a in window.frames[window.frames.length-1])).sort().forEach((a,i)=>console.log(i,a,window[a])); 
-		document.body.removeChild(document.querySelector('#temoin').parentNode); 
+		Object.keys(window).filter(a=>!(a in window.frames[window.frames.length-1])).sort().forEach((a,i)=>console.log(i,a,window[a]));
+		document.body.removeChild(document.querySelector('#temoin').parentNode);
 		console.groupEnd();
 }
 		//
-		
-		
+
+
 		unsafeWindow.Facturier.libs.push({id:'Moise',ptr:moize});// unsafeWindow.Facturier.libs.find(o => o.id == 'NProgress').ptr pour le retrouver
-		 
+
 		// ici toute l'idée est de verifier que le fichier d'install contient src ou dist ... s'il contient source alors, on doit utiliser en sus les ressources locales
 		// sinon on est sur la version livrée et donc on a tout déjà dans le script de base qui a été build
 		// probleme avec CORS
 		// visiblement en tout cas sur chrome l'url n'est pas bien prise en compte par le paramètre du script
 		// @update et @download semblent sans incidences sur ce que l'on trouve dans l'onglet paramètres
-		// dit autrement le positionner à la main dans l'éditeur de script permet de déclencher ce mode local sans toutefois 
+		// dit autrement le positionner à la main dans l'éditeur de script permet de déclencher ce mode local sans toutefois
 		// changer le paramètre dans le header ce qui est bien preatique
-		
+
 		if (GM.info.script.downloadURL === "http://localhost:8000/dist/app-facturier.iife.js") {
 			 console.log("%cALERTE .... version locale !!!!!! ", "background-color:coral;color:white");
 			//Facturier.overrideDebug();
 			console.log("%c test readfile", APP_DEBUG_STYLE);
-			readFile('file:////media/pwyll/USB120Go/DevStt/UserScripts/SttAddon/src/update_data_base.js', function(_res){console.log(_res);}); 
+			readFile('file:////media/pwyll/USB120Go/DevStt/UserScripts/SttAddon/src/update_data_base.js', function(_res){console.log(_res);});
 			Facturier.loadDependencies();
 		} else {
 			console.log(`%c GM.info.script.downloadURL url : ${GM.info.script.downloadURL}`, APP_DEBUG_STYLE);
-		}		
-	
+		}
+
 	},
 	// add an option to oc menu to show hide the bar
 	_addLinkToMenu: function(){
 		console.log(`%cSide menu will be added`, APP_DEBUG_STYLE);
 		document.unbindArrive(Facturier._addLinkToMenu);
-		
+
 		// provisoire eviter double chargement
-		
+
 		if (document.querySelector("ul.Facturier__Menu-header") !== null){
 			console.log(`%cDirty Check no double launch`, APP_DEBUG_STYLE);
 			return ;
 		}
-		
-		
+
+
 		try{
 			let oMenu = document.querySelectorAll('nav:not([role])')[0];
 			// clone last li node from ul child list
@@ -1125,7 +1180,7 @@ if(STT_VERSION) {
 			console.log(`%cSide menu will added`, APP_DEBUG_STYLE);
 		} catch(e){console.log('%cInjecting menu encounter an error: %o',APP_ERROR_STYLE, e)};
 	},
-	
+
 	loadDependencies : function(){
 	   let rDependencies = [];
 	   //rDependencies.push("http://localhost:8000/src/dummy.js");
@@ -1135,7 +1190,7 @@ if(STT_VERSION) {
 		  console.log(`dependencies ${rDependencies} loaded`);
 	   })
 	},
-	
+
 	/*
 	 */
 	dbUpdate : function(){
@@ -1144,8 +1199,8 @@ if(STT_VERSION) {
 			console.log("%c Need to update DB to version '1.00.0006'", APP_DEBUG_STYLE);
 			Dbase.update('1.00.0006');
 		}
-	}, 
-	
+	},
+
 
 }
 if (window.Facturier !== undefined){

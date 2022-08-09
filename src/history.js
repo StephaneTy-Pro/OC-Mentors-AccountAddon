@@ -1,9 +1,10 @@
 /**
  * Ceci est la seconde version de cette librairie post 202106
  */
-  
+
 import {
 	APP_DEBUG_STYLE, APP_WARN_STYLE, APP_ERROR_STYLE,
+	APP_INFO_STYLE
 	} from './constants.js';
 import App from './index.js';
 import { assert } from './utils.js';
@@ -11,7 +12,7 @@ import { isEmptyFunction } from './helpers';
 
 /* Singleton Proxy for db function*/
 const _HistoryDb = (function fHistoryDb() {
-    const TBL_NAME = 'history_session_cache'; 
+    const TBL_NAME = 'history_session_cache';
     const VERBOSE = false;
     const DBCreateTable = function() {
 		if(VERBOSE === true) console.log("%cDb dont' contain table history_session_cache table, will create it", APP_DEBUG_STYLE);
@@ -23,10 +24,10 @@ const _HistoryDb = (function fHistoryDb() {
 		}
 		return true;
     };
-    
+
     const DBFindInTable = function(oValue){
 		if(DBTableExists === false){
-			throw new Error("%c_HistoryDb:DBFindInTable() failed reason : table is not defined", APP_DEBUG_STYLE); 
+			throw new Error("%c_HistoryDb:DBFindInTable() failed reason : table is not defined", APP_DEBUG_STYLE);
 		}
 		if(VERBOSE === true) console.log('%c_HistoryDb:DBFindInTable()  Request is App.Cfg.dbase.get("%s").find(%o).value()',APP_DEBUG_STYLE, TBL_NAME, oValue) ;
 		let _r = App.Cfg.dbase.get(TBL_NAME)
@@ -34,17 +35,17 @@ const _HistoryDb = (function fHistoryDb() {
 		.value();
 		return _r
 	};
-	
+
 	const DBGetAll = function(){
 		if(DBTableExists === false){
-			throw new Error("%c_HistoryDb:DBGetAll() failed reason : table is not defined", APP_DEBUG_STYLE); 
+			throw new Error("%c_HistoryDb:DBGetAll() failed reason : table is not defined", APP_DEBUG_STYLE);
 		}
 		if(VERBOSE === true) console.log('%c_HistoryDb:DBGetAll()  Request is App.Cfg.dbase.get("%s").value()',APP_DEBUG_STYLE, TBL_NAME) ;
 		let _r = App.Cfg.dbase.get(TBL_NAME)
 		.value();
 		return _r
 	}
-    
+
     const DBInsertInTable = function(oValue){
 		if(DBTableExists === false){
 			DBCreateTable();
@@ -76,18 +77,18 @@ const _HistoryDb = (function fHistoryDb() {
 		}
 		if(VERBOSE === true) console.log("%c_HistoryDb:DBRemove with filter", APP_DEBUG_STYLE);
 		if(isEmptyFunction(fn_filter)===true) console.log("%c_HistoryDb:DBRemove /!\ filter is empty", APP_DEBUG_STYLE);
-		
+
 		//console.log(fn_filter.toString().length);
 		//console.log(isEmptyFunction(fn_filter));
-		
-		/* just for simulate delete 
+
+		/* just for simulate delete
 		let _res = App.Cfg.dbase.get(TBL_NAME)
 		.filter( fn_filter )
 		.value();
 		console.log("%cSimulate REMOVE result in deletion of: %o", APP_DEBUG_STYLE, _res);
 		*/
-		
-		
+
+
 		let _r = App.Cfg.dbase.get(TBL_NAME)
 		.remove( fn_filter )
 		.write();
@@ -117,19 +118,23 @@ _HistoryDb.delete();
  * Factory function
  */
 var fHistory = function(){
-	
+
 	const TBL_NAME = 'history_session_cache'; // be careful to user either exported property (min) or constant (maj)
+	const C = {
+		VERBOSE:false,
+		DEBUG: false,
+	}
 
 	const checkSupport = function(){
-		let bDebug = true;
+		let bDebug = C.DEBUG;
 		if( App.Cfg.dbase.get("history_session_cache").value() === undefined) {
 			if(bDebug) console.log("%cDb dont' contain history_session_cache table create it", APP_DEBUG_STYLE);
 			App.Cfg.dbase.assign({history_session_cache:[]}).write();
 		}
 	}
-	
+
 	const _exists = function(dtDate){
-		let bDebug = true;
+		let bDebug = C.DEBUG;
 		if(typeof dtDate === 'string'){
 			dtDate = dayjs(dtDate);
 		}
@@ -147,9 +152,9 @@ var fHistory = function(){
 	 *  Get the session index (number in list of data returned by api)
 	 *  for a date of session
 	 */
-	
+
 	const _getSessionIndex = function(dtDate){
-		let bDebug = true;
+		let bDebug = C.DEBUG;
 		if(typeof dtDate === 'string'){
 			dtDate = dayjs(dtDate);
 		}
@@ -164,8 +169,8 @@ var fHistory = function(){
 			_r = _HistoryDb.find({id: +dtDate.format('YYYYMMDD')});
 			if (typeof _r.index !== undefined){
 				return _r.index;
-			} 
-			throw new Error("_getSessionIndex() failed reason : property index is unknown"); 
+			}
+			throw new Error("_getSessionIndex() failed reason : property index is unknown");
 		}
 		return -1;
 	};
@@ -174,7 +179,7 @@ var fHistory = function(){
 	 * by default the nearest page
 	 */
 	const _getNearestSessionIndex = function(dtDate){
-		let bDebug = false;
+		let bDebug = C.DEBUG;
 		if(typeof dtDate === 'string'){
 			dtDate = dayjs(dtDate);
 		}
@@ -205,18 +210,18 @@ var fHistory = function(){
 			_r = _HistoryDb.find({id: +_needle.format('YYYYMMDD')});
 			if (typeof _r.index !== undefined){
 				return _r.index;
-			} 
-			throw new Error("[History._getNearestSessionIndex()] failed reason : property index is unknown"); 
+			}
+			throw new Error("[History._getNearestSessionIndex()] failed reason : property index is unknown");
 		}
 		return -1;
 	};
-	
+
 	/*
-	 * Either i could found the index of data 
+	 * Either i could found the index of data
 	 * 	or the nearest index to start
 	 * 		{@datetime} dtDate
-	 * 		return (int) 
-	 */ 
+	 * 		return (int)
+	 */
 	const getSameOrNearestSessionIndex = function(dtDate){
 		let _r = _getSessionIndex(dtDate);
 		if (_r === -1){
@@ -225,51 +230,63 @@ var fHistory = function(){
 		return _r;
 	};
 	/*
-	 * 
+	 *
 	 * name: remove
 	 * @param dtFrom dayjs format date from
 	 * @param dtTo dayjs format date to
 	 * @return
-	 * 
+	 *
 	 * Delete elements form DB
-	 * 
+	 *
 	 * dayjs could be string, the will be translated to dayjs but be carreful with format entry
 	 */
 	const remove = function(dtFrom=null, dtTo=null){
+		let bVerbose = C.VERBOSE;
+		//bVerbose = true; // force
 		if (typeof dtFrom === 'string'){ dtFrom = dayjs(dtFrom); }
 		if (typeof dtTo === 'string'){ dtTo = dayjs(dtTo); }
-		
+
+		if(dtFrom === null && dtTo === null){
+			if(bVerbose === true) console.info("%c%s%c Reset all data", APP_INFO_STYLE,'Historyremove()','');
+			reset();
+		}
+
 		let fn_filter = function(){}
 		/*dayjs must parse string for conversion , as id are int
 		 * must convert them
 		 */
 		if(dtFrom !== null && dtTo !== null){
+			if(bVerbose === true) console.info("%c%s%c remove data from %s to %s", APP_INFO_STYLE,'Historyremove()','',dtFrom.format('DD/MM/YYYY'),dtTo.format('DD/MM/YYYY'));
 			fn_filter =  function(o){return dayjs((o.id).toString(10)).isBetween(dtFrom, dtTo, 'day','[]')};
 		}
 		if(dtFrom == null && dtTo !== null ){
+			if(bVerbose === true) console.info("%c%s%c remove all data until %s", APP_INFO_STYLE,'Historyremove()','',dtTo.format('DD/MM/YYYY'));
 			fn_filter = function(o){return dayjs((o.id).toString(10)).isBefore(dtTo, 'day')};
 		}
 		if(dtFrom != null && dtTo == null){
+			if(bVerbose === true) console.info("%c%s%c remove all data since %s", APP_INFO_STYLE,'Historyremove()','', dtFrom.format('DD/MM/YYYY'));
 			fn_filter = function(o){return dayjs((o.id).toString(10)).isAfter(dtFrom, 'day')};
 		}
-		
-		/* just for simulate delete 
+
+
+
+		/* just for simulate delete
 		let _res = App.Cfg.dbase.get(TBL_NAME)
 		.filter( fn_filter )
 		.value();
 		console.log("%cSimulate REMOVE result in deletion of: %o", APP_DEBUG_STYLE, _res);
 		*/
-		
+
 		// a verifier mais sans paramètre ça semble ne pas fonctionner (il ne supprime pas tout, c'estpour ça que le reset existe encore)
-		
+
 		return _HistoryDb.remove( fn_filter );
 	}
-	
+
 	const reset = function(){
 		return _HistoryDb.reset();
 	}
 	/*
-	 * 
+	 *
 	 * name: setSessionIndex
 	 * @param {date} dtDate the date of the index to store
 	 * @param {int}  index the index of data to browse
@@ -277,6 +294,7 @@ var fHistory = function(){
 	 *  BE CARREFUL date is a STRING after conversion and i nee an int
 	 */
 	const setSessionIndex = function(dtDate, index=0){
+		let bDebug = C.DEBUG;
 		if(typeof dtDate === 'string'){
 			dtDate = dayjs(dtDate);
 		}
@@ -291,10 +309,10 @@ var fHistory = function(){
 			_r = _HistoryDb.insert({id: +dtDate.format('YYYYMMDD'),index:index});
 		}else{
 			_r = _HistoryDb.update({id: +dtDate.format('YYYYMMDD')},{index:index});
-		} 
-		
+		}
+
 		return _r;
-	}; 
+	};
 
 	return Object.freeze({
 		tbl_name: TBL_NAME,
@@ -304,7 +322,7 @@ var fHistory = function(){
 		reset: reset,
 		setSessionIndex: setSessionIndex,
  	});
-  
+
 };
 
 const History = fHistory();

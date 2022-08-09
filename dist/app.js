@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Facturier
 // @namespace    https://stephanety-pro.github.io/OC-Mentors-AccountAddon/
-// @version      1.10.0013
+// @version      1.10.0014
 // @description  Un addon pour vous aider dans votre facturation
 // @author       Stéphane TORCHY
 // @updateURL    https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/dist/app.min.js
@@ -13,7 +13,7 @@
 // @match        https://openclassrooms.com/fr/mentorship/dashboard/booked-mentorship-sessions
 
 // Start at document start https://www.tampermonkey.net/documentation.php#_run_at
-// @run-at document-start   
+// @run-at document-start
 
 // @grant        unsafeWindow
 // @grant        GM_addStyle
@@ -36,10 +36,10 @@
 // @require      https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.29/plugin/localeData.min.js
 
 
-//// GM_Compat : Portable monkey-patching for userscripts  
+//// GM_Compat : Portable monkey-patching for userscripts
 // SRC 				https://github.com/chocolateboy/gm-compat
 // permet notamment d'utiliser GMCompat.unsafeWindow.notify('loaded', { value: 42 }) sous chrome
-// @require       	https://unpkg.com/gm-compat@1.1.0 
+// @require       	https://unpkg.com/gm-compat@1.1.0
 
 //// GM_Config
 // SRC 			https://github.com/sizzlemctwizzle/GM_config/wiki
@@ -53,7 +53,7 @@
 //// draggabilly
 // @require      https://cdnjs.cloudflare.com/ajax/libs/draggabilly/2.2.0/draggabilly.pkgd.min.js
 
-//// toastify 
+//// toastify
 // @require     https://cdn.jsdelivr.net/npm/toastify-js@1.8.0/src/toastify.min.js
 // @resource    toastifycss https://raw.githubusercontent.com/apvarun/toastify-js/master/src/toastify.css
 
@@ -96,7 +96,7 @@
 // require https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.js
 
 
-// ProgressBar 
+// ProgressBar
 // https://loading.io/progress/
 // require https://raw.githubusercontent.com/loadingio/loading-bar/master/dist/loading-bar.js
 // resource loading_barcss https://raw.githubusercontent.com/loadingio/loading-bar/master/dist/loading-bar.css
@@ -121,7 +121,7 @@
 // https://cdn.jsdelivr.net/npm/@webos/process@0.2.0/dist/process.min.js
 // bof ... je ne parviens pas à faire fonctionner l'exemple
 // https://cdn.jsdelivr.net/npm/worker-function@2.0.1/WorkerFunction.min.js
-// Threading 
+// Threading
 // require  https://raw.githubusercontent.com/gkjohnson/threading-js/master/umd/Thread.js
 // require   https://raw.githubusercontent.com/gkjohnson/threading-js/master/umd/ThreadPool.js
 // require   https://raw.githubusercontent.com/gkjohnson/threading-js/master/umd/ThreadQueue.js
@@ -611,7 +611,7 @@
                   }
                   if (g2 === -1)
                     break;
-                  if (f2.push(a2.substring(M, g2)), C(g2 + n2), o2 && (S(), j))
+                  if (f2.push(a2.substring(M, g2)), C2(g2 + n2), o2 && (S(), j))
                     return R();
                   if (L && h3.length >= L)
                     return R(true);
@@ -632,7 +632,7 @@
                       }
                       var k = w2(g2);
                       if (a2.substring(_3 + 1 + k, _3 + 1 + k + n2) === I) {
-                        if (f2.push(a2.substring(M, _3).replace(m2, O)), C(_3 + 1 + k + n2), p2 = a2.indexOf(D, M), _3 = a2.indexOf(O, M), o2 && (S(), j))
+                        if (f2.push(a2.substring(M, _3).replace(m2, O)), C2(_3 + 1 + k + n2), p2 = a2.indexOf(D, M), _3 = a2.indexOf(O, M), o2 && (S(), j))
                           return R();
                         if (L && h3.length >= L)
                           return R(true);
@@ -658,7 +658,7 @@
             function E2(e3) {
               return i3 || (e3 === void 0 && (e3 = a2.substring(M)), f2.push(e3), M = r2, b2(f2), o2 && S()), R();
             }
-            function C(e3) {
+            function C2(e3) {
               M = e3, b2(f2), f2 = [], g2 = a2.indexOf(I, M);
             }
             function R(e3) {
@@ -1390,10 +1390,21 @@
   var students_history_default = StudentHistory;
 
   // src/api.openclassrooms.js
+  var C = {
+    APP_DEBUG_STYLE: [
+      "color: #373737",
+      "background-color: #CC6",
+      "padding: 2px 4px",
+      "border-radius: 2px"
+    ].join(";"),
+    VERBOSE: true,
+    DEBUG: true,
+    NAME: "Api"
+  };
   var fApi = function() {
     let _header = {};
     let _user = "0";
-    const VERBOSE = true;
+    const VERBOSE = C.VERBOSE;
     const API_BASE_URL = "https://api.openclassrooms.com";
     const LIFE_CYCLE_STATUS_PENDING = "pending";
     const LIFE_CYCLE_STATUS_CANCELED = "canceled";
@@ -1461,7 +1472,8 @@
       return _r2;
     };
     const _getSession = async function(aFilter = [], iFrom = 0, iTo = 19) {
-      bDebug = true;
+      const HEADER = `${C.NAME}::_getSession()`;
+      let bDebug2 = C.DEBUG;
       assert(isArray(aFilter) === true, "You must provide an array as param aFilter.", TypeError);
       if (aFilter.length == 0) {
         aFilter = [
@@ -1478,8 +1490,8 @@
       }
       const API_URL = `${API_BASE_URL}/users/${_user}/sessions?actor=expert&life-cycle-status=${sFilter}`;
       let oLimit = _getLimit(iFrom, iTo);
-      if (bDebug) {
-        console.log("%cUrl to call is:%o , params are %o", APP_DEBUG_STYLE, API_URL, oLimit);
+      if (bDebug2) {
+        console.log("%c%s%c Url to call is:%o , params are %o", APP_DEBUG_STYLE, HEADER, "", API_URL, oLimit);
       }
       let _r2 = await xGet(API_URL, oLimit);
       if (_r2 === null || _r2 === void 0) {
@@ -1487,7 +1499,7 @@
         throw new Error(`Request:${API_BASE_URL}/users/${_user}/sessions?actor=expert&life-cycle-status=${sFilter} have a problem`);
       }
       if (_r2.errors) {
-        console.log("%cAPI return an error %s", APP_ERROR_STYLE, _r2.errors.message);
+        console.error("%cAPI return an error %s", APP_ERROR_STYLE, _r2.errors.message);
       }
       return _r2;
     };
@@ -4161,8 +4173,12 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
   }();
   var fHistory = function() {
     const TBL_NAME = "history_session_cache";
+    const C2 = {
+      VERBOSE: false,
+      DEBUG: false
+    };
     const checkSupport = function() {
-      let bDebug2 = true;
+      let bDebug2 = C2.DEBUG;
       if (src_default.Cfg.dbase.get("history_session_cache").value() === void 0) {
         if (bDebug2)
           console.log("%cDb dont' contain history_session_cache table create it", APP_DEBUG_STYLE);
@@ -4170,7 +4186,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       }
     };
     const _exists = function(dtDate) {
-      let bDebug2 = true;
+      let bDebug2 = C2.DEBUG;
       if (typeof dtDate === "string") {
         dtDate = dayjs(dtDate);
       }
@@ -4181,7 +4197,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       return _r2 === void 0 ? false : true;
     };
     const _getSessionIndex = function(dtDate) {
-      let bDebug2 = true;
+      let bDebug2 = C2.DEBUG;
       if (typeof dtDate === "string") {
         dtDate = dayjs(dtDate);
       }
@@ -4201,7 +4217,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       return -1;
     };
     const _getNearestSessionIndex = function(dtDate) {
-      let bDebug2 = false;
+      let bDebug2 = C2.DEBUG;
       if (typeof dtDate === "string") {
         dtDate = dayjs(dtDate);
       }
@@ -4242,25 +4258,37 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       return _r2;
     };
     const remove = function(dtFrom2 = null, dtTo2 = null) {
+      let bVerbose = C2.VERBOSE;
       if (typeof dtFrom2 === "string") {
         dtFrom2 = dayjs(dtFrom2);
       }
       if (typeof dtTo2 === "string") {
         dtTo2 = dayjs(dtTo2);
       }
+      if (dtFrom2 === null && dtTo2 === null) {
+        if (bVerbose === true)
+          console.info("%c%s%c Reset all data", APP_INFO_STYLE, "Historyremove()", "");
+        reset();
+      }
       let fn_filter = function() {
       };
       if (dtFrom2 !== null && dtTo2 !== null) {
+        if (bVerbose === true)
+          console.info("%c%s%c remove data from %s to %s", APP_INFO_STYLE, "Historyremove()", "", dtFrom2.format("DD/MM/YYYY"), dtTo2.format("DD/MM/YYYY"));
         fn_filter = function(o) {
           return dayjs(o.id.toString(10)).isBetween(dtFrom2, dtTo2, "day", "[]");
         };
       }
       if (dtFrom2 == null && dtTo2 !== null) {
+        if (bVerbose === true)
+          console.info("%c%s%c remove all data until %s", APP_INFO_STYLE, "Historyremove()", "", dtTo2.format("DD/MM/YYYY"));
         fn_filter = function(o) {
           return dayjs(o.id.toString(10)).isBefore(dtTo2, "day");
         };
       }
       if (dtFrom2 != null && dtTo2 == null) {
+        if (bVerbose === true)
+          console.info("%c%s%c remove all data since %s", APP_INFO_STYLE, "Historyremove()", "", dtFrom2.format("DD/MM/YYYY"));
         fn_filter = function(o) {
           return dayjs(o.id.toString(10)).isAfter(dtFrom2, "day");
         };
@@ -4271,6 +4299,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       return _HistoryDb.reset();
     };
     const setSessionIndex = function(dtDate, index = 0) {
+      let bDebug2 = C2.DEBUG;
       if (typeof dtDate === "string") {
         dtDate = dayjs(dtDate);
       }
@@ -5746,36 +5775,129 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     }
   };
   var _buildCbox = function(oEl, bUsePathToFilrer = true) {
-    if (oEl.childElementCount === 1) {
+    const bDebug2 = false;
+    const sHeader = "do.js#_buildCbox()::";
+    if (bDebug2)
+      console.log("%c%s%c _buildCbox is %o", APP_DEBUG_STYLE, sHeader, "", oEl);
+    if (oEl.children.length !== 1) {
+      console.error("Le DOM des lignes d'historique n'est plus conforme");
       return;
     }
-    ;
-    if (bUsePathToFilrer === true) {
-      const sPath = window.location.pathname.split("/");
-      if (sPath[sPath.length - 1] !== "mentorship-sessions-history") {
-        return;
+    const oLine = oEl.children[0];
+    let _oEl2;
+    if (oLine.querySelector("svg") === null) {
+      console.info("%c%s%c je ne trouve pas de balise svg enfant, cette ligne pose probleme %o", APP_WARN_STYLE, sHeader, "", oLine);
+      return;
+    }
+    var sState = oLine.querySelector("svg").getAttribute("aria-label");
+    if (bDebug2)
+      console.log("\xE9tat: %s", sState);
+    _oEl2 = oLine.querySelector("svg");
+    _oEl2.dataset.facturierType = "state";
+    _oEl2.dataset.facturierValue = sState;
+    if (oLine.querySelector("p") === null) {
+      console.info("%c%s%c je ne trouve pas de balise p enfant, cette ligne pose probleme %o", APP_WARN_STYLE, sHeader, "", oLine);
+      return;
+    }
+    var sSessionType = oLine.querySelector("p").innerText;
+    if (bDebug2)
+      console.log("type de session: %s", sSessionType);
+    _oEl2 = oLine.querySelector("p");
+    _oEl2.dataset.facturierType = "sessionType";
+    _oEl2.dataset.facturierValue = sSessionType;
+    _oEl2 = oLine.querySelector("time");
+    var sDateTime = _oEl2.getAttribute("datetime").trim();
+    if (bDebug2)
+      console.log("date et horaire de session: %s", sDateTime);
+    if (bDebug2)
+      console.log("date et horaire de session to iso %s", dayjs(sDateTime).toISOString());
+    _oEl2.dataset.facturierType = "sessionDateTime";
+    _oEl2.dataset.facturierValue = dayjs(sDateTime).toISOString();
+    _oEl2 = oLine.querySelector("time").closest("div").nextElementSibling.querySelector("a");
+    if (_oEl2 === null) {
+      _oEl2 = oLine.querySelector("time").closest("div").nextElementSibling.querySelector("p");
+    }
+    if (_oEl2 === null) {
+      console.error("Le DOM des lignes d'hsitorique n'est plus conforme");
+      return;
+    }
+    var sStudentName = _oEl2.innerText;
+    if (bDebug2)
+      console.log("nom de l'\xE9tudiant: %s", sStudentName);
+    _oEl2.dataset.facturierType = "sessionStudentName";
+    _oEl2.dataset.facturierValue = sStudentName;
+    _oEl2 = oLine.children[3];
+    let sLvl;
+    if (_oEl2.querySelector("p") !== null && _oEl2.querySelector("p").nextElementSibling !== null && _oEl2.querySelector("p").nextElementSibling.querySelector("span") !== null) {
+      _oEl2 = _oEl2.querySelector("p").nextElementSibling.querySelector("span");
+      sLvl = _oEl2.innerText;
+      if (bDebug2)
+        console.log("expertise: %s", sLvl);
+      _oEl2.dataset.facturierType = "sessionLevel";
+      _oEl2.dataset.facturierValue = sLvl;
+    }
+    const isDefense = (o) => o.querySelector("[data-facturier-type='sessionType'][data-facturier-value='Soutenance']") !== null;
+    const isSession = (o) => o.querySelector("[data-facturier-type='sessionType'][data-facturier-value='Mentorat']") !== null;
+    if (bDebug2)
+      console.log("ligne: %o type de session Mentorat:%o Soutenance:%o", oLine, isSession(oLine), isDefense(oLine));
+    console.log("Tous les a de la ligne renvoient : %o", oEl.querySelectorAll("a"));
+    console.log("Tous les a de la ligne renvoient : %o", oLine.querySelectorAll("a"));
+    let sWho_id = "";
+    if (isDefense(oLine) === true) {
+      if (bDebug2)
+        console.log("check for url in colum 4 %o", oLine.children[4]);
+      _oEl2 = oLine.children[4];
+      if (_oEl2.querySelector("a") !== null) {
+        sWho_id = _oEl2.querySelector("a").href;
+        if (bDebug2)
+          console.log("Valeur du href %s", sWho_id);
+        if (bDebug2)
+          console.log("will replace %s by %s", document.location.origin + "/users/", "");
+        sWho_id = sWho_id.replace(document.location.origin + "/users/", "");
+        sWho_id = sWho_id.substring(sWho_id.indexOf("/"), -1);
+        if (bDebug2)
+          console.log("isDefense =  true, unique id of student: %s", sWho_id);
       }
     }
-    var sSessionSaved = null;
-    var sState = oEl.children[0].querySelector("svg").getAttribute("aria-label");
-    var sSessionType = oEl.children[0].querySelector("p").innerText;
-    if (oEl.children[0].childElementCount === 2) {
-      sSessionSaved = oEl.children[2].getAttribute("aria-label");
-    }
-    var sDateTime = oEl.children[1].querySelector("time").getAttribute("datetime").trim();
-    var sStudentName = oEl.children[2].querySelector("a").innerText;
-    var sWho_id = getKey(oEl.children[2], -2);
-    var sLvl = null;
-    if (oEl.childElementCount > 3 && oEl.children[3].childElementCount !== 0) {
-      if (oEl.children[3].querySelector("span") !== null) {
-        sLvl = oEl.children[3].querySelector("span").innerText;
+    if (isSession(oLine) === true) {
+      if (bDebug2)
+        console.log("check for url in colum 2 %o", oLine.children[2]);
+      _oEl2 = oLine.children[2];
+      if (_oEl2.querySelector("a") !== null) {
+        sWho_id = _oEl2.querySelector("a").href;
+        if (bDebug2)
+          console.log("Valeur du href %s", sWho_id);
+        let sLang = document.location.pathname.split("/")[1];
+        if (bDebug2)
+          console.log("will replace %s by %s", `${document.location.origin}/${sLang}/mentorship/dashboard/students/`, "");
+        sWho_id = sWho_id.replace(`${document.location.origin}/${sLang}/mentorship/dashboard/students/`, "");
+        if (bDebug2)
+          console.log("isSession =  true unique id of student: %s", sWho_id);
       }
+    }
+    if (isSession(oLine) === true && sWho_id.length == 0) {
+      sWho_id = students_default.findByFullName(sStudentName).id;
+    }
+    if (bDebug2)
+      console.log("unique id of student: %s", sWho_id);
+    _oEl2 = oLine.querySelector(".Facturier__cbox");
+    if (_oEl2 !== null) {
+      _oEl2.remove();
+    }
+    var _oClonedColumn = oLine.children[0].cloneNode();
+    oLine.setAttribute("style", "grid-template-columns:15rem 1fr 1fr 5.5rem 6.5rem 1rem");
+    var sWhen = dayjs(sDateTime).toISOString();
+    var iHash = "-1";
+    if (sWho_id.length > 0) {
+      if (bDebug2)
+        console.log("date is %s will search hash(%s,%s)", sDateTime, sWhen, sWho_id);
+      iHash = sessions_default.getHashId(sWhen, sWho_id);
     }
     var inputElem = document.createElement("input");
     inputElem.type = "checkbox";
     inputElem.name = "name";
-    var sWhen = dayjs(sDateTime).toISOString();
-    var iHash = sessions_default.getHashId(sWhen, sWho_id);
+    if (bDebug2)
+      console.log("%ciHash is %c (%o)%o", APP_DEBUG_STYLE, "", typeof iHash, iHash);
     inputElem.value = iHash;
     inputElem.onclick = function(event) {
       event.stopPropagation();
@@ -5783,14 +5905,73 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     bChecked = sessions_default.exists(iHash);
     if (bChecked === true)
       inputElem.checked = true;
-    const cls2ndChild = oEl.children[1].classList;
-    const clsLastChild = oEl.lastChild.classList;
-    oEl.lastChild.classList = cls2ndChild;
-    var oSubEl = document.createElement("div");
-    oSubEl.appendChild(inputElem);
-    oSubEl.classList.add(...clsLastChild);
-    oSubEl.classList.add("Facturier__cbox");
-    return oSubEl;
+    _oClonedColumn.appendChild(inputElem);
+    _oClonedColumn.setAttribute("style", "order:4;");
+    _oClonedColumn.classList.add("Facturier__cbox");
+    return _oClonedColumn;
+  };
+  var updCboxValue = function(oLine) {
+    const bDebug2 = false;
+    const sHeader = "do.js#updCboxValue()::";
+    if (bDebug2)
+      console.log("%c%s%c oLine is %o", APP_DEBUG_STYLE, sHeader, "", oLine);
+    if (oLine.querySelector("input") === null) {
+      if (bDebug2)
+        console.log("%c%s%c updCboxValue no input in %o, have to return", APP_DEBUG_STYLE, sHeader, "", oLine);
+      return;
+    }
+    let inputElem = oLine.querySelector("input");
+    const getDateTime = (o) => o.querySelector("[data-facturier-type='sessionDateTime']").getAttribute("data-facturier-value");
+    const getStudentName = (o) => o.querySelector("[data-facturier-type='sessionStudentName']").getAttribute("data-facturier-value");
+    const isDefense = (o) => o.querySelector("[data-facturier-type='sessionType'][data-facturier-value='Soutenance']") !== null;
+    const isSession = (o) => o.querySelector("[data-facturier-type='sessionType'][data-facturier-value='Mentorat']") !== null;
+    if (isSession(oLine) === false && isDefense(oLine) === false) {
+      console.error("%cSomething wrong not possible to update input on line %o there is not type for session", APP_ERROR_STYLE, oLine);
+      return;
+    }
+    let sDateTime = getDateTime(oLine);
+    if (bDebug2)
+      console.log("date et horaire de session: %s", sDateTime);
+    let sWho_id = "";
+    if (isDefense(oLine) === true) {
+      if (bDebug2)
+        console.log("check for url in colum 4 %o", oLine.children[4]);
+      _oEl = oLine.children[4];
+      if (_oEl.querySelector("a") !== null) {
+        sWho_id = _oEl.querySelector("a").href;
+        sWho_id = sWho_id.replace(document.location.origin + "/users/", "");
+        sWho_id = sWho_id.substring(sWho_id.indexOf("/"), -1);
+        if (bDebug2)
+          console.log("isDefense =  true, unique id of student: %s", sWho_id);
+      }
+    }
+    if (isSession(oLine) === true) {
+      if (bDebug2)
+        console.log("check for url in colum 2 %o", oLine.children[2]);
+      _oEl = oLine.children[2];
+      if (_oEl.querySelector("a") !== null) {
+        sWho_id = _oEl.querySelector("a").href;
+        sWho_id = sWho_id.replace(document.location.origin + "/mentorship/dashboard/students/", "");
+        if (bDebug2)
+          console.log("isSession =  true unique id of student: %s", sWho_id);
+      }
+    }
+    var sWhen = dayjs(sDateTime).toISOString();
+    var iHash = "-1";
+    if (sWho_id.length > 0) {
+      iHash = sessions_default.getHashId(sWhen, sWho_id);
+    } else {
+      let _t = "";
+      _t = students_default.findByFullName(getStudentName(oLine)).id;
+      if (_t.length > 0) {
+        iHash = sessions_default.getHashId(sWhen, _t);
+      }
+    }
+    inputElem.value = iHash;
+    bChecked = sessions_default.exists(iHash);
+    console.log(`%cIs the session with cid ${iHash} (this is the calculated id) in db ? ${bChecked}`, APP_DEBUG_STYLE);
+    if (bChecked === true)
+      inputElem.checked = true;
   };
   var _checkCbox = function(oEl) {
     try {
@@ -5807,9 +5988,11 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     }
   };
   var addCbox = function() {
+    const bDebug2 = true;
+    const sHeader = "do.js#addCbox()::";
     var sPath = OC_DASHBOARDCSSMAINDATASELECTOR;
     var sessions = document.querySelector(sPath);
-    var bChecked2 = false;
+    var bChecked2 = true;
     if (sessions === null) {
       console.log(`%cERROR:Could'nt find the table which display sessions : ${sessions}`, APP_ERROR_STYLE);
       throw new Error("!!!! IRRECOVERABLE ERROR NO TABLE OF SESSIONS FOUNDED");
@@ -5817,11 +6000,26 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     if (sessions.querySelector(".Facturier__cbox input[type=checkbox]") === null) {
       var sessions = document.querySelector(`${sPath}`).children;
       for (let [key, oEl2] of Object.entries(sessions)) {
-        if (oEl2.firstChild.nodeName !== "A") {
+        if (oEl2.nodeName === "DIV" && oEl2.classList.contains("Facturier__cbox_all")) {
+          console.log("MON ENTETE");
+          oEl2.dataset.facturierType = "header";
           continue;
         }
-        const oLine = oEl2.firstChild;
-        oLine.appendChild(_buildCbox(oLine));
+        if (oEl2.querySelector("span") === null) {
+          console.log("UNE ETIQUETTE MOIS");
+          oEl2.dataset.facturierType = "section_month";
+          continue;
+        }
+        const oLine = oEl2.children[0];
+        const oColBox = _buildCbox(oEl2);
+        if (oColBox !== null && typeof oColBox !== "undefined") {
+          if (bDebug2)
+            console.log("%c%s%c returned object to add to line is %o", APP_DEBUG_STYLE, sHeader, "", oColBox);
+          oLine.appendChild(oColBox);
+        } else {
+          if (bDebug2)
+            console.warn("%c%s%c ptoblem returned object to add to line is %o (null or undefined)", APP_WARN_STYLE, sHeader, "", oColBox);
+        }
       }
       if (document.querySelector(`${sPath} .Facturier__cbox_all`) === null) {
         const insertBefore = (ele, anotherEle) => anotherEle.insertAdjacentElement("beforebegin", ele);
@@ -9598,9 +9796,33 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
           const addCboxIfNeeded = function(oNode2) {
             if (typeof oNode2 === "undefined")
               return null;
-            if (oNode2.nodeName === "A" && oNode2.children[0].querySelector("p") !== null && oNode2.children[0].querySelector("p").innerText.toUpperCase().trim() == "SOUTENANCE") {
+            if (oNode2.nodeName === "#text") {
+              return null;
+            }
+            if (oNode2.nodeName === "IFRAME") {
+              return null;
+            }
+            if (oNode2.children.length == 0) {
+              return null;
+            }
+            if (oNode2.parentElement && (oNode2.parentElement.querySelector(".Facturier__cbox") || oNode2.parentElement.querySelector(".Facturier__cbox_all") || oNode2.parentElement.querySelector(".Facturier__header"))) {
+              return null;
+            }
+            if (oNode2.nodeName === "UL") {
+              return null;
+            }
+            if (oNode2.nodeName === "LI") {
               debounce(addOneCbox(oNode2));
               Facturier._lastMutation = dayjs().valueOf();
+              return;
+            }
+            if (oNode2.nodeName === "A" && oNode2.href.includes("/users/")) {
+              if (oNode2.parentElement.parentElement !== null) {
+                debounce(updCboxValue(oNode2.parentElement.parentElement));
+              } else {
+                console.warn("OC a chang\xE9 la mani\xE8re avec laquelles les lignes sont cr\xE9es");
+              }
+              return;
             }
           };
           addCboxIfNeeded(mutation.addedNodes[0]);

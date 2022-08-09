@@ -2,7 +2,11 @@
 
 LEGENDE: C: Corrections(Fixes) / B: Corrections de Bug (BugFixes) / F: Ajout de fonctionnalité (Features) / D: Divers (Misc)
 
-## 1.10.0013 (01/04/2023)
+## 1.10.0014 (09/08/2022)
+	- C: Prise en compte des évolutions d'interface utilisateur openclassrooms
+	- B: Correction d'un bug en supprsseion d'historique (bookmarks) quand on ne donnait pas de date pour filtrer les élements
+
+## 1.10.0013 (01/04/2022)
 	- C: Prise en compte des évolutions d'interface utilisateur openclassrooms
 	- B: Correction sur l'apparition d'étudiants en création alors qu'ils venaient d'être crées
 

@@ -1,7 +1,7 @@
 /**
- * 
+ *
  */
- 
+
 import {
 	APP_DEBUG_STYLE, APP_WARN_STYLE, APP_ERROR_STYLE, APP_PERF_STYLE,
 	APP_NAME, APP_AUTHOR,
@@ -32,8 +32,8 @@ import Meta 		from './meta.js';
 
 
 /**
- * 
- */ 
+ *
+ */
 var about = async function(){
 	var sHtml ="";
 	// src https://ishadeed.com/article/css-variables-inline-styles/
@@ -51,7 +51,7 @@ var about = async function(){
 		},
 	});
 
-  
+
 	var md = response.responseText;
 
 	var converter = new showdown.Converter();
@@ -72,70 +72,8 @@ var about = async function(){
 		grow: 'fullscreen',
 	});
 }
-/**
- * 
- */
-var addCboxOld = function(){
-	var sPath ="table.crud-list tbody";
-	var sessions = document.querySelector(sPath)// le All me retourne aussi le tableau des étudiants
-	var bChecked = false;
-	//console.log(`the sessions are ${sessions}`);
-	if (sessions.querySelector("[type=checkbox]") === null) {
-		for (const el of sessions.children) {
-			//console.log(el.children[0].innerText)
-			var id = getKey(el.children[0]);
-			var inputElem = document.createElement('input');
-			inputElem.type = "checkbox";
-			inputElem.name = "name";
-			inputElem.value = id;
-			inputElem.id = "id";
-			//console.log(el);
-			//console.log(id);
-			bChecked = Session.exists(id);
-			//console.log(`is the session with id ${id} in db ? ${bChecked}`);
-			if (bChecked === true) inputElem.checked = true;
-			var td = document.createElement('td');
-			td.style = "text-align: center";
-			td.appendChild(inputElem);
-			el.appendChild(td);
-		}
-		// ajout d'une case selectionner tout
-		sPath ="table.crud-list thead tr";
-		var el = document.querySelector(sPath)
-		inputElem = document.createElement('input');
-		inputElem.type = "checkbox";
-		inputElem.name = "name";
-		inputElem.value = "value";
-		inputElem.id = "id";
-		inputElem.onclick = function (){document.querySelectorAll("tbody input[type=checkbox]").forEach( e => e.checked = !e.checked);}
-		inputElem.style = "visibility: hidden;"
-		var label = document.createElement('label');
-		label.innerText = "in DB";
-		label.style="display:block;";
-		label.onMouseOver="this.style.cursor=pointer;";
-		label.onMouseOut="this.style.cursor=auto;";
-		label.appendChild(inputElem);
-		td = document.createElement('td');
-		td.style = "text-align: center";
-		//td.appendChild(inputElem);
-		td.appendChild(label);//td.appendChild(inputElem);
-		el.appendChild(td);
-	} else {
-		var _t = sessions.querySelectorAll("[type=checkbox]"); // NOTESTT could be CPU Consumer ? so by precaution define it here
-		var i = _t.length, aChkBox = new Array(i);for(; i--; aChkBox[i] = _t[i]); // NOTESTT those two lines are more optimized than ? var aChkBox = Array.prototype.slice.call(_t)
-		for(var v in aChkBox){
-			bChecked = Session.exists(aChkBox[v].value);
-			//console.log(`is the session with id ${aChkBox[v].value} in db ? ${bChecked}`);
-			if (bChecked === true){
-				aChkBox[v].checked = true;
-			} else {
-				aChkBox[v].checked = false;
-			}
-		}
-	}
-}
 
-// a priori je vais devoir attendre 
+// a priori je vais devoir attendre
 
 /*
  * @param object html element
@@ -158,82 +96,265 @@ var patchSessionHistoryLineUI = function(oEl) {_checkOrAddCbox(oEl);}
 /*
  * @param object html element
  * bUsePathToFilrer filter on location path (note STT 20220313 à améliorer pas tres propre)
+ *
+ * NOTE STT je me demande si je ne devrais pas coller du xdata partout pour me faciliter la vie....
  */
 var _buildCbox=function(oEl, bUsePathToFilrer = true){
-	//console.log("nom de l'étudiant : %o",el.children[2].innerText)
-	// 0 - annulé|réalisé|absent & type mentorat|soutenance
-	// 1 - date
-	// 2 - zone nom étudiant + avatar
-	// 3 - niveau d'expertise
-	
-	// si pas d'enfant c'est une ligne de libellé
-	if (oEl.childElementCount===1){return};
-	if (bUsePathToFilrer === true ){
-			// regexp \/(\w|-)*$
-			const sPath = window.location.pathname.split('/');
-			if (sPath[sPath.length-1] !== 'mentorship-sessions-history'){ return; }
-		}
-	
-	// colonne 0 composée
-	// -- d'une icone
-	// -- d'un texte
-	// -- si soutenance d'un symbole enregistrement
-	var sSessionSaved = null;
-	var sState = oEl.children[0].querySelector('svg').getAttribute('aria-label'); // Annulée...
-	var sSessionType =  oEl.children[0].querySelector('p').innerText; // Mentorat
-	if (oEl.children[0].childElementCount === 2 ){ // pour infor le nodeName est svg
-		// svg enregistré
-		sSessionSaved = oEl.children[2].getAttribute('aria-label');
+	const bDebug = false;
+	const sHeader = 'do.js#_buildCbox()::';
+	if(bDebug)console.log('%c%s%c _buildCbox is %o',APP_DEBUG_STYLE, sHeader, '', oEl);
+	//console.log("_buildCbox %o", oEl.children.length);
+
+	if(oEl.children.length !== 1){
+		console.error("Le DOM des lignes d'historique n'est plus conforme")
+		return;
 	}
-	// colonne 1
-	var sDateTime = oEl.children[1].querySelector('time').getAttribute('datetime').trim(); //  "2021-10-08T07:45:00+0000"
-	// colonne 2 composée
-	// -- d'ue photo
-	// -- d'un nom
-	var sStudentName =  oEl.children[2].querySelector('a').innerText;
-	//var sWho_id = getKey(_oEl.children[2],-2); // get the before last '/' element
-	var sWho_id = getKey(oEl.children[2],-2); // get the before last '/' element
-	// colonne 3 le niveau d'experstise uniquement en mode historique
-	var sLvl = null;
-	if(oEl.childElementCount > 3 && oEl.children[3].childElementCount !== 0){ // si annulé pas de level
-	// mot expertise : oEl.children[3].querySelector('p').innerText
-	// niv 
-		// en fait ce level n'est pas mis à jour tout de suite visiblement
-		// ça se voit en mode debuggage on a pas cette zone de remplie les deux div sont là (la colonne existe)
-		// mais on a pas de span à l'intérieur
-		if (oEl.children[3].querySelector('span') !== null){
-			sLvl = oEl.children[3].querySelector('span').innerText;
+
+	const oLine = oEl.children[0];
+	let _oEl;
+
+	if(oLine.querySelector('svg') === null){
+		console.info('%c%s%c je ne trouve pas de balise svg enfant, cette ligne pose probleme %o',APP_WARN_STYLE, sHeader, '', oLine)
+		return;
+	}
+	var sState = oLine.querySelector('svg').getAttribute('aria-label');
+	if(bDebug)console.log("état: %s", sState);
+	_oEl = oLine.querySelector('svg');
+	_oEl.dataset.facturierType='state';
+	_oEl.dataset.facturierValue=sState;
+
+	if(oLine.querySelector('p') === null){
+		console.info('%c%s%c je ne trouve pas de balise p enfant, cette ligne pose probleme %o',APP_WARN_STYLE, sHeader, '', oLine)
+		return;
+	}
+
+	var sSessionType =  oLine.querySelector('p').innerText;
+	if(bDebug)console.log("type de session: %s", sSessionType);
+	_oEl =  oLine.querySelector('p');
+	_oEl.dataset.facturierType='sessionType';
+	_oEl.dataset.facturierValue=sSessionType;
+
+	_oEl =  oLine.querySelector('time');
+	var sDateTime =  _oEl.getAttribute('datetime').trim();
+	if(bDebug)console.log("date et horaire de session: %s", sDateTime);
+	if(bDebug)console.log("date et horaire de session to iso %s", dayjs(sDateTime).toISOString());
+	_oEl.dataset.facturierType='sessionDateTime';
+	_oEl.dataset.facturierValue=dayjs(sDateTime).toISOString();
+
+	// puisque le nom de l'étudiant est à droite de la date
+	// on va utiliser l'element suivant le parent de l'element date
+	_oEl =  oLine.querySelector('time').closest('div').nextElementSibling.querySelector('a');
+
+	// si c'est une soutenance ou si l'étudiant n'est plus accessible
+	if (_oEl === null){
+		_oEl =  oLine.querySelector('time').closest('div').nextElementSibling.querySelector('p');
+	}
+
+	if (_oEl === null){
+		console.error("Le DOM des lignes d'hsitorique n'est plus conforme")
+		return;
+	}
+
+	var sStudentName =  _oEl.innerText;
+	if(bDebug)console.log("nom de l'étudiant: %s", sStudentName);
+	_oEl.dataset.facturierType='sessionStudentName';
+	_oEl.dataset.facturierValue=sStudentName;
+
+	// expertise on repart sur les pseudo colonnes
+	_oEl =  oLine.children[3];
+	let sLvl;
+	// le niveau d'expertise est stocké dans l'élement suivant le p
+	if (_oEl.querySelector('p') !== null &&
+		_oEl.querySelector('p').nextElementSibling !== null &&
+		_oEl.querySelector('p').nextElementSibling.querySelector('span') !== null
+	){
+		_oEl = _oEl.querySelector('p').nextElementSibling.querySelector('span');
+		sLvl = _oEl.innerText;
+		if(bDebug)console.log("expertise: %s", sLvl);
+		_oEl.dataset.facturierType='sessionLevel';
+		_oEl.dataset.facturierValue=sLvl;
+	}
+
+	const isDefense = (o) => o.querySelector("[data-facturier-type='sessionType'][data-facturier-value='Soutenance']") !== null
+	const isSession= (o) => o.querySelector("[data-facturier-type='sessionType'][data-facturier-value='Mentorat']") !== null
+
+	//récuperer l'id dans le lien du voir détail
+
+	// checking
+
+	if(bDebug)console.log("ligne: %o type de session Mentorat:%o Soutenance:%o", oLine, isSession(oLine), isDefense(oLine));
+
+		console.log("Tous les a de la ligne renvoient : %o",oEl.querySelectorAll('a'));
+		console.log("Tous les a de la ligne renvoient : %o",oLine.querySelectorAll('a'));
+
+	let sWho_id="";
+	if (isDefense(oLine)===true){
+		if(bDebug)console.log("check for url in colum 4 %o", oLine.children[4]);
+
+		_oEl =  oLine.children[4]; // noeud détail
+		if(_oEl.querySelector('a') !== null){ // pas de ligne détail
+			sWho_id = _oEl.querySelector('a').href;
+			if(bDebug)console.log("Valeur du href %s", sWho_id);
+
+			if(bDebug)console.log("will replace %s by %s", document.location.origin+'/users/', '');
+
+			sWho_id = sWho_id.replace(document.location.origin+'/users/','');
+			sWho_id = sWho_id.substring(sWho_id.indexOf('/'),-1)
+
+			if(bDebug)console.log("isDefense =  true, unique id of student: %s", sWho_id);
 		}
+	}
+	// si l'étudiant n'est plus accessible la colonne 2 sera vide de A et on devra passer à l'étape suivante
+	if (isSession(oLine)===true){
+		if(bDebug)console.log("check for url in colum 2 %o", oLine.children[2]);
+		_oEl =  oLine.children[2]; // noeud détail
+		if(_oEl.querySelector('a') !== null){ // pas de ligne détail
+			sWho_id = _oEl.querySelector('a').href;
+			if(bDebug)console.log("Valeur du href %s", sWho_id);
+			// exemple  "https://openclassrooms.com/fr/mentorship/dashboard/students/9692797"
+			let sLang = document.location.pathname.split('/')[1];
+			if(bDebug)console.log("will replace %s by %s", `${document.location.origin}/${sLang}/mentorship/dashboard/students/`, '');
+
+			sWho_id = sWho_id.replace(`${document.location.origin}/${sLang}/mentorship/dashboard/students/`,'');
+
+			if(bDebug)console.log("isSession =  true unique id of student: %s", sWho_id);
+		}
+	}
+	// si l'étudiant n'est plus accessible regarder la colonne 4
+	/*if (isSession(oLine)===true && sWho_id.length==0){
+		if(bDebug)console.log("check for url in colum 4 %o", oLine.children[4]);
+		_oEl =  oLine.children[4]; // noeud détail
+		if(_oEl.querySelector('a') !== null){ // pas de ligne détail
+			sWho_id = _oEl.querySelector('a').href;
+			if(bDebug)console.log("Valeur du href %s", sWho_id);
+			// exemple  "https://openclassrooms.com/fr/mentorship/dashboard/students/9692797"
+			let sLang = document.location.pathname.split('/')[1];
+			if(bDebug)console.log("will replace %s by %s", `${document.location.origin}/${sLang}/mentorship/dashboard/sessions/mentoring/`, '');
+
+			sWho_id = sWho_id.replace(`${document.location.origin}/${sLang}/mentorship/dashboard/sessions/mentoring/`,'');
+
+			if(bDebug)console.log("isSession =  true unique id of student: %s", sWho_id);
+		}
+	}*/
+
+	if (isSession(oLine)===true && sWho_id.length==0){
+		sWho_id =  Student.findByFullName(sStudentName).id;
+	}
+
+	if(bDebug)console.log("unique id of student: %s", sWho_id);
+	// on trace
+
+
+	// cloner la premiere colonne
+	// delete any existing element cbox
+	_oEl = oLine.querySelector('.Facturier__cbox');
+	if(_oEl !== null){ _oEl.remove(); }
+
+	var _oClonedColumn =  oLine.children[0].cloneNode();
+	//_oClonedColumn
+
+	// ajouter une colonne dans la grille de base
+
+	oLine.setAttribute('style','grid-template-columns:15rem 1fr 1fr 5.5rem 6.5rem 1rem');
+
+	var sWhen = dayjs(sDateTime).toISOString();
+	var iHash = "-1";
+	if(sWho_id.length>0){
+		if(bDebug)console.log("date is %s will search hash(%s,%s)", sDateTime, sWhen, sWho_id);
+		iHash = Session.getHashId(sWhen, sWho_id);
 	}
 	var inputElem = document.createElement('input');
 	inputElem.type = "checkbox";
 	inputElem.name = "name";
-	var sWhen = dayjs(sDateTime).toISOString();
 	// the cid (calculate id is a combination of id of student and timetime)
-	var iHash = Session.getHashId(sWhen, sWho_id);
-	//console.log('%ciHash is (%o)%o',APP_DEBUG_STYLE, typeof iHash, iHash);
+
+	if(bDebug)console.log('%ciHash is %c (%o)%o',APP_DEBUG_STYLE, '', typeof iHash, iHash);
 	inputElem.value = iHash;
 	// because there is a global handler click on whole tr
 	inputElem.onclick = function(event){ event.stopPropagation(); };
 	bChecked = Session.exists(iHash);
 	//console.log(`%cIs the session with cid ${iHash} (this is the calculated id) in db ? ${bChecked}`, APP_DEBUG_STYLE);
 	if (bChecked === true) inputElem.checked = true;
-	/*
-	var td = document.createElement('td');
-	td.style = "text-align: center";
-	td.appendChild(inputElem);
-	*/
-	// get classlist from last element
-	const cls2ndChild = oEl.children[1].classList;
-	// get classlist from before lastelement
-	const clsLastChild = oEl.lastChild.classList;
-	//
-	oEl.lastChild.classList = cls2ndChild;
-	var oSubEl = document.createElement('div');
-	oSubEl.appendChild(inputElem);
-	oSubEl.classList.add(...clsLastChild);
-	oSubEl.classList.add('Facturier__cbox');	
-	return oSubEl;
+	_oClonedColumn.appendChild(inputElem);
+	_oClonedColumn.setAttribute('style', 'order:4;');
+
+	_oClonedColumn.classList.add('Facturier__cbox');
+
+	return _oClonedColumn;
+	//oLine.appendChild(_oClonedColumn);
+
+
+
+}
+
+var updCboxValue = function(oLine){
+	const bDebug = false;
+	const sHeader = 'do.js#updCboxValue()::';
+	if(bDebug)console.log('%c%s%c oLine is %o',APP_DEBUG_STYLE, sHeader, '', oLine);
+
+	if(oLine.querySelector('input') === null){
+		if(bDebug)console.log('%c%s%c updCboxValue no input in %o, have to return',APP_DEBUG_STYLE, sHeader, '', oLine);
+		return;
+	}
+	let inputElem = oLine.querySelector('input');
+
+	//let sDateTime = querySelector("[data-facturier-type='sessionDateTime']").facturierValue;
+	//let sDateTime = querySelector("[data-facturier-type='sessionDateTime']").facturierValue;
+	const getDateTime = (o) => o.querySelector("[data-facturier-type='sessionDateTime']").getAttribute('data-facturier-value');
+	const getStudentName= (o) => o.querySelector("[data-facturier-type='sessionStudentName']").getAttribute('data-facturier-value');
+	const isDefense = (o) => o.querySelector("[data-facturier-type='sessionType'][data-facturier-value='Soutenance']") !== null
+	const isSession= (o) => o.querySelector("[data-facturier-type='sessionType'][data-facturier-value='Mentorat']") !== null
+
+	if (isSession(oLine) === false && isDefense(oLine) === false){
+		console.error('%cSomething wrong not possible to update input on line %o there is not type for session', APP_ERROR_STYLE, oLine);
+		return;
+	}
+
+	let sDateTime = getDateTime(oLine);
+
+	if(bDebug)console.log("date et horaire de session: %s", sDateTime);
+
+	let sWho_id="";
+	if (isDefense(oLine)===true){
+		if(bDebug)console.log("check for url in colum 4 %o", oLine.children[4]);
+		_oEl =  oLine.children[4]; // noeud détail
+		if(_oEl.querySelector('a') !== null){ // pas de ligne détail
+			sWho_id = _oEl.querySelector('a').href;
+			//if(bDebug)console.log("will replace %s by %s", document.location.origin+'/users/', '');
+			sWho_id = sWho_id.replace(document.location.origin+'/users/','');
+			sWho_id = sWho_id.substring(sWho_id.indexOf('/'),-1)
+			if(bDebug)console.log("isDefense =  true, unique id of student: %s", sWho_id);
+		}
+	}
+	if (isSession(oLine)===true){
+		if(bDebug)console.log("check for url in colum 2 %o", oLine.children[2]);
+		_oEl =  oLine.children[2]; // noeud détail
+		if(_oEl.querySelector('a') !== null){ // pas de ligne détail
+			sWho_id = _oEl.querySelector('a').href;
+			// exemple  "https://openclassrooms.com/fr/mentorship/dashboard/students/9692797"
+			//if(bDebug)console.log("will replace %s by %s", document.location.origin+'/mentorship/dashboard/students/', '');
+			sWho_id = sWho_id.replace(document.location.origin+'/mentorship/dashboard/students/','');
+			if(bDebug)console.log("isSession =  true unique id of student: %s", sWho_id);
+		}
+	}
+
+	var sWhen = dayjs(sDateTime).toISOString();
+	var iHash = "-1";
+	if(sWho_id.length>0){
+		iHash = Session.getHashId(sWhen, sWho_id);
+	}else{
+		let _t ='';
+		_t =  Student.findByFullName(getStudentName(oLine)).id;
+		if( _t.length>0){
+			iHash = Session.getHashId(sWhen, _t);
+		}
+
+	}
+
+	inputElem.value = iHash;
+	bChecked = Session.exists(iHash);
+	console.log(`%cIs the session with cid ${iHash} (this is the calculated id) in db ? ${bChecked}`, APP_DEBUG_STYLE);
+	if (bChecked === true) inputElem.checked = true;
 }
 
 /*
@@ -261,31 +382,54 @@ var _checkCbox = function(oEl){
 
 /*
  * sessions.firstChild.querySelector('tr > td > div > div+p')
- * 
+ *
  * version 1.08.20211005 -> changement dans l'affichage
  * version 1.10.0011 -> il faudrait pouvoir ajouter une cbox ce que ne permet pas de faire cette fonction
  *  il va falloir que je compte les nombres de cbox potentielles et que je fasse le traitement si ce nombre est différent de l'actuel
  * */
 
 var addCbox = function(){
+	const bDebug = true;
+	const sHeader = 'do.js#addCbox()::';
+
 	var sPath = OC_DASHBOARDCSSMAINDATASELECTOR;
 	var sessions = document.querySelector(sPath);// le All me retourne aussi le tableau des étudiants
-	var bChecked = false;
+	var bChecked = true;
 	//console.log(`the sessions object is ${sessions}`);
-    if (sessions === null){ 
+    if (sessions === null){
 		console.log(`%cERROR:Could'nt find the table which display sessions : ${sessions}`, APP_ERROR_STYLE);
-		throw new Error("!!!! IRRECOVERABLE ERROR NO TABLE OF SESSIONS FOUNDED"); 
+		throw new Error("!!!! IRRECOVERABLE ERROR NO TABLE OF SESSIONS FOUNDED");
 	}
 	if (sessions.querySelector(".Facturier__cbox input[type=checkbox]") === null) {
 		//console.log("%cCheckBox NOT already displayed, i ve to build and show checked on|off", APP_DEBUG_STYLE);
 		//var sessions = document.querySelector(`${sPath} tbody`);// remarque attention le All me retourne aussi le tableau des étudiants
 		var sessions = document.querySelector(`${sPath}`).children;
 		for (let [key, oEl] of Object.entries(sessions)) {
-			// avoid month summary
-			// les sommaires sont directement contenues dans le div enfant
-			if(oEl.firstChild.nodeName !== 'A'){continue}
-			const oLine = oEl.firstChild;
-			oLine.appendChild(_buildCbox(oLine));
+			// si je veux faire du regexp plutot
+			if(oEl.nodeName === 'DIV' && oEl.classList.contains('Facturier__cbox_all')){
+				console.log("MON ENTETE")
+				oEl.dataset.facturierType = 'header';
+				continue;
+			}
+			// si pas de span je suis dans un mois
+			if(oEl.querySelector('span')===null){
+				console.log("UNE ETIQUETTE MOIS");
+				oEl.dataset.facturierType = 'section_month';
+				continue;
+			}
+			const oLine = oEl.children[0]; // note stt j'aurais pu passer oLine
+
+			const oColBox = _buildCbox(oEl);
+
+			if (
+				oColBox !== null &&
+				typeof oColBox !== 'undefined'
+				){
+				if(bDebug)console.log('%c%s%c returned object to add to line is %o',APP_DEBUG_STYLE, sHeader, '', oColBox);
+				oLine.appendChild(oColBox);
+			}else{
+				if(bDebug)console.warn('%c%s%c ptoblem returned object to add to line is %o (null or undefined)',APP_WARN_STYLE, sHeader, '', oColBox);
+			}
 		}
 		// ajout d'une case selectionner tout
 		// 1 - ajout du thead si nécessaire
@@ -333,7 +477,7 @@ var addCbox = function(){
 	}
 }
     /**
-     * 
+     *
      */
     /*var hiChecked = async function(){
         var sPath = "table.crud-list tbody input:checked"
@@ -352,17 +496,17 @@ var addCbox = function(){
             showConfirmButton: false,
             timer: 1500
         });
-    } */ 
+    } */
 
-// called when element dynamically added 
+// called when element dynamically added
 var addOneCbox = function(oEl){
 	return _checkOrAddCbox(oEl);
-} 
+}
 /**
- * 
+ *
  */
 var billInDetails = async function(){
-	
+
 	var [dtFrom,dtTo] = await popupDateSelector(dayjs().startOf('month'),dayjs().endOf('month'));
 	let _r = List.getListDetailBill(dtFrom,dtTo);
 	let sHtml="";
@@ -402,15 +546,15 @@ var billInDetails = async function(){
 		},
 	});
 
-}  
+}
 /*
- * 
+ *
  * name: collectAuto
  * @param
  * @return
- * 
+ *
  */
- 
+
 var collectAuto = async function(){
 	var bDebug = true;
 	var [dtFrom,dtTo] = await popupDateSelector(dayjs().startOf('month'),dayjs().endOf('month'));
@@ -419,154 +563,23 @@ var collectAuto = async function(){
 	var _r = await Session.getSessionsFromAPI(dtFrom, dtTo);
 	if(bDebug==true) console.log("%ccollectAuto() Sessions are is %o", APP_DEBUG_STYLE, _r);
 	// -->
-	
-} 
- 
-var collectAutoOld = async function (){
 
-	var [dtFrom,dtTo] = await popupDateSelector(dayjs().startOf('month'),dayjs().endOf('month'));
-	//console.log(`wanna fetch history between ${dtFrom.format()} and ${dtTo.format()} searching in page ${pg} of history`);
-	// check if first line is after start of parsing date data
-	// don't load next page if date of last line is before start date of data
-	let iRecurse = 0;
-	let iMaxRecurse = GM_config.get('maxfetchpg');
-	let bBrowse = true;
-	var res = {};
-	let data = [];
-	let pg=1;
-	
-	// -> check in private database session-history-cache the value of date from to accelerate page 
-	let _r = History.getSameOrNearestSessionPage(dtTo); // as we go from present to past in history
-	if (_r !== undefined && _r.page > pg){
-		pg = _r.page; // advance to that page
-	}
-	
-	while(bBrowse){
-		//console.log(`iRecurse > iMaxRecurse ? ${iRecurse} > ${iMaxRecurse} = ${iRecurse > iMaxRecurse}`,APP_LOG_STYLE);
-		if (iRecurse > iMaxRecurse) {
-			console.warn("%cEMERGENCY EXIT LOOP",APP_WARN_STYLE);
-			break; // emergency exit
-		}
-		try {
-			res = await _historyFetch(dtFrom, dtTo, pg, data);
-		}catch(e){
-			console.error(`%c IRRECOVERABLE ERROR ... ${e}, will exit !!!! `, APP_ERROR_STYLE);
-			throw new Error(); // exit js https://stackoverflow.com/questions/550574/how-to-terminate-the-script-in-javascript
-		} 
-		//console.dir(res);console.log(res.length);
-		//Si la dernière ligne du tableau est plus récente que la date de bébut arrête
-		if(res.length>0 && dayjs(res[res.length-1].when).isSameOrBefore(dtFrom) === true){
-			bBrowse = false;
-		}
-		
-		pg+=1
-		iRecurse+=1
-	}
-
-	GM_addStyle('.ldBar path.mainline{stroke-width:10;stroke:#09f;stroke-linecap:round}');
-	GM_addStyle('.ldBar path.baseline{stroke-width:14;stroke:#f1f2f3;stroke-linecap:round;filter:url(#custom-shadow)}');
-	let sHtml = '<div id="pbar" class="ldBar label-center" data-value="0" data-path="M0 0 L200 0 L200 1"></div>';
-	
-	// voir ici si on peut mettre directement dans le div le code pour ne pas avoir de progression, lors du set (equivalent de false dans le set)
-	/* https://loading.io/progress/
-	 * data-duration	bar animation duration.
-data-transition-in	animate the bar for entering transition, when value is set by data-value.
-	 */
-	
-	var cb = res.length
-	
-	Swal.fire({
-		title: 'Traitement en cours!',
-		html: sHtml,
-		confirmButtonText: 'Lovely!',
-		onBeforeOpen: function(modal){
-			//console.log('on before open.');
-			//console.log(document.getElementById('pbar'));
-			var bar = new ldBar("#pbar");
-			//console.log(bar);
-		},
-		onRender: function(modal){
-			//console.log('onRender');   
-			//console.log(document.getElementById('pbar'));
-		},
-		onOpen: async function(modal){
-			//console.log('onOpen');
-			//console.log(document.getElementById('pbar'));
-			var bar = document.getElementById('pbar').ldBar;
-			for(var i in res){
-				if(dayjs(res[i].when).isBefore(dtFrom, "day") === true){
-					break;
-				}
-				if(dayjs(res[i].when).isAfter(dtTo, "day") === true){
-					bar.set( (i / cb) * 100, false);
-					//await sleep(1);// pause need here else no count was shown NOTESTT je pense qu'il s'agit plus d'un probleme de plugin qui s'update pas en temps réel mais avec animation
-					continue;
-				}
-				if(dayjs(res[i].when).isBetween(dtFrom, dtTo, 'day','[]')){
-					await Session.add(res[i]);
-					bar.set( (i / cb) * 100, false);
-					//await sleep(1);// pause need here else no count was shown
-				}
-			}
-			bar.set(100, false);
-			Swal.getTitle().innerText = "Traitement terminé !"
-		},
-		onClose: function(modal){
-			//console.log(".....onClose");
-		},
-		onAfterClose: function(modal){
-			//console.log("......onAfterClose");
-		},
-		onDestroy: function(modal){
-			//console.log(".......onDestroy");
-		}, 
-	});
-
-/*
-	for(var i in res){
-		if(dayjs(res[i].when).isBefore(dtFrom, "day") === true){
-			Swal.fire({
-				position: 'top-end',
-				icon: 'info',
-				toast: true,
-				title: "Collecte des sessions\nCollecte terminée",
-				showConfirmButton: false,
-				timer: 1500
-			});
-			//console.log("BEFORE START");
-			//console.log(`session with id ${res[i].id} date: ${dayjs(res[i].when).format("DD/MM/YYYY")} is before ${dtFrom.format("DD/MM/YYYY")} don't add it to database but continue parsing`);
-			break; // if current data date is before end of filtered period STOP (rember that we are in antichronological order)
-			//continue;
-		}
-		if(dayjs(res[i].when).isAfter(dtTo, "day") === true){ //NOTE STT be careful about hours exemple : session with id 514515 date: 2020-05-31T23:00:00+02:00 is after 2020-05-31T00:00:00+02:00 don't add it to database but continue parsing === true
-			//console.log("NOT AFTER END");
-			//console.log(`session with id ${res[i].id} date: ${dayjs(res[i].when).format()} is after ${dtTo.format()} don't add it to database but continue parsing === ${dayjs(res[i].when).isAfter(dtTo)}`);
-			continue;    // if current data date is not after start of filtered period CONTNUE (rember that we are in antichronological order)
-		}
-		if(dayjs(res[i].when).isBetween(dtFrom, dtTo, 'day','[]')){
-			//console.log(`session with id ${res[i].id} date: ${dayjs(res[i].when).format("DD/MM/YYYY")} is between ${dtFrom.format("DD/MM/YYY")} ${dtTo.format("DD/MM/YYYY")} add it to database`);
-			await Session.add(res[i]);
-		}
-	}
-*/
-	addCbox(); // addCbox on
-	//toastOk("Collecte automatique terminée");
 }
 
 /*
- * 
+ *
  * name: collectChecked
  * @param none
  * @return none
- * 
- */    
+ *
+ */
 var collectChecked = async function(){
 	//var sPath = "table.crud-list tbody input:checked"; //before 20210601
 	//var sPath = "table#sessions_2 tbody input:checked";
 	//var sPath ='table[id*="session"] tbody input:checked';
 	var sPath = OC_DASHBOARDCSSMAINDATASELECTOR;
 	var cb = document.querySelectorAll(sPath);
-	// show progressbar 
+	// show progressbar
 	// working with https://codepen.io/stephane_ty/pen/LYNjvew?editors=1111
 	// voir aussi https://codepen.io/loadingio/pen/yLNOWPq
 	// voir aussi https://codepen.io/loadingio/pen/vYOGwLO
@@ -575,7 +588,7 @@ var collectChecked = async function(){
 	GM_addStyle('.ldBar path.mainline{stroke-width:10;stroke:#09f;stroke-linecap:round}');
 	GM_addStyle('.ldBar path.baseline{stroke-width:14;stroke:#f1f2f3;stroke-linecap:round;filter:url(#custom-shadow)}');
 	let sHtml = '<div id="pbar" class="ldBar label-center" data-value="0" data-path="M0 0 L200 0 L200 1"></div>';
-	
+
 	Swal.fire({
 		title: 'Traitement en cours!',
 		html: sHtml,
@@ -587,7 +600,7 @@ var collectChecked = async function(){
 			//console.log(bar);
 		},
 		onRender: function(modal){
-			//console.log('onRender');   
+			//console.log('onRender');
 			//console.log(document.getElementById('pbar'));
 		},
 		onOpen: async function(modal){
@@ -616,20 +629,20 @@ var collectChecked = async function(){
 		},
 		onDestroy: function(modal){
 			//console.log(".......onDestroy");
-		}, 
+		},
 	});
 	/* mettre cette fonction casse tout le systeme ... SWAL global je suppose */
 	//toastOk("Collecte des sessions cochées\nterminée");
-}  
-	  
+}
+
 /*
- * 
+ *
  * name: debugMode
  * @param none
  * @return none
- * 
+ *
  * Give access to a console
- * 
+ *
  */
 
 var debugMode = function(){
@@ -675,14 +688,14 @@ var debugMode = function(){
 	console.log("Find all session between 01/08/2020 and 31/08/2020 :  d_dbase.get(d_Session.tbl_name).filter( v => d_dayjs(v.when).isSameOrBefore('20200831', 'day') && d_dayjs(v.when).isSameOrAfter('20200801', 'day')).value(); ");
 	console.groupEnd();
 	debugger;
-}      
+}
 
 /*
- * 
+ *
  * name: inconnu
  * @param
  * @return
- * 
+ *
  */
 
 
@@ -696,7 +709,7 @@ var debugMode = function(){
             showConfirmButton: false,
             timer: 3000
         });
-        
+
         let oDom = null
         try {
 			oDom = await _fetch(`https://openclassrooms.com/fr/mentorship/dashboard/mentorship-sessions-history?page=${pg}`, "table.crud-list tbody");
@@ -716,8 +729,8 @@ var debugMode = function(){
 		if (_to.isAfter(dtTo, "day") === true) {
 			console.log(`%cOptimization: oldest (last) data from page are at :${_to.format("DD/MM/YYYY")}, don't analyze what was before end date of extraction ${dtTo.format("DD/MM/YYYY")}`, APP_DEBUG_STYLE);
 			return data;
-		} 
-      
+		}
+
         /*
         if(convertRowToDate(oDom,-1).isAfter(dtTo,'day')===true) {
             console.log(`%cOptimization: oldest (last) data from page are at :${convertRowToDate(oDom, -1).format("DD/MM/YYYY")}, don't analyze what was before end date of extraction ${dtTo.format("DD/MM/YYYY")}`, APP_DEBUG_STYLE);
@@ -735,10 +748,10 @@ var debugMode = function(){
             data.push(me);
         }
         return data;
-    }      
-    
+    }
+
 	/**
-	 * 
+	 *
 	 */
     var pdf = function(){
         const { degrees, PDFDocument, rgb, StandardFonts } = PDFLib
@@ -800,11 +813,11 @@ var debugMode = function(){
             }
 
 		 async function createPdf2() {
-			 
+
 			var [dtFrom,dtTo] = await popupDateSelector(dayjs().startOf('month'),dayjs().endOf('month'));
 
-			let _r = List.getListDetailBill(dtFrom,dtTo); 
-         			 
+			let _r = List.getListDetailBill(dtFrom,dtTo);
+
 			const pdfDoc = await PDFDocument.create()
 			const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman)
 
@@ -826,7 +839,7 @@ var debugMode = function(){
 			curPage.setFontSize(font_size);
 			curPage.line_space = line_space;
 			curPage.font = timesRomanFont;
-			
+
 			let curLine = 1;
 			let iSizeOfFooter = 20;
 			let iBottomPg = line_space * font_size + iSizeOfFooter;
@@ -838,7 +851,7 @@ var debugMode = function(){
 			};
 			//let _iWidth = [0, lorem_width(18), lorem_width(38), lorem_width(17), lorem_width(5), lorem_width(7), lorem_width(5), lorem_width(7)]; // le décompte de lettre sauf 2 eme colonne est le bon
 			let _iStrMaxLength = [0, 18 , 36, 10, 13, 8, 5, 7];
-			let _iWidth = [_iStrMaxLength[0], 
+			let _iWidth = [_iStrMaxLength[0],
 				lorem_width(_iStrMaxLength[1]),
 				lorem_width(_iStrMaxLength[2]),
 				lorem_width(_iStrMaxLength[3]),
@@ -859,9 +872,9 @@ var debugMode = function(){
 					curPage.font = timesRomanFont;
 					curPage.setFontSize(font_size);
 					curPage.line_space = line_space;
-					
+
 					iCurrentHeigth = height - line_space * font_size * curLine;
-					
+
 				}
 				// does i need to show header
 				if(curLine === 1){
@@ -885,7 +898,7 @@ var debugMode = function(){
 				});
 				iCurX+=_iWidth[1];
 				/* Col 3 idx 2*/
-				curPage.drawText(_r[_l].who_name.trim().slice(0, _iStrMaxLength[2]), { 
+				curPage.drawText(_r[_l].who_name.trim().slice(0, _iStrMaxLength[2]), {
 					font: timesRomanFont,
 					size: font_size,
 					y: iCurrentHeigth,
@@ -958,28 +971,28 @@ var debugMode = function(){
 			const aPu_before = Accounting.getPriceList(dtNewMode.subtract(1,'day'));
 			const aPu_after = Accounting.getPriceList(dtNewMode);
 			var _l=1; // counter for level of billing
-			const bShowEmptyLines = false; // display empty lines on 
-			
+			const bShowEmptyLines = false; // display empty lines on
+
 			var _aSessionType = [TYPE_SESSION, TYPE_DEFENSE, TYPE_COACHING];
 			var _aSessionTypeStr = ["Sessions", "Soutenance", "Coaching"];
-			
+
 			var _aSessionQuality = [0, 1, 2, 3];
-			var _aSessionQualityStr = ["Réalisée", "Annulée", "Annulée tardivement", "Etudiant(e) absent(e)"];			
+			var _aSessionQualityStr = ["Réalisée", "Annulée", "Annulée tardivement", "Etudiant(e) absent(e)"];
 
 			var _aFunding = [BILL_AUTOFUNDED, BILL_FUNDED, BILL_OTHER];
 			var _aFundingStr = ["Autofinancés", "Financés", "Autres"];
-			
+
 			curLine = 1;
 			curPage = pdfDoc.addPage();
 			let aHeader2 = ["","Quand","Qui","Nb", "Pu","Cumul"];
 			let _iStrMaxLength2 = [0, 18 , 50, 3, 5, 7];
-			let _iWidth2 = [_iStrMaxLength[0], 
+			let _iWidth2 = [_iStrMaxLength[0],
 				lorem_width(_iStrMaxLength[1]),
 				lorem_width(_iStrMaxLength[2]),
 				lorem_width(_iStrMaxLength[3]),
 				lorem_width(_iStrMaxLength[4]),
 				lorem_width(_iStrMaxLength[5])]; // permet d"aérer mais le décompte de lettre n'est plus bon
-			let sHeader=""; // used to store next header string	
+			let sHeader=""; // used to store next header string
 			for(_iSessionType = 0, _iSessionTypeLength=_aSessionType.length;_iSessionType < _iSessionTypeLength; _iSessionType+=1){
 				while (_l <= iCurrentMaxLevel) {
 					//iCurrentHeigth = height - line_space * font_size * curLine;
@@ -1022,7 +1035,7 @@ var debugMode = function(){
 							curLine += 1;
 							[curLine,curPage] = PDF.changePgIfNeeded(iCurrentHeigth, iBottomPg, curLine, pdfDoc);
 							iCurrentHeigth = height - line_space * font_size * curLine;
-							//list 
+							//list
 							if (typeof _i0 === 'undefined'){
 								curPage.drawText(`désolé pas de résultat pour cette section au niveau de facturation (${_l})`, {
 									font: timesRomanFont,
@@ -1066,7 +1079,7 @@ var debugMode = function(){
 									lineHeight: iLineHeigth
 								});
 								iCurSubX+=_iWidth2[1];
-								curPage.drawText(_i0.data[_k].who_name.trim().slice(0, _iStrMaxLength2[1]), { 
+								curPage.drawText(_i0.data[_k].who_name.trim().slice(0, _iStrMaxLength2[1]), {
 									font: timesRomanFont,
 									size: font_size,
 									y: iCurrentHeigth,
@@ -1076,7 +1089,7 @@ var debugMode = function(){
 								//iCurrentHeigth = height - line_space * font_size * curLine;
 								iCurSubX+=_iWidth2[2];
 
-								curPage.drawText( (_k+1).toString(), { 
+								curPage.drawText( (_k+1).toString(), {
 									font: timesRomanFont,
 									size: font_size,
 									y: iCurrentHeigth,
@@ -1085,7 +1098,7 @@ var debugMode = function(){
 								});
 								//iCurrentHeigth = height - line_space * font_size * curLine;
 								iCurSubX+=_iWidth2[3];
-								
+
 								//_i0 = data.get(TYPE_SESSION, SESSION_DONE, BILL_AUTOFUNDED, _l);
 								if (Core.isInOldMode(dayjs(_i0.data[_k].when))) {
 									//iPu = +_i0.data[_k].lvl > 0 ? aPu_before[_l][iType][iStatus][iFunding] : 0 ;
@@ -1094,7 +1107,7 @@ var debugMode = function(){
 									//iPu = +_i0.data[_k].lvl > 0 ? aPu_after[_l][iType][iStatus][iFunding]  : 0 ;
 									iPu = +_i0.data[_k].lvl > 0 ? aPu_after[_l][_aSessionType[_iSessionType]][_aSessionQuality[_iSessionQuality]][_aFunding[_iFunding]]  : 0 ;
 								}
-								curPage.drawText(iPu.toString(), { 
+								curPage.drawText(iPu.toString(), {
 									font: timesRomanFont,
 									size: font_size,
 									y: iCurrentHeigth,
@@ -1104,14 +1117,14 @@ var debugMode = function(){
 								iCurSubX+=_iWidth2[4];
 								iCumul += iPu;
 								// Cumul
-								curPage.drawText(iCumul.toString(), { 
+								curPage.drawText(iCumul.toString(), {
 									font: timesRomanFont,
 									size: font_size,
 									y: iCurrentHeigth,
 									x: iCurSubX,
 									lineHeight: iLineHeigth
 								});
-								
+
 								//iCurSubX+=_iWidth2[4];
 								// next line
 								curLine += 1;
@@ -1128,22 +1141,22 @@ var debugMode = function(){
 			_l = 1; // reset loop level
 			}// next type
 			// pied de page
-			PDF.addFooter(pdfDoc, `Généré avec Facturier version ${Core.getAppVersion()}`);  
+			PDF.addFooter(pdfDoc, `Généré avec Facturier version ${Core.getAppVersion()}`);
 			const pdfBytes = await pdfDoc.save();
 			download(pdfBytes, `prestations_facturees_detail_${dtFrom.format('YYYYMMDD')}-${dtTo.format('YYYYMMDD')}.pdf`, "application/pdf");
 		  }
-  
+
     createPdf2();
     }
-    
+
 /*
- * 
+ *
  * name: inconnu
  * @param
  * @return
- * 
+ *
  */
-    
+
     var mgtDbase = async function(){
 		// twostep swal
 		//import_db =  JSON.stringify(unsafeWindow.Facturier.cfg.dbase.getState())
@@ -1163,10 +1176,10 @@ var debugMode = function(){
 		sHtml+="<legend>Que voulez vous faire ?</legend>";
 		sHtml+="<fieldset>"
 		sHtml+='<div class="formgrid">';
-		sHtml+='Epurer<button id="answer1" data-action="raz" class="swal2-styled" type="button">RAZ</button>';  
+		sHtml+='Epurer<button id="answer1" data-action="raz" class="swal2-styled" type="button">RAZ</button>';
 		sHtml+='Sauvegarder toute la base<button id="answer2" data-action="export" class="swal2-styled" type="button">Sauvegarder</button>';
-		sHtml+='Charger toute la base<button id="answer3" data-action="import" class="swal2-styled" type="button">Charger</button>'; 
-if(STT_VERSION) {     
+		sHtml+='Charger toute la base<button id="answer3" data-action="import" class="swal2-styled" type="button">Charger</button>';
+if(STT_VERSION) {
 		sHtml+=`Exporter les tables
     <button class="swal2-styled" type="button"
     	hx-get="http://127.0.0.1:8000/views/test-swal-sauvegarde.html"
@@ -1174,7 +1187,7 @@ if(STT_VERSION) {
         hx-include="[name='email']"
         hx-swap="innerHTML"> Exporter (local)
     </button>
-		`;   
+		`;
 		sHtml+=`Exporter les tables
     <button class="swal2-styled" type="button"
     	hx-get="http://127.0.0.1:8000/views/test-swal-sauvegarde.html"
@@ -1182,8 +1195,8 @@ if(STT_VERSION) {
         hx-include="[name='email']"
         hx-swap="innerHTML"> Importer (local)
     </button>
-		`; 
-		}   
+		`;
+		}
 		sHtml+=`Exporter les tables
     <button class="swal2-styled" type="button"
     	hx-get="/views/test-swal-sauvegarde"
@@ -1192,11 +1205,11 @@ if(STT_VERSION) {
         hx-include="[name='email']"
         hx-swap="innerHTML"> Exporter
     </button>
-		`; 
+		`;
 		sHtml+="</fieldset>";
 		sHtml+="</div>";
 
-		
+
 		// Be carreful about two arguments function ine removeEventListener_handler
 
 		const { value: formValues } = await Swal.fire({
@@ -1213,23 +1226,23 @@ if(STT_VERSION) {
 			didOpen: (el) => {
 				console.log("%conOpen popup", "color:coral");
 				// include all js needed
-				
+
 				// process htmx
 				htmx.process(document.querySelector('.swal2-container'));
 				console.log("%cHtmx Process done", "color:coral");
 				/* Sending that to index.js (~ BUS BROKER)
 				 * document.body.addEventListener('htmx:beforeRequest', function(detail) {
-					
+
 					console.log("HTMX event received...");
 					console.dir(detail);
 					console.dir(detail.elt);
 					console.dir(detail.xhr);
 					console.dir(detail.target);
 					console.dir(detail.requestConfig);
-					
+
 				});
 				*/
-				
+
 				/* generic addEventListener with handler functions src : https://gomakethings.com/event-delegation-and-multiple-selectors-with-vanilla-js/*/
 				el.querySelector('.formgrid').addEventListener('click', _handler = function(e){
 					const raz_action    = function(evt){ if(evt.target.matches('button[data-action="raz"]')){Swal.close(); razDbase();} return;};
@@ -1250,29 +1263,29 @@ if(STT_VERSION) {
 		if (formValues) {
 			Swal.fire(JSON.stringify(formValues))
 		}
-		
+
 	}
-	
-	
-	
+
+
+
 	/*
-	 * 
+	 *
 	 * name: inconnu
 	 * @param
 	 * @return
-	 * 
+	 *
 	 */
 	var save_database = async function(){
 		/* SRC: https://ourcodeworld.com/articles/read/189/how-to-create-a-file-and-generate-a-download-with-javascript-in-the-browser-without-a-server */
 		let sExport = Dbase.save();
 		console.log(`%cWanna save : ${sExport}`, APP_DEBUG_STYLE);
 		let now = dayjs();
-		
+
 		let sHtml="";
 		//sHtml+=`<a id="download" href="data:text/plain;charset=utf-8,${encodeURIComponent(sExport)}" download="export_${now.format('YYYYMMDD')}.json" style="display:none"></a>`;
 		sHtml+=`<a id="download" href="data:text/plain;charset=utf-8,${encodeURIComponent(sExport)}" download="save_${now.format('YYYYMMDD')}.json">save_${now.format('YYYYMMDD')}.json</a>`;
 		//sHtml+=`<p>téléchargement de export_${now.format('YYYYMMDD')}.json en cours....</p>`;
-		
+
 		Swal.fire({
 			title: 'Sauvegarde de la base de donnée',
 			html: sHtml,
@@ -1282,27 +1295,27 @@ if(STT_VERSION) {
 		});
 	}
 	var export_database_v2 = async function(){
-		
+
 		oTableList = await tableSelector("Export des données");
 		console.log(oTableList);
-		
+
 		// -- selection du mode d'export CSV ou JSON
-		
+
 		// -- export de la ou des tables choisies
-		
+
 		let _TableName = Student.tbl_name; // TEMPORARY
-		
+
 		console.log(`%cWanna export ${_TableName}`, APP_DEBUG_STYLE);
 		let sExport = Dbase.exportTblToCSV(_TableName);
-		
+
 		console.log(`%cWanna export : ${sExport}`, APP_DEBUG_STYLE);
 		let now = dayjs();
-		
+
 		let sHtml="";
 		sHtml+=`<a id="download" href="data:text/plain;charset=utf-8,${encodeURIComponent(sExport)}" download="export_${now.format('YYYYMMDD')}.json" style="display:none"></a>`;
 		sHtml+=`<a id="download" href="data:text/plain;charset=utf-8,${encodeURIComponent(sExport)}" download="export_${now.format('YYYYMMDD')}.csv">export_${now.format('YYYYMMDD')}.csv</a>`;
 		//sHtml+=`<p>téléchargement de export_${now.format('YYYYMMDD')}.json en cours....</p>`;
-		
+
 		Swal.fire({
 			title: 'Export de la table ou des table suivante: AAAAAAAAAAAAAA',
 			html: sHtml,
@@ -1310,19 +1323,19 @@ if(STT_VERSION) {
 			onOpen: (el) => {el.querySelector('#download').click();},
 			onClose: (el) => {},
 		});
-		
-		
+
+
 		return
 	}
 	/*
-	 * SWAL2 source and 
+	 * SWAL2 source and
 	 * add https://ourcodeworld.com/articles/read/189/how-to-create-a-file-and-generate-a-download-with-javascript-in-the-browser-without-a-server
 	 * add https://www.webdeveloper.com/d/261923-how-to-use-javascript-in-html-to-read-txt-file-and-display-it/10
 	 * https://50linesofco.de/post/2019-07-05-reading-local-files-with-javascript
 	 * add https://stackoverflow.com/questions/37425002/how-to-load-the-contents-of-a-local-text-file-by-name-using-javascript-and-html
 	 *  to add progress bar
 	 * https://usefulangle.com/post/193/javascript-read-local-file
-	 * 
+	 *
 	 * voir egalement ici : https://stackoverflow.com/questions/42108782/firefox-webextensions-get-local-files-content-by-path/44516256#44516256
 	 * c'était sur un autre sujet (tampermonkey et local files) mais .....
 	 */
@@ -1347,12 +1360,12 @@ if(STT_VERSION) {
 		  reader.readAsText(file)
 		}
 }
-    
+
     /**
-     * 
+     *
      */
 	var razDbase = async function(){
-		
+
 		GM_addStyle(".form_addon {display: grid;padding: 1em;background: #f9f9f9;border: 1px solid #c1c1c1;margin: 2rem auto 0 auto;max-width: 600px;padding: 1em;}");
 		GM_addStyle(".form_addon input {background: #fff;border: 1px solid #9c9c9c;}");
 		GM_addStyle(".form_addon button {background: lightgrey;padding: 0.7em;width: 100%;border: 0;}");
@@ -1381,7 +1394,7 @@ if(STT_VERSION) {
         sHtml+='<label for="archives" class="cbox">Archives : factures</label>';
         sHtml+='<input id="archives" type="checkbox" value="del_archives_true" checked>';
         sHtml+='<label for="history_cache" class="cbox">Signet historique</label>';
-        sHtml+='<input id="history_cache" type="checkbox" value="del_history_cache_true" checked>';        
+        sHtml+='<input id="history_cache" type="checkbox" value="del_history_cache_true" checked>';
         sHtml+='<label for="radio1">filtrer la date</label>';
         sHtml+='<input type="radio" id="radio1" name="date_filter" value="false" checked>';
         sHtml+='<label for="radio2">ne pas filtrer</label>';
@@ -1413,9 +1426,9 @@ if(STT_VERSION) {
                 for(var i in r){
                     if(r[i].checked === true) radioValue = r[i].value;
                 }
-                
+
                 console.log(document.getElementById('s1'));
-                
+
                 return [
                     document.getElementById('students').checked,
                     document.getElementById('sessions').checked,
@@ -1513,15 +1526,15 @@ if(STT_VERSION) {
                 }).showToast();
             }, 500);
             History.remove(dtFrom, dtTo);
-        }        
-        
+        }
+
     }
-    
+
 	/*
 	 * sandbox
-	 * 
+	 *
 	 */
-	 
+
 	 var sandbox = async function(){
 		GM_addStyle('.formgrid{font-family: "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", Helvetica, Arial, sans-serif;}');
 		/* CSS compressed with : https://csscompressor.com/*/
@@ -1531,7 +1544,7 @@ if(STT_VERSION) {
 		sHtml+="<legend>Que voulez vous faire ?</legend>";
 		sHtml+="<fieldset>"
 		sHtml+='<div class="formgrid">';
-if(STT_VERSION) {     
+if(STT_VERSION) {
 		sHtml+=`Etudiants Listes
     <button class="swal2-styled" type="button"
     	hx-get="http://127.0.0.1:8000/views/test-students.html"
@@ -1539,8 +1552,8 @@ if(STT_VERSION) {
         hx-include="[name='email']"
         hx-swap="innerHTML"> Exporter
     </button>
-		`;   
-}   
+		`;
+}
 		sHtml+=`Exporter les tables
     <button class="swal2-styled" type="button"
     	hx-get="/views/test-swal-sauvegarde"
@@ -1549,11 +1562,11 @@ if(STT_VERSION) {
         hx-include="[name='email']"
         hx-swap="innerHTML"> Exporter
     </button>
-		`; 
+		`;
 		sHtml+="</fieldset>";
 		sHtml+="</div>";
 
-		
+
 		// Be carreful about two arguments function ine removeEventListener_handler
 
 		const { value: formValues } = await Swal.fire({
@@ -1568,23 +1581,23 @@ if(STT_VERSION) {
 			didOpen: (el) => {
 				console.log("%conOpen popup", "color:coral");
 				// include all js needed
-				
+
 				// process htmx
 				htmx.process(document.querySelector('.swal2-container'));
 				console.log("%cHtmx Process done", "color:coral");
 				/* Sending that to index.js (~ BUS BROKER)
 				 * document.body.addEventListener('htmx:beforeRequest', function(detail) {
-					
+
 					console.log("HTMX event received...");
 					console.dir(detail);
 					console.dir(detail.elt);
 					console.dir(detail.xhr);
 					console.dir(detail.target);
 					console.dir(detail.requestConfig);
-					
+
 				});
 				*/
-				
+
 				/* generic addEventListener with handler functions src : https://gomakethings.com/event-delegation-and-multiple-selectors-with-vanilla-js/*/
 				el.querySelector('.formgrid').addEventListener('click', _handler = function(e){
 				});
@@ -1599,10 +1612,10 @@ if(STT_VERSION) {
 			Swal.fire(JSON.stringify(formValues))
 		}
 	}
-    
-         
+
+
 	/**
-	 * 
+	 *
 	 */
 	var showBill = async function(){
         var sHtml="";
@@ -1642,7 +1655,7 @@ if(STT_VERSION) {
              showBillPhase2(dtFrom, dtTo, data);
          }
     }
-    
+
     /*
      * dtFrom : dayjs format
      * dtTo : dayjs format
@@ -1777,9 +1790,9 @@ if(STT_VERSION) {
 		  console.warn(`${r[0].errors[2].data.length} erreurs de type ${r[0].errors[2].type} data are`, r[0].errors[2].data);
 		  console.warn(`${r[0].errors[3].data.length} erreurs de type ${r[0].errors[3].type} data are`, r[0].errors[3].data);
 		}
-		
-		sHtml+=`<p>Soit un total général à facturer de ${iTotalHtSessions}€`;    
-		
+
+		sHtml+=`<p>Soit un total général à facturer de ${iTotalHtSessions}€`;
+
         Swal.fire({
             title: `<strong>Liste des formations tarifées du ${dtFrom.format("DD/MM/YYYY")} au ${dtTo.format("DD/MM/YYYY")}</strong>`,
             //icon: 'info',
@@ -1798,11 +1811,11 @@ if(STT_VERSION) {
      * r : array of data
      */
 var showBillPhase1 = function (dtFrom, dtTo, data){
-	
+
 	const oMeta = data.get(0,0,0,0);
 	//const iCurrentMaxLevel = oMeta.maxLevel; /* could be different from the global OC_MAX_LEVEL (depending on when data was saved */
 	const iCurrentMaxLevel = 4; /* could be different from the global OC_MAX_LEVEL (depending on when data was saved */
-	
+
 	var sHtml ="";
 	var _ref = null;
 	var iTotQ = 0;
@@ -1835,16 +1848,16 @@ var showBillPhase1 = function (dtFrom, dtTo, data){
 	sHtml+='</tr>';
 	var t0 = performance.now();
 	while(_l <= iCurrentMaxLevel){
-		
+
 		_i0 = data.get(TYPE_SESSION,  SESSION_DONE, BILL_AUTOFUNDED, _l);
-		_qa = _i0 === undefined ? 0 : _i0.number; 
+		_qa = _i0 === undefined ? 0 : _i0.number;
 		_ma = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_SESSION,  SESSION_DONE, BILL_FUNDED, _l);
-		_qf = _i0 === undefined ? 0 : _i0.number; 
-		_mf = _i0 === undefined ? 0 : _i0.amount; 
+		_qf = _i0 === undefined ? 0 : _i0.number;
+		_mf = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_SESSION,  SESSION_DONE, BILL_OTHER, _l);
-		_qo = _i0 === undefined ? 0 : _i0.number;  
-		_mo = _i0 === undefined ? 0 : _i0.amount;  
+		_qo = _i0 === undefined ? 0 : _i0.number;
+		_mo = _i0 === undefined ? 0 : _i0.amount;
 		_pa = _qa > 0 ? _ma / _qa : _ma;
 		_pf = _qf > 0 ? _mf / _qf : _mf;
 		_po = _qo > 0 ? _mo / _qo : _mo;
@@ -1862,14 +1875,14 @@ var showBillPhase1 = function (dtFrom, dtTo, data){
 		}
 
 		_i0 = data.get(TYPE_SESSION,  SESSION_CANCEL, BILL_AUTOFUNDED, _l);
-		_qa = _i0 === undefined ? 0 : _i0.number; 
+		_qa = _i0 === undefined ? 0 : _i0.number;
 		_ma = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_SESSION,  SESSION_CANCEL, BILL_FUNDED, _l);
-		_qf = _i0 === undefined ? 0 : _i0.number; 
-		_mf = _i0 === undefined ? 0 : _i0.amount; 
+		_qf = _i0 === undefined ? 0 : _i0.number;
+		_mf = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_SESSION,  SESSION_CANCEL, BILL_OTHER, _l);
-		_qo = _i0 === undefined ? 0 : _i0.number;  
-		_mo = _i0 === undefined ? 0 : _i0.amount;  
+		_qo = _i0 === undefined ? 0 : _i0.number;
+		_mo = _i0 === undefined ? 0 : _i0.amount;
 		_pa = _qa > 0 ? _ma / _qa : _ma;
 		_pf = _qf > 0 ? _mf / _qf : _mf;
 		_po = _qo > 0 ? _mo / _qo : _mo;
@@ -1885,16 +1898,16 @@ var showBillPhase1 = function (dtFrom, dtTo, data){
 			sHtml+=`<td>${_qa + _qf +_qo}</td><td>${ _pf }</td><td>${_ma + _mf + _mo}€</td>`;
 			sHtml+="</tr>";
 		}
-		
+
 		_i0 = data.get(TYPE_SESSION,  SESSION_CANCEL_LATE, BILL_AUTOFUNDED, _l);
-		_qa = _i0 === undefined ? 0 : _i0.number; 
+		_qa = _i0 === undefined ? 0 : _i0.number;
 		_ma = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_SESSION,  SESSION_CANCEL_LATE, BILL_FUNDED, _l);
-		_qf = _i0 === undefined ? 0 : _i0.number; 
-		_mf = _i0 === undefined ? 0 : _i0.amount; 
+		_qf = _i0 === undefined ? 0 : _i0.number;
+		_mf = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_SESSION,  SESSION_CANCEL_LATE, BILL_OTHER, _l);
-		_qo = _i0 === undefined ? 0 : _i0.number;  
-		_mo = _i0 === undefined ? 0 : _i0.amount;  
+		_qo = _i0 === undefined ? 0 : _i0.number;
+		_mo = _i0 === undefined ? 0 : _i0.amount;
 		_pa = _qa > 0 ? _ma / _qa : _ma;
 		_pf = _qf > 0 ? _mf / _qf : _mf;
 		_po = _qo > 0 ? _mo / _qo : _mo;
@@ -1910,16 +1923,16 @@ var showBillPhase1 = function (dtFrom, dtTo, data){
 			sHtml+=`<td>${_qa + _qf +_qo}</td><td>${ _pf }</td><td>${_ma + _mf + _mo}€</td>`;
 			sHtml+="</tr>";
 		}
-		
+
 		_i0 = data.get(TYPE_SESSION,  SESSION_STUDENT_AWAY, BILL_AUTOFUNDED, _l);
-		_qa = _i0 === undefined ? 0 : _i0.number; 
+		_qa = _i0 === undefined ? 0 : _i0.number;
 		_ma = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_SESSION,  SESSION_STUDENT_AWAY, BILL_FUNDED, _l);
-		_qf = _i0 === undefined ? 0 : _i0.number; 
-		_mf = _i0 === undefined ? 0 : _i0.amount; 
+		_qf = _i0 === undefined ? 0 : _i0.number;
+		_mf = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_SESSION,  SESSION_STUDENT_AWAY, BILL_OTHER, _l);
-		_qo = _i0 === undefined ? 0 : _i0.number;  
-		_mo = _i0 === undefined ? 0 : _i0.amount;  
+		_qo = _i0 === undefined ? 0 : _i0.number;
+		_mo = _i0 === undefined ? 0 : _i0.amount;
 		_pa = _qa > 0 ? _ma / _qa : _ma;
 		_pf = _qf > 0 ? _mf / _qf : _mf;
 		_po = _qo > 0 ? _mo / _qo : _mo;
@@ -1946,27 +1959,27 @@ var showBillPhase1 = function (dtFrom, dtTo, data){
 	sHtml+='<tr>';
 	sHtml+='</tr>';
 	iTotG+= iTotM;
-	
+
 	// -- Soutenances
 	iTotQ = 0
 	iTotM = 0
 	sHtml+='<tr>';
 	sHtml+='<th colspan="4" class="pseudoheader" scope="colgroup">Sessions de Soutenance</th>';
 	sHtml+='</tr>';
-	
+
 	_l = 1; // reset loop
 	var t0 = performance.now();
 	while(_l <= iCurrentMaxLevel){
-		
+
 		_i0 = data.get(TYPE_DEFENSE,  SESSION_DONE, BILL_AUTOFUNDED, _l);
-		_qa = _i0 === undefined ? 0 : _i0.number; 
+		_qa = _i0 === undefined ? 0 : _i0.number;
 		_ma = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_DEFENSE,  SESSION_DONE, BILL_FUNDED, _l);
-		_qf = _i0 === undefined ? 0 : _i0.number; 
-		_mf = _i0 === undefined ? 0 : _i0.amount; 
+		_qf = _i0 === undefined ? 0 : _i0.number;
+		_mf = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_DEFENSE,  SESSION_DONE, BILL_OTHER, _l);
-		_qo = _i0 === undefined ? 0 : _i0.number;  
-		_mo = _i0 === undefined ? 0 : _i0.amount;  
+		_qo = _i0 === undefined ? 0 : _i0.number;
+		_mo = _i0 === undefined ? 0 : _i0.amount;
 		_pa = _qa > 0 ? _ma / _qa : _ma;
 		_pf = _qf > 0 ? _mf / _qf : _mf;
 		_po = _qo > 0 ? _mo / _qo : _mo;
@@ -1984,14 +1997,14 @@ var showBillPhase1 = function (dtFrom, dtTo, data){
 		}
 
 		_i0 = data.get(TYPE_DEFENSE,  SESSION_CANCEL, BILL_AUTOFUNDED, _l);
-		_qa = _i0 === undefined ? 0 : _i0.number; 
+		_qa = _i0 === undefined ? 0 : _i0.number;
 		_ma = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_DEFENSE,  SESSION_CANCEL, BILL_FUNDED, _l);
-		_qf = _i0 === undefined ? 0 : _i0.number; 
-		_mf = _i0 === undefined ? 0 : _i0.amount; 
+		_qf = _i0 === undefined ? 0 : _i0.number;
+		_mf = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_DEFENSE,  SESSION_CANCEL, BILL_OTHER, _l);
-		_qo = _i0 === undefined ? 0 : _i0.number;  
-		_mo = _i0 === undefined ? 0 : _i0.amount;  
+		_qo = _i0 === undefined ? 0 : _i0.number;
+		_mo = _i0 === undefined ? 0 : _i0.amount;
 		_pa = _qa > 0 ? _ma / _qa : _ma;
 		_pf = _qf > 0 ? _mf / _qf : _mf;
 		_po = _qo > 0 ? _mo / _qo : _mo;
@@ -2007,16 +2020,16 @@ var showBillPhase1 = function (dtFrom, dtTo, data){
 			sHtml+=`<td>${_qa + _qf +_qo}</td><td>${ _pf }</td><td>${_ma + _mf + _mo}€</td>`;
 			sHtml+="</tr>";
 		}
-		
+
 		_i0 = data.get(TYPE_DEFENSE,  SESSION_CANCEL_LATE, BILL_AUTOFUNDED, _l);
-		_qa = _i0 === undefined ? 0 : _i0.number; 
+		_qa = _i0 === undefined ? 0 : _i0.number;
 		_ma = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_DEFENSE,  SESSION_CANCEL_LATE, BILL_FUNDED, _l);
-		_qf = _i0 === undefined ? 0 : _i0.number; 
-		_mf = _i0 === undefined ? 0 : _i0.amount; 
+		_qf = _i0 === undefined ? 0 : _i0.number;
+		_mf = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_DEFENSE,  SESSION_CANCEL_LATE, BILL_OTHER, _l);
-		_qo = _i0 === undefined ? 0 : _i0.number;  
-		_mo = _i0 === undefined ? 0 : _i0.amount;  
+		_qo = _i0 === undefined ? 0 : _i0.number;
+		_mo = _i0 === undefined ? 0 : _i0.amount;
 		_pa = _qa > 0 ? _ma / _qa : _ma;
 		_pf = _qf > 0 ? _mf / _qf : _mf;
 		_po = _qo > 0 ? _mo / _qo : _mo;
@@ -2032,16 +2045,16 @@ var showBillPhase1 = function (dtFrom, dtTo, data){
 			sHtml+=`<td>${_qa + _qf +_qo}</td><td>${ _pf }</td><td>${_ma + _mf + _mo}€</td>`;
 			sHtml+="</tr>";
 		}
-		
+
 		_i0 = data.get(TYPE_DEFENSE,  SESSION_STUDENT_AWAY, BILL_AUTOFUNDED, _l);
-		_qa = _i0 === undefined ? 0 : _i0.number; 
+		_qa = _i0 === undefined ? 0 : _i0.number;
 		_ma = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_DEFENSE,  SESSION_STUDENT_AWAY, BILL_FUNDED, _l);
-		_qf = _i0 === undefined ? 0 : _i0.number; 
-		_mf = _i0 === undefined ? 0 : _i0.amount; 
+		_qf = _i0 === undefined ? 0 : _i0.number;
+		_mf = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_DEFENSE,  SESSION_STUDENT_AWAY, BILL_OTHER, _l);
-		_qo = _i0 === undefined ? 0 : _i0.number;  
-		_mo = _i0 === undefined ? 0 : _i0.amount;  
+		_qo = _i0 === undefined ? 0 : _i0.number;
+		_mo = _i0 === undefined ? 0 : _i0.amount;
 		_pa = _qa > 0 ? _ma / _qa : _ma;
 		_pf = _qf > 0 ? _mf / _qf : _mf;
 		_po = _qo > 0 ? _mo / _qo : _mo;
@@ -2068,27 +2081,27 @@ var showBillPhase1 = function (dtFrom, dtTo, data){
 	sHtml+='<tr>';
 	sHtml+='</tr>';
 	iTotG+= iTotM;
-	
+
 	// -- Coaching
 	iTotQ = 0
 	iTotM = 0
 	sHtml+='<tr>';
 	sHtml+='<th colspan="4" class="pseudoheader" scope="colgroup">Sessions de Coaching</th>';
 	sHtml+='</tr>';
-	
+
 	_l = 1; // reset loop
 	var t0 = performance.now();
 	while(_l <= iCurrentMaxLevel){
-		
+
 		_i0 = data.get(TYPE_COACHING,  SESSION_DONE, BILL_AUTOFUNDED, _l);
-		_qa = _i0 === undefined ? 0 : _i0.number; 
+		_qa = _i0 === undefined ? 0 : _i0.number;
 		_ma = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_COACHING,  SESSION_DONE, BILL_FUNDED, _l);
-		_qf = _i0 === undefined ? 0 : _i0.number; 
-		_mf = _i0 === undefined ? 0 : _i0.amount; 
+		_qf = _i0 === undefined ? 0 : _i0.number;
+		_mf = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_COACHING,  SESSION_DONE, BILL_OTHER, _l);
-		_qo = _i0 === undefined ? 0 : _i0.number;  
-		_mo = _i0 === undefined ? 0 : _i0.amount;  
+		_qo = _i0 === undefined ? 0 : _i0.number;
+		_mo = _i0 === undefined ? 0 : _i0.amount;
 		_pa = _qa > 0 ? _ma / _qa : _ma;
 		_pf = _qf > 0 ? _mf / _qf : _mf;
 		_po = _qo > 0 ? _mo / _qo : _mo;
@@ -2106,14 +2119,14 @@ var showBillPhase1 = function (dtFrom, dtTo, data){
 		}
 
 		_i0 = data.get(TYPE_COACHING,  SESSION_CANCEL, BILL_AUTOFUNDED, _l);
-		_qa = _i0 === undefined ? 0 : _i0.number; 
+		_qa = _i0 === undefined ? 0 : _i0.number;
 		_ma = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_COACHING,  SESSION_CANCEL, BILL_FUNDED, _l);
-		_qf = _i0 === undefined ? 0 : _i0.number; 
-		_mf = _i0 === undefined ? 0 : _i0.amount; 
+		_qf = _i0 === undefined ? 0 : _i0.number;
+		_mf = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_COACHING,  SESSION_CANCEL, BILL_OTHER, _l);
-		_qo = _i0 === undefined ? 0 : _i0.number;  
-		_mo = _i0 === undefined ? 0 : _i0.amount;  
+		_qo = _i0 === undefined ? 0 : _i0.number;
+		_mo = _i0 === undefined ? 0 : _i0.amount;
 		_pa = _qa > 0 ? _ma / _qa : _ma;
 		_pf = _qf > 0 ? _mf / _qf : _mf;
 		_po = _qo > 0 ? _mo / _qo : _mo;
@@ -2129,16 +2142,16 @@ var showBillPhase1 = function (dtFrom, dtTo, data){
 			sHtml+=`<td>${_qa + _qf +_qo}</td><td>${ _pf }</td><td>${_ma + _mf + _mo}€</td>`;
 			sHtml+="</tr>";
 		}
-		
+
 		_i0 = data.get(TYPE_COACHING,  SESSION_CANCEL_LATE, BILL_AUTOFUNDED, _l);
-		_qa = _i0 === undefined ? 0 : _i0.number; 
+		_qa = _i0 === undefined ? 0 : _i0.number;
 		_ma = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_COACHING,  SESSION_CANCEL_LATE, BILL_FUNDED, _l);
-		_qf = _i0 === undefined ? 0 : _i0.number; 
-		_mf = _i0 === undefined ? 0 : _i0.amount; 
+		_qf = _i0 === undefined ? 0 : _i0.number;
+		_mf = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_COACHING,  SESSION_CANCEL_LATE, BILL_OTHER, _l);
-		_qo = _i0 === undefined ? 0 : _i0.number;  
-		_mo = _i0 === undefined ? 0 : _i0.amount;  
+		_qo = _i0 === undefined ? 0 : _i0.number;
+		_mo = _i0 === undefined ? 0 : _i0.amount;
 		_pa = _qa > 0 ? _ma / _qa : _ma;
 		_pf = _qf > 0 ? _mf / _qf : _mf;
 		_po = _qo > 0 ? _mo / _qo : _mo;
@@ -2154,16 +2167,16 @@ var showBillPhase1 = function (dtFrom, dtTo, data){
 			sHtml+=`<td>${_qa + _qf +_qo}</td><td>${ _pf }</td><td>${_ma + _mf + _mo}€</td>`;
 			sHtml+="</tr>";
 		}
-		
+
 		_i0 = data.get(TYPE_COACHING,  SESSION_STUDENT_AWAY, BILL_AUTOFUNDED, _l);
-		_qa = _i0 === undefined ? 0 : _i0.number; 
+		_qa = _i0 === undefined ? 0 : _i0.number;
 		_ma = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_COACHING,  SESSION_STUDENT_AWAY, BILL_FUNDED, _l);
-		_qf = _i0 === undefined ? 0 : _i0.number; 
-		_mf = _i0 === undefined ? 0 : _i0.amount; 
+		_qf = _i0 === undefined ? 0 : _i0.number;
+		_mf = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_COACHING,  SESSION_STUDENT_AWAY, BILL_OTHER, _l);
-		_qo = _i0 === undefined ? 0 : _i0.number;  
-		_mo = _i0 === undefined ? 0 : _i0.amount;  
+		_qo = _i0 === undefined ? 0 : _i0.number;
+		_mo = _i0 === undefined ? 0 : _i0.amount;
 		_pa = _qa > 0 ? _ma / _qa : _ma;
 		_pf = _qf > 0 ? _mf / _qf : _mf;
 		_po = _qo > 0 ? _mo / _qo : _mo;
@@ -2199,14 +2212,14 @@ var showBillPhase1 = function (dtFrom, dtTo, data){
 	sHtml+='</tr>';
 	//sHtml+='</tfoot>';
 	//sHtml+='</table>';
-	
+
 	sHtml+='</tbody>';
 	sHtml+='<tfoot>';
     sHtml+='</tfoot>';
 	sHtml+='</table>';
-	
-	sHtml+=`<p>Soit un total général à facturer de ${iTotG}€`;    
-	
+
+	sHtml+=`<p>Soit un total général à facturer de ${iTotG}€`;
+
 	Swal.fire({
 		title: `<strong>Liste des formations tarifées du ${dtFrom.format("DD/MM/YYYY")} au ${dtTo.format("DD/MM/YYYY")}</strong>`,
 		//icon: 'info',
@@ -2218,7 +2231,7 @@ var showBillPhase1 = function (dtFrom, dtTo, data){
 		grow: 'fullscreen',
 	});
 
-}    
+}
 var showBillPhase2 = function (dtFrom, dtTo, data){
 	console.log("%cEnter computation bill", APP_DEBUG_STYLE);
 	const bShowEmptyLine = false; //TODO add a configuration option
@@ -2271,14 +2284,14 @@ var showBillPhase2 = function (dtFrom, dtTo, data){
 	var t0 = performance.now();
 	while(_l <= iCurrentMaxLevel){
 		_i0 = data.get(TYPE_SESSION,  SESSION_DONE, BILL_AUTOFUNDED, _l);
-		_qa = _i0 === undefined ? 0 : _i0.number; 
+		_qa = _i0 === undefined ? 0 : _i0.number;
 		_ma = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_SESSION,  SESSION_DONE, BILL_FUNDED, _l);
-		_qf = _i0 === undefined ? 0 : _i0.number; 
-		_mf = _i0 === undefined ? 0 : _i0.amount; 
+		_qf = _i0 === undefined ? 0 : _i0.number;
+		_mf = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_SESSION,  SESSION_DONE, BILL_OTHER, _l);
-		_qo = _i0 === undefined ? 0 : _i0.number;  
-		_mo = _i0 === undefined ? 0 : _i0.amount;  
+		_qo = _i0 === undefined ? 0 : _i0.number;
+		_mo = _i0 === undefined ? 0 : _i0.amount;
 		_pa = _qa > 0 ? _ma / _qa : _ma;
 		_pf = _qf > 0 ? _mf / _qf : _mf;
 		_po = _qo > 0 ? _mo / _qo : _mo;
@@ -2297,16 +2310,16 @@ var showBillPhase2 = function (dtFrom, dtTo, data){
 			sHtml+=`<td>${_qa + _qf +_qo}</td><td>${_ma + _mf + _mo}€</td>`;
 			sHtml+="</tr>";
 		}
-		
+
 		_i0 = data.get(TYPE_SESSION,  SESSION_CANCEL, BILL_AUTOFUNDED, _l);
-		_qa = _i0 === undefined ? 0 : _i0.number; 
+		_qa = _i0 === undefined ? 0 : _i0.number;
 		_ma = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_SESSION,  SESSION_CANCEL, BILL_FUNDED, _l);
-		_qf = _i0 === undefined ? 0 : _i0.number; 
-		_mf = _i0 === undefined ? 0 : _i0.amount; 
+		_qf = _i0 === undefined ? 0 : _i0.number;
+		_mf = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_SESSION,  SESSION_CANCEL, BILL_OTHER, _l);
-		_qo = _i0 === undefined ? 0 : _i0.number;  
-		_mo = _i0 === undefined ? 0 : _i0.amount;  
+		_qo = _i0 === undefined ? 0 : _i0.number;
+		_mo = _i0 === undefined ? 0 : _i0.amount;
 		_pa = _qa > 0 ? _ma / _qa : _ma;
 		_pf = _qf > 0 ? _mf / _qf : _mf;
 		_po = _qo > 0 ? _mo / _qo : _mo;
@@ -2325,16 +2338,16 @@ var showBillPhase2 = function (dtFrom, dtTo, data){
 			sHtml+=`<td>${_qa + _qf +_qo}</td><td>${_ma + _mf + _mo}€</td>`;
 			sHtml+="</tr>";
 		}
-		
+
 		_i0 = data.get(TYPE_SESSION,  SESSION_CANCEL_LATE, BILL_AUTOFUNDED, _l);
-		_qa = _i0 === undefined ? 0 : _i0.number; 
+		_qa = _i0 === undefined ? 0 : _i0.number;
 		_ma = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_SESSION,  SESSION_CANCEL_LATE, BILL_FUNDED, _l);
-		_qf = _i0 === undefined ? 0 : _i0.number; 
-		_mf = _i0 === undefined ? 0 : _i0.amount; 
+		_qf = _i0 === undefined ? 0 : _i0.number;
+		_mf = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_SESSION,  SESSION_CANCEL_LATE, BILL_OTHER, _l);
-		_qo = _i0 === undefined ? 0 : _i0.number;  
-		_mo = _i0 === undefined ? 0 : _i0.amount;  
+		_qo = _i0 === undefined ? 0 : _i0.number;
+		_mo = _i0 === undefined ? 0 : _i0.amount;
 		_pa = _qa > 0 ? _ma / _qa : _ma;
 		_pf = _qf > 0 ? _mf / _qf : _mf;
 		_po = _qo > 0 ? _mo / _qo : _mo;
@@ -2353,16 +2366,16 @@ var showBillPhase2 = function (dtFrom, dtTo, data){
 			sHtml+=`<td>${_qa + _qf +_qo}</td><td>${_ma + _mf + _mo}€</td>`;
 			sHtml+="</tr>";
 		}
-		
+
 		_i0 = data.get(TYPE_SESSION,  SESSION_STUDENT_AWAY, BILL_AUTOFUNDED, _l);
-		_qa = _i0 === undefined ? 0 : _i0.number; 
+		_qa = _i0 === undefined ? 0 : _i0.number;
 		_ma = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_SESSION,  SESSION_STUDENT_AWAY, BILL_FUNDED, _l);
-		_qf = _i0 === undefined ? 0 : _i0.number; 
-		_mf = _i0 === undefined ? 0 : _i0.amount; 
+		_qf = _i0 === undefined ? 0 : _i0.number;
+		_mf = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_SESSION,  SESSION_STUDENT_AWAY, BILL_OTHER, _l);
-		_qo = _i0 === undefined ? 0 : _i0.number;  
-		_mo = _i0 === undefined ? 0 : _i0.amount;  
+		_qo = _i0 === undefined ? 0 : _i0.number;
+		_mo = _i0 === undefined ? 0 : _i0.amount;
 		_pa = _qa > 0 ? _ma / _qa : _ma;
 		_pf = _qf > 0 ? _mf / _qf : _mf;
 		_po = _qo > 0 ? _mo / _qo : _mo;
@@ -2381,7 +2394,7 @@ var showBillPhase2 = function (dtFrom, dtTo, data){
 			sHtml+=`<td>${_qa + _qf +_qo}</td><td>${_ma + _mf + _mo}€</td>`;
 			sHtml+="</tr>";
 		}
-		
+
 		_l+=1; // Next Level
 	}
 	var t1 = performance.now();console.log("%cCalculate first array" + (t1 - t0) + " milliseconds.", APP_PERF_STYLE); // avant optimisation
@@ -2402,7 +2415,7 @@ var showBillPhase2 = function (dtFrom, dtTo, data){
 	iTotGMa += iTotMa;
 	iTotGMf += iTotMf;
 	iTotGMo += iTotMo;
-	
+
 	// -- Soutenances
 	iTotQa = 0
 	iTotQf = 0;
@@ -2413,17 +2426,17 @@ var showBillPhase2 = function (dtFrom, dtTo, data){
 	sHtml+='<tr>';
 	sHtml+='<th colspan="12" class="pseudoheader" scope="colgroup">Sessions de Soutenance</th>';
 	sHtml+='</tr>';
-	
+
 	_l = 1; // reset loop
 	while(_l <= iCurrentMaxLevel){
-		_i0 = data.get(TYPE_DEFENSE,  SESSION_DONE, BILL_AUTOFUNDED, _l);   
-		_qa = _i0 === undefined ? 0 : _i0.number; 
+		_i0 = data.get(TYPE_DEFENSE,  SESSION_DONE, BILL_AUTOFUNDED, _l);
+		_qa = _i0 === undefined ? 0 : _i0.number;
 		_ma = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_DEFENSE,  SESSION_DONE, BILL_FUNDED, _l);
-		_qf = _i0 === undefined ? 0 : _i0.number; 
+		_qf = _i0 === undefined ? 0 : _i0.number;
 		_mf = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_DEFENSE,  SESSION_DONE, BILL_OTHER, _l);
-		_qo = _i0 === undefined ? 0 : _i0.number; 
+		_qo = _i0 === undefined ? 0 : _i0.number;
 		_mo = _i0 === undefined ? 0 : _i0.amount;
 		_pa = _qa > 0 ? _ma / _qa : _ma;
 		_pf = _qf > 0 ? _mf / _qf : _mf;
@@ -2443,15 +2456,15 @@ var showBillPhase2 = function (dtFrom, dtTo, data){
 			sHtml+=`<td>${_qa + _qf +_qo}</td><td>${_ma + _mf + _mo}€</td>`;
 			sHtml+="</tr>";
 		}
-		
-		_i0 = data.get(TYPE_DEFENSE,  SESSION_CANCEL, BILL_AUTOFUNDED, _l);   
-		_qa = _i0 === undefined ? 0 : _i0.number; 
+
+		_i0 = data.get(TYPE_DEFENSE,  SESSION_CANCEL, BILL_AUTOFUNDED, _l);
+		_qa = _i0 === undefined ? 0 : _i0.number;
 		_ma = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_DEFENSE,  SESSION_CANCEL, BILL_FUNDED, _l);
-		_qf = _i0 === undefined ? 0 : _i0.number; 
+		_qf = _i0 === undefined ? 0 : _i0.number;
 		_mf = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_DEFENSE,  SESSION_CANCEL, BILL_OTHER, _l);
-		_qo = _i0 === undefined ? 0 : _i0.number; 
+		_qo = _i0 === undefined ? 0 : _i0.number;
 		_mo = _i0 === undefined ? 0 : _i0.amount;
 		_pa = _qa > 0 ? _ma / _qa : _ma;
 		_pf = _qf > 0 ? _mf / _qf : _mf;
@@ -2471,15 +2484,15 @@ var showBillPhase2 = function (dtFrom, dtTo, data){
 			sHtml+=`<td>${_qa + _qf +_qo}</td><td>${_ma + _mf + _mo}€</td>`;
 			sHtml+="</tr>";
 		}
-		
-		_i0 = data.get(TYPE_DEFENSE,  SESSION_CANCEL_LATE, BILL_AUTOFUNDED, _l);   
-		_qa = _i0 === undefined ? 0 : _i0.number; 
+
+		_i0 = data.get(TYPE_DEFENSE,  SESSION_CANCEL_LATE, BILL_AUTOFUNDED, _l);
+		_qa = _i0 === undefined ? 0 : _i0.number;
 		_ma = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_DEFENSE,  SESSION_CANCEL_LATE, BILL_FUNDED, _l);
-		_qf = _i0 === undefined ? 0 : _i0.number; 
+		_qf = _i0 === undefined ? 0 : _i0.number;
 		_mf = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_DEFENSE,  SESSION_CANCEL_LATE, BILL_OTHER, _l);
-		_qo = _i0 === undefined ? 0 : _i0.number; 
+		_qo = _i0 === undefined ? 0 : _i0.number;
 		_mo = _i0 === undefined ? 0 : _i0.amount;
 		_pa = _qa > 0 ? _ma / _qa : _ma;
 		_pf = _qf > 0 ? _mf / _qf : _mf;
@@ -2499,15 +2512,15 @@ var showBillPhase2 = function (dtFrom, dtTo, data){
 			sHtml+=`<td>${_qa + _qf +_qo}</td><td>${_ma + _mf + _mo}€</td>`;
 			sHtml+="</tr>";
 		}
-		
-		_i0 = data.get(TYPE_DEFENSE,  SESSION_STUDENT_AWAY, BILL_AUTOFUNDED, _l);   
-		_qa = _i0 === undefined ? 0 : _i0.number; 
+
+		_i0 = data.get(TYPE_DEFENSE,  SESSION_STUDENT_AWAY, BILL_AUTOFUNDED, _l);
+		_qa = _i0 === undefined ? 0 : _i0.number;
 		_ma = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_DEFENSE,  SESSION_STUDENT_AWAY, BILL_FUNDED, _l);
-		_qf = _i0 === undefined ? 0 : _i0.number; 
+		_qf = _i0 === undefined ? 0 : _i0.number;
 		_mf = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_DEFENSE,  SESSION_STUDENT_AWAY, BILL_OTHER, _l);
-		_qo = _i0 === undefined ? 0 : _i0.number; 
+		_qo = _i0 === undefined ? 0 : _i0.number;
 		_mo = _i0 === undefined ? 0 : _i0.amount;
 		_pa = _qa > 0 ? _ma / _qa : _ma;
 		_pf = _qf > 0 ? _mf / _qf : _mf;
@@ -2527,7 +2540,7 @@ var showBillPhase2 = function (dtFrom, dtTo, data){
 			sHtml+=`<td>${_qa + _qf +_qo}</td><td>${_ma + _mf + _mo}€</td>`;
 			sHtml+="</tr>";
 		}
-		
+
 		_l+=1; // Next Level
 	}
 	sHtml+='<tr>';
@@ -2555,17 +2568,17 @@ var showBillPhase2 = function (dtFrom, dtTo, data){
 	sHtml+='<tr>';
 	sHtml+='<th colspan="12" class="pseudoheader" scope="colgroup">Sessions de Coaching</th>';
 	sHtml+='</tr>';
-	
+
 	var _l = 1; // reset loop
 	while(_l <= iCurrentMaxLevel){
-		_i0 = data.get(TYPE_COACHING,  SESSION_DONE, BILL_AUTOFUNDED, _l);   
-		_qa = _i0 === undefined ? 0 : _i0.number; 
+		_i0 = data.get(TYPE_COACHING,  SESSION_DONE, BILL_AUTOFUNDED, _l);
+		_qa = _i0 === undefined ? 0 : _i0.number;
 		_ma = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_COACHING,  SESSION_DONE, BILL_FUNDED, _l);
-		_qf = _i0 === undefined ? 0 : _i0.number; 
+		_qf = _i0 === undefined ? 0 : _i0.number;
 		_mf = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_COACHING,  SESSION_DONE, BILL_OTHER, _l);
-		_qo = _i0 === undefined ? 0 : _i0.number; 
+		_qo = _i0 === undefined ? 0 : _i0.number;
 		_mo = _i0 === undefined ? 0 : _i0.amount;
 		_pa = _qa > 0 ? _ma / _qa : _ma;
 		_pf = _qf > 0 ? _mf / _qf : _mf;
@@ -2585,15 +2598,15 @@ var showBillPhase2 = function (dtFrom, dtTo, data){
 			sHtml+=`<td>${_qa + _qf +_qo}</td><td>${_ma + _mf + _mo}€</td>`;
 			sHtml+="</tr>";
 		}
-		
-		_i0 = data.get(TYPE_COACHING,  SESSION_CANCEL, BILL_AUTOFUNDED, _l);   
-		_qa = _i0 === undefined ? 0 : _i0.number; 
+
+		_i0 = data.get(TYPE_COACHING,  SESSION_CANCEL, BILL_AUTOFUNDED, _l);
+		_qa = _i0 === undefined ? 0 : _i0.number;
 		_ma = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_COACHING,  SESSION_CANCEL, BILL_FUNDED, _l);
-		_qf = _i0 === undefined ? 0 : _i0.number; 
+		_qf = _i0 === undefined ? 0 : _i0.number;
 		_mf = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_COACHING,  SESSION_CANCEL, BILL_OTHER, _l);
-		_qo = _i0 === undefined ? 0 : _i0.number; 
+		_qo = _i0 === undefined ? 0 : _i0.number;
 		_mo = _i0 === undefined ? 0 : _i0.amount;
 		_pa = _qa > 0 ? _ma / _qa : _ma;
 		_pf = _qf > 0 ? _mf / _qf : _mf;
@@ -2613,15 +2626,15 @@ var showBillPhase2 = function (dtFrom, dtTo, data){
 			sHtml+=`<td>${_qa + _qf +_qo}</td><td>${_ma + _mf + _mo}€</td>`;
 			sHtml+="</tr>";
 		}
-		
-		_i0 = data.get(TYPE_COACHING,  SESSION_CANCEL_LATE, BILL_AUTOFUNDED, _l);   
-		_qa = _i0 === undefined ? 0 : _i0.number; 
+
+		_i0 = data.get(TYPE_COACHING,  SESSION_CANCEL_LATE, BILL_AUTOFUNDED, _l);
+		_qa = _i0 === undefined ? 0 : _i0.number;
 		_ma = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_COACHING,  SESSION_CANCEL_LATE, BILL_FUNDED, _l);
-		_qf = _i0 === undefined ? 0 : _i0.number; 
+		_qf = _i0 === undefined ? 0 : _i0.number;
 		_mf = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_COACHING,  SESSION_CANCEL_LATE, BILL_OTHER, _l);
-		_qo = _i0 === undefined ? 0 : _i0.number; 
+		_qo = _i0 === undefined ? 0 : _i0.number;
 		_mo = _i0 === undefined ? 0 : _i0.amount;
 		_pa = _qa > 0 ? _ma / _qa : _ma;
 		_pf = _qf > 0 ? _mf / _qf : _mf;
@@ -2641,15 +2654,15 @@ var showBillPhase2 = function (dtFrom, dtTo, data){
 			sHtml+=`<td>${_qa + _qf +_qo}</td><td>${_ma + _mf + _mo}€</td>`;
 			sHtml+="</tr>";
 		}
-		
-		_i0 = data.get(TYPE_COACHING,  SESSION_STUDENT_AWAY, BILL_AUTOFUNDED, _l);   
-		_qa = _i0 === undefined ? 0 : _i0.number; 
+
+		_i0 = data.get(TYPE_COACHING,  SESSION_STUDENT_AWAY, BILL_AUTOFUNDED, _l);
+		_qa = _i0 === undefined ? 0 : _i0.number;
 		_ma = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_COACHING,  SESSION_STUDENT_AWAY, BILL_FUNDED, _l);
-		_qf = _i0 === undefined ? 0 : _i0.number; 
+		_qf = _i0 === undefined ? 0 : _i0.number;
 		_mf = _i0 === undefined ? 0 : _i0.amount;
 		_i0 = data.get(TYPE_COACHING,  SESSION_STUDENT_AWAY, BILL_OTHER, _l);
-		_qo = _i0 === undefined ? 0 : _i0.number; 
+		_qo = _i0 === undefined ? 0 : _i0.number;
 		_mo = _i0 === undefined ? 0 : _i0.amount;
 		_pa = _qa > 0 ? _ma / _qa : _ma;
 		_pf = _qf > 0 ? _mf / _qf : _mf;
@@ -2669,17 +2682,17 @@ var showBillPhase2 = function (dtFrom, dtTo, data){
 			sHtml+=`<td>${_qa + _qf +_qo}</td><td>${_ma + _mf + _mo}€</td>`;
 			sHtml+="</tr>";
 		}
-		
+
 		_l+=1; // Next Level
 	}
-	
+
 	iTotGQa += iTotQa;
 	iTotGQf += iTotQf;
 	iTotGQo += iTotQo;
 	iTotGMa += iTotMa;
 	iTotGMf += iTotMf;
 	iTotGMo += iTotMo;
-	
+
 	//sHtml+='</tbody>';
 	//sHtml+='<tfoot>';
 	sHtml+='<tr>';
@@ -2693,12 +2706,12 @@ var showBillPhase2 = function (dtFrom, dtTo, data){
 	sHtml+='</tr>';
 	//sHtml+='</tfoot>';
 	//sHtml+='</table>';
-	
+
 	sHtml+='</tbody>';
 	sHtml+='<tfoot>';
     sHtml+='</tfoot>';
 	sHtml+='</table>';
-	
+
 /*
 	let iError = data[0].errors[0].total_errors;
 	if(iError > 0){
@@ -2715,9 +2728,9 @@ var showBillPhase2 = function (dtFrom, dtTo, data){
 	}
 	* */
 	// Bonus for AF
-	var iTotG = 0;      
+	var iTotG = 0;
 	var sAFOK = "";
-	let iFlatFeeNumber = oMeta.flatFee.length  
+	let iFlatFeeNumber = oMeta.flatFee.length
 	for(var t=0; t < iFlatFeeNumber; t+=1){
 		iTotG+=30
 		sAFOK+= oMeta.flatFee[t].who_name+", ";
@@ -2727,12 +2740,12 @@ var showBillPhase2 = function (dtFrom, dtTo, data){
 	} else {
 		sHtml+= `<p class="flat_fee">Calcul du forfait "autofinancé". Ce mois ci ${iFlatFeeNumber} étudiant a eu au moins une session il s'agit de : ${sAFOK.slice(0, -1)}`;
 	}
-	sHtml+= `. Le forfait est donc de ${iTotG}€</p>`;        
-	sHtml+=`<p>Soit un total général à facturer de ${iTotGMa+iTotGMf+iTotGMo+iTotG}€</p>`;  
-  
+	sHtml+= `. Le forfait est donc de ${iTotG}€</p>`;
+	sHtml+=`<p>Soit un total général à facturer de ${iTotGMa+iTotGMf+iTotGMo+iTotG}€</p>`;
 
 
-	
+
+
 	Swal.fire({
 		title: `<strong>Liste des formations tarifées du ${dtFrom.format("DD/MM/YYYY")} au ${dtTo.format("DD/MM/YYYY")}</strong>`,
 		//icon: 'info',
@@ -2743,10 +2756,10 @@ var showBillPhase2 = function (dtFrom, dtTo, data){
 		position: 'center-start',
 		grow: 'fullscreen',
 	});
-	
+
 }
 
- 
+
 /**
  *
  */
@@ -2899,7 +2912,7 @@ var showBillPhase2 = function (dtFrom, dtTo, data){
 		dtCurTo = dtCurFrom.endOf("month");
 	}
     sHtml = "<table>" + aHtml.join(" ") + `</tbody><tfoot><tr><td colspan=${aData.length + 1}>la valeur entre parenthèse fait reference aux annulés</td></tr></tfoot></table>`;
-	
+
 	Swal.fire({
 		title: `<strong>Statistiques du ${dtFrom.format("DD/MM/YYYY")} au ${dtTo.format("DD/MM/YYYY")}</strong>`,
 		icon: 'info',
@@ -2912,9 +2925,9 @@ var showBillPhase2 = function (dtFrom, dtTo, data){
 		onOpen: (el) => {
 		},
 	});
-	
-}    
-      
+
+}
+
 export {
 	about,
 	addCbox,
@@ -2930,4 +2943,5 @@ export {
 	sandbox,
 	showBill,
 	statistics,
+	updCboxValue,
 }
