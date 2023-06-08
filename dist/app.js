@@ -1,3 +1,154 @@
+// ==UserScript==
+// @name         Facturier
+// @namespace    https://stephanety-pro.github.io/OC-Mentors-AccountAddon/
+// @version      1.10.0015
+// @description  Un addon pour vous aider dans votre facturation
+// @author       Stéphane TORCHY
+// @updateURL    https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/dist/app.min.js
+// @downloadURL  https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/dist/app.min.js
+// @icon         https://mirrors.creativecommons.org/presskit/icons/heart.red.png
+// multiple usage
+// @match        https://openclassrooms.com/fr/mentorship/dashboard/mentorship-sessions-history*
+// @match        https://openclassrooms.com/fr/mentorship/dashboard/sessions
+// @match        https://openclassrooms.com/fr/mentorship/dashboard/booked-mentorship-sessions
+
+// Start at document start https://www.tampermonkey.net/documentation.php#_run_at
+// @run-at document-start
+
+// @grant        unsafeWindow
+// @grant        GM_addStyle
+// @grant        GM_getResourceText
+// @grant        GM_registerMenuCommand
+// @grant        GM_unregisterMenuCommand
+// @grant        GM_xmlhttpRequest
+// @grant        GM.xmlHttpRequest
+// @grant        GM_notification
+
+// @require      https://cdn.jsdelivr.net/npm/lodash@4.17.19/lodash.min.js
+// @require      https://unpkg.com/lowdb@0.17/dist/low.min.js
+// @require      https://unpkg.com/lowdb@0.17/dist/LocalStorage.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.29/dayjs.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.29/locale/fr.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.29/plugin/isBetween.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.29/plugin/isSameOrBefore.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.29/plugin/isSameOrAfter.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.29/plugin/customParseFormat.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.29/plugin/localeData.min.js
+
+
+//// GM_Compat : Portable monkey-patching for userscripts
+// SRC 				https://github.com/chocolateboy/gm-compat
+// permet notamment d'utiliser GMCompat.unsafeWindow.notify('loaded', { value: 42 }) sous chrome
+// @require       	https://unpkg.com/gm-compat@1.1.0
+
+//// GM_Config
+// SRC 			https://github.com/sizzlemctwizzle/GM_config/wiki
+// require      https://openuserjs.org/src/libs/sizzle/GM_config.js (cassé ce jour 28/08/2020);
+// require      https://raw.githubusercontent.com/sizzlemctwizzle/GM_config/master/gm_config.js
+//(semble de nouveau utilisable 07/06/2023)
+// @require     https://openuserjs.org/src/libs/sizzle/GM_config.js
+// Legacy GM3 support
+// @grant              GM_getValue
+// @grant              GM_setValue
+// Current GM4 support
+// @grant              GM.getValue
+// @grant              GM.setValue
+
+//// sweetalert 2
+// require      https://cdn.jsdelivr.net/npm/sweetalert2@9/dist/sweetalert2.all.min.js
+// @require      https://cdn.jsdelivr.net/npm/sweetalert2@10
+
+//// draggabilly
+// @require      https://cdnjs.cloudflare.com/ajax/libs/draggabilly/2.2.0/draggabilly.pkgd.min.js
+
+//// toastify
+// @require     https://cdn.jsdelivr.net/npm/toastify-js@1.8.0/src/toastify.min.js
+// @resource    toastifycss https://raw.githubusercontent.com/apvarun/toastify-js/master/src/toastify.css
+
+// https://github.com/uzairfarooq/arrive --> included manually
+// require     https://raw.githubusercontent.com/uzairfarooq/arrive/master/minified/arrive.min.js
+
+////simple-datatables
+//// https://github.com/fiduswriter/Simple-DataTables
+// @require     https://cdn.jsdelivr.net/npm/simple-datatables@latest
+// @resource    simpledatatablecss https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css
+
+
+//// MEMOIZATION
+//// TODO : check best function
+// require https://raw.githubusercontent.com/anywhichway/nano-memoize/master/dist/nano-memoize.min.js
+// https://github.com/planttheidea/moize#usage
+// @require https://cdn.jsdelivr.net/npm/moize@5.4.7/dist/moize.min.js
+// require https://cdn.jsdelivr.net/npm/moize@6.0.2/dist/moize.min.js -> probleme 20210701
+// require https://cdn.jsdelivr.net/npm/moize@6.0.3/dist/moize.min.js -> probleme 20210701
+// USAGE OF https://caolan.github.io/async/v3/docs.html
+// FONCTIONNE PAS require https://cdn.jsdelivr.net/npm/async@3.2.0/memoize.min.js probleme export
+// @require https://cdn.jsdelivr.net/npm/async@3.2.0/dist/async.min.js
+// TOTEST https://github.com/sindresorhus/p-memoize
+// Ne fonctionne pasrequire https://cdn.skypack.dev/p-memoize
+
+//// FETCH INJECT --> included manually
+// require https://cdn.jsdelivr.net/npm/fetch-inject
+
+//// PARSER MKDOWN
+// @require 	 https://cdn.jsdelivr.net/npm/showdown@1.9.1/dist/showdown.min.js
+
+//// PDF https://pdf-lib.js.org/docs/api/
+// @require      https://unpkg.com/pdf-lib@1.9.0/dist/pdf-lib.min.js
+// @require      https://unpkg.com/downloadjs@1.4.7/download.js
+
+//// HTMX https://htmx.org --> included dynamically
+// require https://unpkg.com/htmx.org@1.1.0/dist/htmx.min.js
+
+//// ALPINE JS --> included dynamically
+// require https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.js
+
+
+// ProgressBar
+// https://loading.io/progress/
+// require https://raw.githubusercontent.com/loadingio/loading-bar/master/dist/loading-bar.js
+// resource loading_barcss https://raw.githubusercontent.com/loadingio/loading-bar/master/dist/loading-bar.css
+// @require https://loadingio.github.io/loading-bar/dist/loading-bar.js
+// @resource loading_barcss https://loadingio.github.io/loading-bar/dist/loading-bar.min.css
+
+// https://www.cssscript.com/demo/text-progress-bar-ascii-loader/
+// https://github.com/kimmobrunfeldt/progressbar.js - fonctionne mais probleme avec le easing dans mon popup progress bar
+// require https://raw.githubusercontent.com/kimmobrunfeldt/progressbar.js/master/dist/progressbar.min.js
+// require https://raw.githubusercontent.com/kimmobrunfeldt/progressbar.js/master/dist/progressbar.js
+// https://pvdlg.github.io/uprogress/js-api/#UProgress+start
+// https://ricostacruz.com/nprogress
+
+
+// @require https://unpkg.com/nprogress@0.2.0/nprogress.js
+// @resource nprogress_css https://unpkg.com/nprogress@0.2.0/nprogress.css
+
+
+// semble cassé
+// https://github.com/webosorg/Process
+// https://unpkg.com/@webos/process@0.2.0/dist/process.js
+// https://cdn.jsdelivr.net/npm/@webos/process@0.2.0/dist/process.min.js
+// bof ... je ne parviens pas à faire fonctionner l'exemple
+// https://cdn.jsdelivr.net/npm/worker-function@2.0.1/WorkerFunction.min.js
+// Threading
+// require  https://raw.githubusercontent.com/gkjohnson/threading-js/master/umd/Thread.js
+// require   https://raw.githubusercontent.com/gkjohnson/threading-js/master/umd/ThreadPool.js
+// require   https://raw.githubusercontent.com/gkjohnson/threading-js/master/umd/ThreadQueue.js
+// semble cassé
+// https://cdn.jsdelivr.net/npm/threads@1.6.3/dist/index.min.js
+// https://unpkg.com/paralleljs@1.0/lib/parallel.js
+// https://cdn.jsdelivr.net/npm/threads@1.6.3/dist/index.min.js
+// Freelancer
+// https://github.com/Wildhoney/Freelancer
+// fonctionne require https://raw.githubusercontent.com/arqex/worker-function/master/WorkerFunction.js
+// ne fonctonne pas https://raw.githubusercontent.com/duart38/Thread/master/Thread.bundle.js
+// require      https://cdn.jsdelivr.net/npm/paralleljs@1.0.1/lib/parallel.min.js
+
+
+/*
+ * History
+ * cf https://github.com/StephaneTy-Pro/OC-Mentors-AccountAddon/blob/master/CHANGELOG.md
+ */
+// ==/UserScript==
 (() => {
   var __create = Object.create;
   var __defProp = Object.defineProperty;
