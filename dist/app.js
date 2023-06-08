@@ -1,146 +1,3 @@
-// ==UserScript==
-// @name         Facturier
-// @namespace    https://stephanety-pro.github.io/OC-Mentors-AccountAddon/
-// @version      1.10.0014
-// @description  Un addon pour vous aider dans votre facturation
-// @author       Stéphane TORCHY
-// @updateURL    https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/dist/app.min.js
-// @downloadURL  https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/dist/app.min.js
-// @icon         https://mirrors.creativecommons.org/presskit/icons/heart.red.png
-// multiple usage
-// @match        https://openclassrooms.com/fr/mentorship/dashboard/mentorship-sessions-history*
-// @match        https://openclassrooms.com/fr/mentorship/dashboard/sessions
-// @match        https://openclassrooms.com/fr/mentorship/dashboard/booked-mentorship-sessions
-
-// Start at document start https://www.tampermonkey.net/documentation.php#_run_at
-// @run-at document-start
-
-// @grant        unsafeWindow
-// @grant        GM_addStyle
-// @grant        GM_getResourceText
-// @grant        GM_registerMenuCommand
-// @grant        GM_unregisterMenuCommand
-// @grant        GM_xmlhttpRequest
-// @grant        GM.xmlHttpRequest
-// @grant        GM_notification
-
-// @require      https://cdn.jsdelivr.net/npm/lodash@4.17.19/lodash.min.js
-// @require      https://unpkg.com/lowdb@0.17/dist/low.min.js
-// @require      https://unpkg.com/lowdb@0.17/dist/LocalStorage.min.js
-// @require      https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.29/dayjs.min.js
-// @require      https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.29/locale/fr.min.js
-// @require      https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.29/plugin/isBetween.min.js
-// @require      https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.29/plugin/isSameOrBefore.min.js
-// @require      https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.29/plugin/isSameOrAfter.min.js
-// @require      https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.29/plugin/customParseFormat.min.js
-// @require      https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.29/plugin/localeData.min.js
-
-
-//// GM_Compat : Portable monkey-patching for userscripts
-// SRC 				https://github.com/chocolateboy/gm-compat
-// permet notamment d'utiliser GMCompat.unsafeWindow.notify('loaded', { value: 42 }) sous chrome
-// @require       	https://unpkg.com/gm-compat@1.1.0
-
-//// GM_Config
-// SRC 			https://github.com/sizzlemctwizzle/GM_config/wiki
-// require      https://openuserjs.org/src/libs/sizzle/GM_config.js (cassé ce jour 28/08/2020);
-// @require      https://raw.githubusercontent.com/sizzlemctwizzle/GM_config/master/gm_config.js
-
-//// sweetalert 2
-// require      https://cdn.jsdelivr.net/npm/sweetalert2@9/dist/sweetalert2.all.min.js
-// @require      https://cdn.jsdelivr.net/npm/sweetalert2@10
-
-//// draggabilly
-// @require      https://cdnjs.cloudflare.com/ajax/libs/draggabilly/2.2.0/draggabilly.pkgd.min.js
-
-//// toastify
-// @require     https://cdn.jsdelivr.net/npm/toastify-js@1.8.0/src/toastify.min.js
-// @resource    toastifycss https://raw.githubusercontent.com/apvarun/toastify-js/master/src/toastify.css
-
-// https://github.com/uzairfarooq/arrive --> included manually
-// require     https://raw.githubusercontent.com/uzairfarooq/arrive/master/minified/arrive.min.js
-
-////simple-datatables
-//// https://github.com/fiduswriter/Simple-DataTables
-// @require     https://cdn.jsdelivr.net/npm/simple-datatables@latest
-// @resource    simpledatatablecss https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css
-
-
-//// MEMOIZATION
-//// TODO : check best function
-// require https://raw.githubusercontent.com/anywhichway/nano-memoize/master/dist/nano-memoize.min.js
-// https://github.com/planttheidea/moize#usage
-// @require https://cdn.jsdelivr.net/npm/moize@5.4.7/dist/moize.min.js
-// require https://cdn.jsdelivr.net/npm/moize@6.0.2/dist/moize.min.js -> probleme 20210701
-// require https://cdn.jsdelivr.net/npm/moize@6.0.3/dist/moize.min.js -> probleme 20210701
-// USAGE OF https://caolan.github.io/async/v3/docs.html
-// FONCTIONNE PAS require https://cdn.jsdelivr.net/npm/async@3.2.0/memoize.min.js probleme export
-// @require https://cdn.jsdelivr.net/npm/async@3.2.0/dist/async.min.js
-// TOTEST https://github.com/sindresorhus/p-memoize
-// Ne fonctionne pasrequire https://cdn.skypack.dev/p-memoize
-
-//// FETCH INJECT --> included manually
-// require https://cdn.jsdelivr.net/npm/fetch-inject
-
-//// PARSER MKDOWN
-// @require 	 https://cdn.jsdelivr.net/npm/showdown@1.9.1/dist/showdown.min.js
-
-//// PDF https://pdf-lib.js.org/docs/api/
-// @require      https://unpkg.com/pdf-lib@1.9.0/dist/pdf-lib.min.js
-// @require      https://unpkg.com/downloadjs@1.4.7/download.js
-
-//// HTMX https://htmx.org --> included dynamically
-// require https://unpkg.com/htmx.org@1.1.0/dist/htmx.min.js
-
-//// ALPINE JS --> included dynamically
-// require https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.js
-
-
-// ProgressBar
-// https://loading.io/progress/
-// require https://raw.githubusercontent.com/loadingio/loading-bar/master/dist/loading-bar.js
-// resource loading_barcss https://raw.githubusercontent.com/loadingio/loading-bar/master/dist/loading-bar.css
-// @require https://loadingio.github.io/loading-bar/dist/loading-bar.js
-// @resource loading_barcss https://loadingio.github.io/loading-bar/dist/loading-bar.min.css
-
-// https://www.cssscript.com/demo/text-progress-bar-ascii-loader/
-// https://github.com/kimmobrunfeldt/progressbar.js - fonctionne mais probleme avec le easing dans mon popup progress bar
-// require https://raw.githubusercontent.com/kimmobrunfeldt/progressbar.js/master/dist/progressbar.min.js
-// require https://raw.githubusercontent.com/kimmobrunfeldt/progressbar.js/master/dist/progressbar.js
-// https://pvdlg.github.io/uprogress/js-api/#UProgress+start
-// https://ricostacruz.com/nprogress
-
-
-// @require https://unpkg.com/nprogress@0.2.0/nprogress.js
-// @resource nprogress_css https://unpkg.com/nprogress@0.2.0/nprogress.css
-
-
-// semble cassé
-// https://github.com/webosorg/Process
-// https://unpkg.com/@webos/process@0.2.0/dist/process.js
-// https://cdn.jsdelivr.net/npm/@webos/process@0.2.0/dist/process.min.js
-// bof ... je ne parviens pas à faire fonctionner l'exemple
-// https://cdn.jsdelivr.net/npm/worker-function@2.0.1/WorkerFunction.min.js
-// Threading
-// require  https://raw.githubusercontent.com/gkjohnson/threading-js/master/umd/Thread.js
-// require   https://raw.githubusercontent.com/gkjohnson/threading-js/master/umd/ThreadPool.js
-// require   https://raw.githubusercontent.com/gkjohnson/threading-js/master/umd/ThreadQueue.js
-// semble cassé
-// https://cdn.jsdelivr.net/npm/threads@1.6.3/dist/index.min.js
-// https://unpkg.com/paralleljs@1.0/lib/parallel.js
-// https://cdn.jsdelivr.net/npm/threads@1.6.3/dist/index.min.js
-// Freelancer
-// https://github.com/Wildhoney/Freelancer
-// fonctionne require https://raw.githubusercontent.com/arqex/worker-function/master/WorkerFunction.js
-// ne fonctonne pas https://raw.githubusercontent.com/duart38/Thread/master/Thread.bundle.js
-// require      https://cdn.jsdelivr.net/npm/paralleljs@1.0.1/lib/parallel.min.js
-
-
-/*
- * History
- * cf https://github.com/StephaneTy-Pro/OC-Mentors-AccountAddon/blob/master/CHANGELOG.md
- */
-// ==/UserScript==
 (() => {
   var __create = Object.create;
   var __defProp = Object.defineProperty;
@@ -149,21 +6,25 @@
   var __getProtoOf = Object.getPrototypeOf;
   var __hasOwnProp = Object.prototype.hasOwnProperty;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-  var __markAsModule = (target) => __defProp(target, "__esModule", { value: true });
   var __commonJS = (cb, mod) => function __require() {
-    return mod || (0, cb[Object.keys(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+    return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
   };
-  var __reExport = (target, module, desc) => {
-    if (module && typeof module === "object" || typeof module === "function") {
-      for (let key of __getOwnPropNames(module))
-        if (!__hasOwnProp.call(target, key) && key !== "default")
-          __defProp(target, key, { get: () => module[key], enumerable: !(desc = __getOwnPropDesc(module, key)) || desc.enumerable });
+  var __copyProps = (to, from, except, desc) => {
+    if (from && typeof from === "object" || typeof from === "function") {
+      for (let key of __getOwnPropNames(from))
+        if (!__hasOwnProp.call(to, key) && key !== except)
+          __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
     }
-    return target;
+    return to;
   };
-  var __toModule = (module) => {
-    return __reExport(__markAsModule(__defProp(module != null ? __create(__getProtoOf(module)) : {}, "default", module && module.__esModule && "default" in module ? { get: () => module.default, enumerable: true } : { value: module, enumerable: true })), module);
-  };
+  var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+    // If the importer is in node compatibility mode or this is not an ESM
+    // file that has been converted to a CommonJS file using a Babel-
+    // compatible transform (i.e. "__esModule" has not been set), then set
+    // "default" to the CommonJS "module.exports" for node compatibility.
+    isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+    mod
+  ));
   var __publicField = (obj, key, value) => {
     __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
     return value;
@@ -173,10 +34,10 @@
   var require_papaparse_min = __commonJS({
     "src/vendor/papaparse/papaparse.min.js"(exports, module) {
       !function(e, t) {
-        typeof define == "function" && define.amd ? define([], t) : typeof module == "object" && typeof exports != "undefined" ? module.exports = t() : e.Papa = t();
+        "function" == typeof define && define.amd ? define([], t) : "object" == typeof module && "undefined" != typeof exports ? module.exports = t() : e.Papa = t();
       }(exports, function s() {
         "use strict";
-        var f = typeof self != "undefined" ? self : typeof window != "undefined" ? window : f !== void 0 ? f : {};
+        var f = "undefined" != typeof self ? self : "undefined" != typeof window ? window : void 0 !== f ? f : {};
         var n = !f.document && !!f.postMessage, o = n && /blob:/i.test((f.location || {}).protocol), a = {}, h2 = 0, b = { parse: function(e, t) {
           var i3 = (t = t || {}).dynamicTyping || false;
           U(i3) && (t.dynamicTypingFunction = i3, i3 = {});
@@ -191,41 +52,41 @@
             return r2.userStep = t.step, r2.userChunk = t.chunk, r2.userComplete = t.complete, r2.userError = t.error, t.step = U(t.step), t.chunk = U(t.chunk), t.complete = U(t.complete), t.error = U(t.error), delete t.worker, void r2.postMessage({ input: e, config: t, workerId: r2.id });
           }
           var n2 = null;
-          b.NODE_STREAM_INPUT, typeof e == "string" ? n2 = t.download ? new l(t) : new p(t) : e.readable === true && U(e.read) && U(e.on) ? n2 = new g(t) : (f.File && e instanceof File || e instanceof Object) && (n2 = new c(t));
+          b.NODE_STREAM_INPUT, "string" == typeof e ? n2 = t.download ? new l(t) : new p(t) : true === e.readable && U(e.read) && U(e.on) ? n2 = new g(t) : (f.File && e instanceof File || e instanceof Object) && (n2 = new c(t));
           return n2.stream(e);
         }, unparse: function(e, t) {
           var n2 = false, m2 = true, _3 = ",", v2 = "\r\n", s2 = '"', a2 = s2 + s2, i3 = false, r2 = null, o2 = false;
           !function() {
-            if (typeof t != "object")
+            if ("object" != typeof t)
               return;
-            typeof t.delimiter != "string" || b.BAD_DELIMITERS.filter(function(e2) {
-              return t.delimiter.indexOf(e2) !== -1;
+            "string" != typeof t.delimiter || b.BAD_DELIMITERS.filter(function(e2) {
+              return -1 !== t.delimiter.indexOf(e2);
             }).length || (_3 = t.delimiter);
-            (typeof t.quotes == "boolean" || typeof t.quotes == "function" || Array.isArray(t.quotes)) && (n2 = t.quotes);
-            typeof t.skipEmptyLines != "boolean" && typeof t.skipEmptyLines != "string" || (i3 = t.skipEmptyLines);
-            typeof t.newline == "string" && (v2 = t.newline);
-            typeof t.quoteChar == "string" && (s2 = t.quoteChar);
-            typeof t.header == "boolean" && (m2 = t.header);
+            ("boolean" == typeof t.quotes || "function" == typeof t.quotes || Array.isArray(t.quotes)) && (n2 = t.quotes);
+            "boolean" != typeof t.skipEmptyLines && "string" != typeof t.skipEmptyLines || (i3 = t.skipEmptyLines);
+            "string" == typeof t.newline && (v2 = t.newline);
+            "string" == typeof t.quoteChar && (s2 = t.quoteChar);
+            "boolean" == typeof t.header && (m2 = t.header);
             if (Array.isArray(t.columns)) {
-              if (t.columns.length === 0)
+              if (0 === t.columns.length)
                 throw new Error("Option columns is empty");
               r2 = t.columns;
             }
-            t.escapeChar !== void 0 && (a2 = t.escapeChar + s2);
-            typeof t.escapeFormulae == "boolean" && (o2 = t.escapeFormulae);
+            void 0 !== t.escapeChar && (a2 = t.escapeChar + s2);
+            "boolean" == typeof t.escapeFormulae && (o2 = t.escapeFormulae);
           }();
           var h3 = new RegExp(q(s2), "g");
-          typeof e == "string" && (e = JSON.parse(e));
+          "string" == typeof e && (e = JSON.parse(e));
           if (Array.isArray(e)) {
             if (!e.length || Array.isArray(e[0]))
               return f2(null, e, i3);
-            if (typeof e[0] == "object")
+            if ("object" == typeof e[0])
               return f2(r2 || u2(e[0]), e, i3);
-          } else if (typeof e == "object")
-            return typeof e.data == "string" && (e.data = JSON.parse(e.data)), Array.isArray(e.data) && (e.fields || (e.fields = e.meta && e.meta.fields), e.fields || (e.fields = Array.isArray(e.data[0]) ? e.fields : u2(e.data[0])), Array.isArray(e.data[0]) || typeof e.data[0] == "object" || (e.data = [e.data])), f2(e.fields || [], e.data || [], i3);
+          } else if ("object" == typeof e)
+            return "string" == typeof e.data && (e.data = JSON.parse(e.data)), Array.isArray(e.data) && (e.fields || (e.fields = e.meta && e.meta.fields), e.fields || (e.fields = Array.isArray(e.data[0]) ? e.fields : u2(e.data[0])), Array.isArray(e.data[0]) || "object" == typeof e.data[0] || (e.data = [e.data])), f2(e.fields || [], e.data || [], i3);
           throw new Error("Unable to serialize unrecognized input");
           function u2(e2) {
-            if (typeof e2 != "object")
+            if ("object" != typeof e2)
               return [];
             var t2 = [];
             for (var i4 in e2)
@@ -234,7 +95,7 @@
           }
           function f2(e2, t2, i4) {
             var r3 = "";
-            typeof e2 == "string" && (e2 = JSON.parse(e2)), typeof t2 == "string" && (t2 = JSON.parse(t2));
+            "string" == typeof e2 && (e2 = JSON.parse(e2)), "string" == typeof t2 && (t2 = JSON.parse(t2));
             var n3 = Array.isArray(e2) && 0 < e2.length, s3 = !Array.isArray(t2[0]);
             if (n3 && m2) {
               for (var a3 = 0; a3 < e2.length; a3++)
@@ -242,13 +103,13 @@
               0 < t2.length && (r3 += v2);
             }
             for (var o3 = 0; o3 < t2.length; o3++) {
-              var h4 = n3 ? e2.length : t2[o3].length, u3 = false, f3 = n3 ? Object.keys(t2[o3]).length === 0 : t2[o3].length === 0;
-              if (i4 && !n3 && (u3 = i4 === "greedy" ? t2[o3].join("").trim() === "" : t2[o3].length === 1 && t2[o3][0].length === 0), i4 === "greedy" && n3) {
+              var h4 = n3 ? e2.length : t2[o3].length, u3 = false, f3 = n3 ? 0 === Object.keys(t2[o3]).length : 0 === t2[o3].length;
+              if (i4 && !n3 && (u3 = "greedy" === i4 ? "" === t2[o3].join("").trim() : 1 === t2[o3].length && 0 === t2[o3][0].length), "greedy" === i4 && n3) {
                 for (var d2 = [], l2 = 0; l2 < h4; l2++) {
                   var c2 = s3 ? e2[l2] : l2;
                   d2.push(t2[o3][c2]);
                 }
-                u3 = d2.join("").trim() === "";
+                u3 = "" === d2.join("").trim();
               }
               if (!u3) {
                 for (var p2 = 0; p2 < h4; p2++) {
@@ -262,17 +123,17 @@
             return r3;
           }
           function y2(e2, t2) {
-            if (e2 == null)
+            if (null == e2)
               return "";
             if (e2.constructor === Date)
               return JSON.stringify(e2).slice(1, 25);
-            o2 === true && typeof e2 == "string" && e2.match(/^[=+\-@].*$/) !== null && (e2 = "'" + e2);
-            var i4 = e2.toString().replace(h3, a2), r3 = typeof n2 == "boolean" && n2 || typeof n2 == "function" && n2(e2, t2) || Array.isArray(n2) && n2[t2] || function(e3, t3) {
+            true === o2 && "string" == typeof e2 && null !== e2.match(/^[=+\-@].*$/) && (e2 = "'" + e2);
+            var i4 = e2.toString().replace(h3, a2), r3 = "boolean" == typeof n2 && n2 || "function" == typeof n2 && n2(e2, t2) || Array.isArray(n2) && n2[t2] || function(e3, t3) {
               for (var i5 = 0; i5 < t3.length; i5++)
                 if (-1 < e3.indexOf(t3[i5]))
                   return true;
               return false;
-            }(i4, b.BAD_DELIMITERS) || -1 < i4.indexOf(_3) || i4.charAt(0) === " " || i4.charAt(i4.length - 1) === " ";
+            }(i4, b.BAD_DELIMITERS) || -1 < i4.indexOf(_3) || " " === i4.charAt(0) || " " === i4.charAt(i4.length - 1);
             return r3 ? s2 + i4 + s2 : i4;
           }
         } };
@@ -281,23 +142,23 @@
           d.fn.parse = function(o2) {
             var i3 = o2.config || {}, h3 = [];
             return this.each(function(e2) {
-              if (!(d(this).prop("tagName").toUpperCase() === "INPUT" && d(this).attr("type").toLowerCase() === "file" && f.FileReader) || !this.files || this.files.length === 0)
+              if (!("INPUT" === d(this).prop("tagName").toUpperCase() && "file" === d(this).attr("type").toLowerCase() && f.FileReader) || !this.files || 0 === this.files.length)
                 return true;
               for (var t = 0; t < this.files.length; t++)
                 h3.push({ file: this.files[t], inputElem: this, instanceConfig: d.extend({}, i3) });
             }), e(), this;
             function e() {
-              if (h3.length !== 0) {
+              if (0 !== h3.length) {
                 var e2, t, i4, r2, n2 = h3[0];
                 if (U(o2.before)) {
                   var s2 = o2.before(n2.file, n2.inputElem);
-                  if (typeof s2 == "object") {
-                    if (s2.action === "abort")
+                  if ("object" == typeof s2) {
+                    if ("abort" === s2.action)
                       return e2 = "AbortError", t = n2.file, i4 = n2.inputElem, r2 = s2.reason, void (U(o2.error) && o2.error({ name: e2 }, t, i4, r2));
-                    if (s2.action === "skip")
+                    if ("skip" === s2.action)
                       return void u2();
-                    typeof s2.config == "object" && (n2.instanceConfig = d.extend(n2.instanceConfig, s2.config));
-                  } else if (s2 === "skip")
+                    "object" == typeof s2.config && (n2.instanceConfig = d.extend(n2.instanceConfig, s2.config));
+                  } else if ("skip" === s2)
                     return void u2();
                 }
                 var a2 = n2.instanceConfig.complete;
@@ -320,7 +181,7 @@
           }.call(this, e), this.parseChunk = function(e2, t) {
             if (this.isFirstChunk && U(this._config.beforeFirstChunk)) {
               var i3 = this._config.beforeFirstChunk(e2);
-              i3 !== void 0 && (e2 = i3);
+              void 0 !== i3 && (e2 = i3);
             }
             this.isFirstChunk = false, this._halted = false;
             var r2 = this._partialLine + e2;
@@ -370,12 +231,12 @@
               } catch (e3) {
                 this._chunkError(e3.message);
               }
-              n && r2.status === 0 && this._chunkError();
+              n && 0 === r2.status && this._chunkError();
             }
           }, this._chunkLoaded = function() {
-            r2.readyState === 4 && (r2.status < 200 || 400 <= r2.status ? this._chunkError() : (this._start += this._config.chunkSize ? this._config.chunkSize : r2.responseText.length, this._finished = !this._config.chunkSize || this._start >= function(e2) {
+            4 === r2.readyState && (r2.status < 200 || 400 <= r2.status ? this._chunkError() : (this._start += this._config.chunkSize ? this._config.chunkSize : r2.responseText.length, this._finished = !this._config.chunkSize || this._start >= function(e2) {
               var t = e2.getResponseHeader("Content-Range");
-              if (t === null)
+              if (null === t)
                 return -1;
               return parseInt(t.substring(t.lastIndexOf("/") + 1));
             }(r2), this.parseChunk(r2.responseText)));
@@ -387,7 +248,7 @@
         function c(e) {
           var r2, n2;
           (e = e || {}).chunkSize || (e.chunkSize = b.LocalChunkSize), u.call(this, e);
-          var s2 = typeof FileReader != "undefined";
+          var s2 = "undefined" != typeof FileReader;
           this.stream = function(e2) {
             this._input = e2, n2 = e2.slice || e2.webkitSlice || e2.mozSlice, s2 ? ((r2 = new FileReader()).onload = y(this._chunkLoaded, this), r2.onerror = y(this._chunkError, this)) : r2 = new FileReaderSync(), this._nextChunk();
           }, this._nextChunk = function() {
@@ -427,12 +288,12 @@
           }, this.stream = function(e2) {
             this._input = e2, this._input.on("data", this._streamData), this._input.on("end", this._streamEnd), this._input.on("error", this._streamError);
           }, this._checkIsFinished = function() {
-            r2 && t.length === 1 && (this._finished = true);
+            r2 && 1 === t.length && (this._finished = true);
           }, this._nextChunk = function() {
             this._checkIsFinished(), t.length ? this.parseChunk(t.shift()) : i3 = true;
           }, this._streamData = y(function(e2) {
             try {
-              t.push(typeof e2 == "string" ? e2 : e2.toString(this._config.encoding)), i3 && (i3 = false, this._checkIsFinished(), this.parseChunk(t.shift()));
+              t.push("string" == typeof e2 ? e2 : e2.toString(this._config.encoding)), i3 && (i3 = false, this._checkIsFinished(), this.parseChunk(t.shift()));
             } catch (e3) {
               this._streamError(e3);
             }
@@ -452,14 +313,14 @@
               if (c2 = e2, m2())
                 g2();
               else {
-                if (g2(), c2.data.length === 0)
+                if (g2(), 0 === c2.data.length)
                   return;
                 i3 += e2.data.length, _3.preview && i3 > _3.preview ? o2.abort() : (c2.data = c2.data[0], p2(c2, t));
               }
             };
           }
           function v2(e2) {
-            return _3.skipEmptyLines === "greedy" ? e2.join("").trim() === "" : e2.length === 1 && e2[0].length === 0;
+            return "greedy" === _3.skipEmptyLines ? "" === e2.join("").trim() : 1 === e2.length && 0 === e2[0].length;
           }
           function g2() {
             if (c2 && h3 && (k("Delimiter", "UndetectableDelimiter", "Unable to auto-detect delimiting character; defaulted to '" + b.DefaultDelimiter + "'"), h3 = false), _3.skipEmptyLines)
@@ -484,7 +345,7 @@
                 var i4, r3 = _3.header ? {} : [];
                 for (i4 = 0; i4 < e4.length; i4++) {
                   var n3 = i4, s3 = e4[i4];
-                  _3.header && (n3 = i4 >= l2.length ? "__parsed_extra" : l2[i4]), _3.transform && (s3 = _3.transform(s3, n3)), s3 = y2(n3, s3), n3 === "__parsed_extra" ? (r3[n3] = r3[n3] || [], r3[n3].push(s3)) : r3[n3] = s3;
+                  _3.header && (n3 = i4 >= l2.length ? "__parsed_extra" : l2[i4]), _3.transform && (s3 = _3.transform(s3, n3)), s3 = y2(n3, s3), "__parsed_extra" === n3 ? (r3[n3] = r3[n3] || [], r3[n3].push(s3)) : r3[n3] = s3;
                 }
                 return _3.header && (i4 > l2.length ? k("FieldMismatch", "TooManyFields", "Too many fields: expected " + l2.length + " fields but parsed " + i4, f2 + t3) : i4 < l2.length && k("FieldMismatch", "TooFewFields", "Too few fields: expected " + l2.length + " fields but parsed " + i4, f2 + t3)), r3;
               }
@@ -495,32 +356,32 @@
             }();
           }
           function m2() {
-            return _3.header && l2.length === 0;
+            return _3.header && 0 === l2.length;
           }
           function y2(e2, t2) {
-            return i4 = e2, _3.dynamicTypingFunction && _3.dynamicTyping[i4] === void 0 && (_3.dynamicTyping[i4] = _3.dynamicTypingFunction(i4)), (_3.dynamicTyping[i4] || _3.dynamicTyping) === true ? t2 === "true" || t2 === "TRUE" || t2 !== "false" && t2 !== "FALSE" && (function(e3) {
+            return i4 = e2, _3.dynamicTypingFunction && void 0 === _3.dynamicTyping[i4] && (_3.dynamicTyping[i4] = _3.dynamicTypingFunction(i4)), true === (_3.dynamicTyping[i4] || _3.dynamicTyping) ? "true" === t2 || "TRUE" === t2 || "false" !== t2 && "FALSE" !== t2 && (function(e3) {
               if (s2.test(e3)) {
                 var t3 = parseFloat(e3);
                 if (n2 < t3 && t3 < r2)
                   return true;
               }
               return false;
-            }(t2) ? parseFloat(t2) : u2.test(t2) ? new Date(t2) : t2 === "" ? null : t2) : t2;
+            }(t2) ? parseFloat(t2) : u2.test(t2) ? new Date(t2) : "" === t2 ? null : t2) : t2;
             var i4;
           }
           function k(e2, t2, i4, r3) {
             var n3 = { type: e2, code: t2, message: i4 };
-            r3 !== void 0 && (n3.row = r3), c2.errors.push(n3);
+            void 0 !== r3 && (n3.row = r3), c2.errors.push(n3);
           }
           this.parse = function(e2, t2, i4) {
             var r3 = _3.quoteChar || '"';
             if (_3.newline || (_3.newline = function(e3, t3) {
               e3 = e3.substring(0, 1048576);
               var i5 = new RegExp(q(t3) + "([^]*?)" + q(t3), "gm"), r4 = (e3 = e3.replace(i5, "")).split("\r"), n4 = e3.split("\n"), s4 = 1 < n4.length && n4[0].length < r4[0].length;
-              if (r4.length === 1 || s4)
+              if (1 === r4.length || s4)
                 return "\n";
               for (var a3 = 0, o3 = 0; o3 < r4.length; o3++)
-                r4[o3][0] === "\n" && a3++;
+                "\n" === r4[o3][0] && a3++;
               return a3 >= r4.length / 2 ? "\r\n" : "\r";
             }(e2, r3)), h3 = false, _3.delimiter)
               U(_3.delimiter) && (_3.delimiter = _3.delimiter(e2), c2.meta.delimiter = _3.delimiter);
@@ -536,9 +397,9 @@
                       c3++;
                     else {
                       var m3 = p3.data[g3].length;
-                      l3 += m3, o3 !== void 0 ? 0 < m3 && (d3 += Math.abs(m3 - o3), o3 = m3) : o3 = m3;
+                      l3 += m3, void 0 !== o3 ? 0 < m3 && (d3 += Math.abs(m3 - o3), o3 = m3) : o3 = m3;
                     }
-                  0 < p3.data.length && (l3 /= p3.data.length - c3), (a3 === void 0 || d3 <= a3) && (h4 === void 0 || h4 < l3) && 1.99 < l3 && (a3 = d3, s4 = f3, h4 = l3);
+                  0 < p3.data.length && (l3 /= p3.data.length - c3), (void 0 === a3 || d3 <= a3) && (void 0 === h4 || h4 < l3) && 1.99 < l3 && (a3 = d3, s4 = f3, h4 = l3);
                 }
                 return { successful: !!(_3.delimiter = s4), bestDelimiter: s4 };
               }(e2, _3.newline, _3.skipEmptyLines, _3.comments, _3.delimitersToGuess);
@@ -562,18 +423,18 @@
           return e.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         }
         function w(e) {
-          var O, D = (e = e || {}).delimiter, I = e.newline, T = e.comments, A = e.step, L = e.preview, F = e.fastMode, z = O = e.quoteChar === void 0 ? '"' : e.quoteChar;
-          if (e.escapeChar !== void 0 && (z = e.escapeChar), (typeof D != "string" || -1 < b.BAD_DELIMITERS.indexOf(D)) && (D = ","), T === D)
+          var O, D = (e = e || {}).delimiter, I = e.newline, T = e.comments, A = e.step, L = e.preview, F = e.fastMode, z = O = void 0 === e.quoteChar ? '"' : e.quoteChar;
+          if (void 0 !== e.escapeChar && (z = e.escapeChar), ("string" != typeof D || -1 < b.BAD_DELIMITERS.indexOf(D)) && (D = ","), T === D)
             throw new Error("Comment character same as delimiter");
-          T === true ? T = "#" : (typeof T != "string" || -1 < b.BAD_DELIMITERS.indexOf(T)) && (T = false), I !== "\n" && I !== "\r" && I !== "\r\n" && (I = "\n");
+          true === T ? T = "#" : ("string" != typeof T || -1 < b.BAD_DELIMITERS.indexOf(T)) && (T = false), "\n" !== I && "\r" !== I && "\r\n" !== I && (I = "\n");
           var M = 0, j = false;
           this.parse = function(a2, t, i3) {
-            if (typeof a2 != "string")
+            if ("string" != typeof a2)
               throw new Error("Input must be a string");
             var r2 = a2.length, e2 = D.length, n2 = I.length, s2 = T.length, o2 = U(A), h3 = [], u2 = [], f2 = [], d2 = M = 0;
             if (!a2)
               return R();
-            if (F || F !== false && a2.indexOf(O) === -1) {
+            if (F || false !== F && -1 === a2.indexOf(O)) {
               for (var l2 = a2.split(I), c2 = 0; c2 < l2.length; c2++) {
                 if (f2 = l2[c2], M += f2.length, c2 !== l2.length - 1)
                   M += I.length;
@@ -593,23 +454,23 @@
             }
             for (var p2 = a2.indexOf(D, M), g2 = a2.indexOf(I, M), m2 = new RegExp(q(z) + q(O), "g"), _3 = a2.indexOf(O, M); ; )
               if (a2[M] !== O)
-                if (T && f2.length === 0 && a2.substring(M, M + s2) === T) {
-                  if (g2 === -1)
+                if (T && 0 === f2.length && a2.substring(M, M + s2) === T) {
+                  if (-1 === g2)
                     return R();
                   M = g2 + n2, g2 = a2.indexOf(I, M), p2 = a2.indexOf(D, M);
                 } else {
-                  if (p2 !== -1 && (p2 < g2 || g2 === -1)) {
+                  if (-1 !== p2 && (p2 < g2 || -1 === g2)) {
                     if (!(p2 < _3)) {
                       f2.push(a2.substring(M, p2)), M = p2 + e2, p2 = a2.indexOf(D, M);
                       continue;
                     }
                     var v2 = x(p2, _3, g2);
-                    if (v2 && v2.nextDelim !== void 0) {
+                    if (v2 && void 0 !== v2.nextDelim) {
                       p2 = v2.nextDelim, _3 = v2.quoteSearch, f2.push(a2.substring(M, p2)), M = p2 + e2, p2 = a2.indexOf(D, M);
                       continue;
                     }
                   }
-                  if (g2 === -1)
+                  if (-1 === g2)
                     break;
                   if (f2.push(a2.substring(M, g2)), C2(g2 + n2), o2 && (S(), j))
                     return R();
@@ -618,14 +479,14 @@
                 }
               else
                 for (_3 = M, M++; ; ) {
-                  if ((_3 = a2.indexOf(O, _3 + 1)) === -1)
+                  if (-1 === (_3 = a2.indexOf(O, _3 + 1)))
                     return i3 || u2.push({ type: "Quotes", code: "MissingQuotes", message: "Quoted field unterminated", row: h3.length, index: M }), E2();
                   if (_3 === r2 - 1)
                     return E2(a2.substring(M, _3).replace(m2, O));
                   if (O !== z || a2[_3 + 1] !== z) {
-                    if (O === z || _3 === 0 || a2[_3 - 1] !== z) {
-                      p2 !== -1 && p2 < _3 + 1 && (p2 = a2.indexOf(D, _3 + 1)), g2 !== -1 && g2 < _3 + 1 && (g2 = a2.indexOf(I, _3 + 1));
-                      var y2 = w2(g2 === -1 ? p2 : Math.min(p2, g2));
+                    if (O === z || 0 === _3 || a2[_3 - 1] !== z) {
+                      -1 !== p2 && p2 < _3 + 1 && (p2 = a2.indexOf(D, _3 + 1)), -1 !== g2 && g2 < _3 + 1 && (g2 = a2.indexOf(I, _3 + 1));
+                      var y2 = w2(-1 === g2 ? p2 : Math.min(p2, g2));
                       if (a2[_3 + 1 + y2] === D) {
                         f2.push(a2.substring(M, _3).replace(m2, O)), a2[M = _3 + 1 + y2 + e2] !== O && (_3 = a2.indexOf(O, M)), p2 = a2.indexOf(D, M), g2 = a2.indexOf(I, M);
                         break;
@@ -649,14 +510,14 @@
             }
             function w2(e3) {
               var t2 = 0;
-              if (e3 !== -1) {
+              if (-1 !== e3) {
                 var i4 = a2.substring(_3 + 1, e3);
-                i4 && i4.trim() === "" && (t2 = i4.length);
+                i4 && "" === i4.trim() && (t2 = i4.length);
               }
               return t2;
             }
             function E2(e3) {
-              return i3 || (e3 === void 0 && (e3 = a2.substring(M)), f2.push(e3), M = r2, b2(f2), o2 && S()), R();
+              return i3 || (void 0 === e3 && (e3 = a2.substring(M)), f2.push(e3), M = r2, b2(f2), o2 && S()), R();
             }
             function C2(e3) {
               M = e3, b2(f2), f2 = [], g2 = a2.indexOf(I, M);
@@ -669,9 +530,9 @@
             }
             function x(e3, t2, i4) {
               var r3 = { nextDelim: void 0, quoteSearch: void 0 }, n3 = a2.indexOf(O, t2 + 1);
-              if (t2 < e3 && e3 < n3 && (n3 < i4 || i4 === -1)) {
+              if (t2 < e3 && e3 < n3 && (n3 < i4 || -1 === i4)) {
                 var s3 = a2.indexOf(D, n3);
-                if (s3 === -1)
+                if (-1 === s3)
                   return r3;
                 n3 < s3 && (n3 = a2.indexOf(O, n3 + 1)), r3 = x(s3, n3, i4);
               } else
@@ -709,7 +570,7 @@
           throw new Error("Not implemented.");
         }
         function E(e) {
-          if (typeof e != "object" || e === null)
+          if ("object" != typeof e || null === e)
             return e;
           var t = Array.isArray(e) ? [] : {};
           for (var i3 in e)
@@ -722,12 +583,12 @@
           };
         }
         function U(e) {
-          return typeof e == "function";
+          return "function" == typeof e;
         }
         return o && (f.onmessage = function(e) {
           var t = e.data;
-          b.WORKER_ID === void 0 && t && (b.WORKER_ID = t.workerId);
-          if (typeof t.input == "string")
+          void 0 === b.WORKER_ID && t && (b.WORKER_ID = t.workerId);
+          if ("string" == typeof t.input)
             f.postMessage({ workerId: b.WORKER_ID, results: b.parse(t.input, t.config), finished: true });
           else if (f.File && t.input instanceof File || t.input instanceof Object) {
             var i3 = b.parse(t.input, t.config);
@@ -872,7 +733,11 @@
   }
   var charCodeOfDot = ".".charCodeAt(0);
   var reEscapeChar = /\\(\\)?/g;
-  var rePropName = RegExp(`[^.[\\]]+|\\[(?:([^"'][^[]*)|(["'])((?:(?!\\2)[^\\\\]|\\\\.)*?)\\2)\\]|(?=(?:\\.|\\[\\])(?:\\.|\\[\\]|$))`, "g");
+  var rePropName = RegExp(
+    // Match anything that isn't a dot or bracket.
+    `[^.[\\]]+|\\[(?:([^"'][^[]*)|(["'])((?:(?!\\2)[^\\\\]|\\\\.)*?)\\2)\\]|(?=(?:\\.|\\[\\])(?:\\.|\\[\\]|$))`,
+    "g"
+  );
   var stringToPath = memoizeCapped((string) => {
     const result = [];
     if (string.charCodeAt(0) === charCodeOfDot) {
@@ -926,9 +791,12 @@
       method: "GET",
       url: sUrl,
       responseType: "text/html",
+      //binary: true,
       headers: {
         "User-Agent": "Mozilla/5.0"
+        // If not specified, navigator.userAgent will be used.
       },
+      // SRC https://github.com/Tampermonkey/tampermonkey/issues/609#
       onprogress: function(e) {
       }
     }).catch((error) => {
@@ -1152,6 +1020,7 @@
       icon: "info",
       html: sHtml,
       showCloseButton: true,
+      //showCancelButton: true,
       focusConfirm: false,
       position: "top-start",
       grow: "row",
@@ -1200,6 +1069,14 @@
   };
   var Archive = _Archive;
   __publicField(Archive, "tbl_name", "f_archives");
+  // private field prefixed with # are not currently supported 
+  /*
+   * 
+   * name: inconnu
+   * @param
+   * @return
+   * 
+   */
   __publicField(Archive, "add", async function(oArchive) {
     let db = src_default.Cfg.dbase;
     let now = dayjs().format("YYYY-MM-DDTHH:mm:ssZ[Z]");
@@ -1207,6 +1084,9 @@
     console.log(`%cWill create archive for id ${oArchive[0].to.format("YYYYMM")} (YYYYMM)`, APP_DEBUG_STYLE);
     db.get(_Archive.tbl_name).push(JSON.parse(JSON.stringify(needle))).write();
   });
+  /*
+      Id in form of YYYYMM
+      */
   __publicField(Archive, "exists", function(needle) {
     let db = src_default.Cfg.dbase;
     let _r2 = db.get(_Archive.tbl_name).find({ id: needle }).value();
@@ -1216,6 +1096,13 @@
       return true;
     }
   });
+  /*
+   * 
+   * name: inconnu
+   * @param
+   * @return
+   * 
+   */
   __publicField(Archive, "get", function(needle) {
     let db = src_default.Cfg.dbase;
     var _r2 = db.get(_Archive.tbl_name).find({ id: needle }).value();
@@ -1227,6 +1114,17 @@
       return _r2;
     }
   });
+  /*
+   * 
+   * name: delete
+   * @param dtFrom dayjs format date from
+   * @param dtTo dayjs format date to
+   * @return
+   * 
+   * Delete elements form DB
+   * 
+   * dayjs could be string, the will be translated to dayjs bu be carreful with format entry
+   */
   __publicField(Archive, "delete", function(dtFrom2 = null, dtTo2 = null) {
     let db = src_default.Cfg.dbase;
     if (typeof dtFrom2 === "string") {
@@ -1262,6 +1160,10 @@
   var _Core = class {
   };
   var Core = _Core;
+  /*
+   * check if something is in old mode
+   * by checking the date parameters is before the changing date 01/06/2020
+   */
   __publicField(Core, "isInOldMode", function(date) {
     var dtDate = null;
     if (typeof date === "string") {
@@ -1275,9 +1177,17 @@
       throw Error("Erreur qui ne devrait jamais arriver en IsInOldMode (probablement un probleme sur la conversion de la date en objet dayjs:" + e.stack || e);
     }
   });
+  /*
+   * 
+   * name: inconnu
+   * @param
+   * @return
+   * 
+   */
   __publicField(Core, "getOldModeDate", function() {
     return dayjs("2020-06-01");
   });
+  // when getting out of tampermonkey have to get a real verstion
   __publicField(Core, "getAppVersion", function() {
     return GM.info.script.version;
   });
@@ -1307,7 +1217,11 @@
       if (typeof sStudentId === "number") {
         sStudentId = sStudentId.toString(10);
       }
-      assert(typeof sStudentId === "string", "You must provide a string.", TypeError);
+      assert(
+        typeof sStudentId === "string",
+        "You must provide a string.",
+        TypeError
+      );
       const db = src_default.Cfg.dbase;
       if (typeof created2 === "string") {
         created2 = dayjs(created2);
@@ -1315,7 +1229,11 @@
       if (created2 === null) {
         created2 = dayjs();
       }
-      assert(created2 instanceof dayjs, "created date must be a string, a dayjs instance or null.", TypeError);
+      assert(
+        created2 instanceof dayjs,
+        "created date must be a string, a dayjs instance or null.",
+        TypeError
+      );
       let me = { id: sStudentId, type: 0 | iType, value: data, date: created2.valueOf(), humanDate: created2.format("YYYY-MM-DDTHH:mm:ssZZ") };
       if (bDebug2 === true)
         console.log(`%cAdd in student history at date ${dayjs(me.date).format("YYYY-MM-DDTHH:mm:ssZZ")} data ${data} with type:${iType} cf const of object`, APP_DEBUG_STYLE);
@@ -1365,6 +1283,33 @@
       const min = (arr) => Math.min(...arr);
       let _needle = _iBaseDay + min(_r2);
       return db.get(TBL_NAME).filter((o) => o.id === sStudentId && o.type & iType && o.date == _needle).value()[0];
+    };
+    const modify_value = function(sStudentId, iType, dtOfEvent = null, data) {
+      const bDebug2 = false;
+      let _r2;
+      _r2 = find(sStudentId, iType, dtOfEvent);
+      if (typeof _r2 === "undefined") {
+        if (bDebug2 === true)
+          console.log(`%cAs we find nothing there is nothing to modfiy`, APP_DEBUG_STYLE);
+        return void 0;
+      }
+      const db = src_default.Cfg.dbase;
+      if (typeof dtOfEvent === "string") {
+        dtOfEvent = dayjs(dtOfEvent);
+      }
+      if (dtOfEvent === null) {
+        dtOfEvent = dayjs();
+      }
+      assert(
+        dtOfEvent instanceof dayjs,
+        "created date must be a string, a dayjs instance or null.",
+        TypeError
+      );
+      if (bDebug2 === true)
+        console.log(`%cModify student history at date ${dayjs(dtOfEvent).format("YYYY-MM-DDTHH:mm:ssZZ")} data ${data} with type:${iType} cf const of object`, APP_DEBUG_STYLE);
+      db.get(TBL_NAME).find({ id: _r2.id }).assign({ value: data }).write();
+    };
+    const modify_date = function(sStudentId, iType, dtOfEvent = null, data) {
     };
     const isFunding = function(data) {
       return is(data, TYPE_FUNDING);
@@ -1448,8 +1393,16 @@
       if (typeof dtDate === "string") {
         dtDate = dayjs(dtDate);
       }
-      assert(isArray(aFilter) === true, "You must provide an array as param aFilter.", TypeError);
-      assert(dtDate instanceof dayjs === true, "date must be a string or a dayjs object.", TypeError);
+      assert(
+        isArray(aFilter) === true,
+        "You must provide an array as param aFilter.",
+        TypeError
+      );
+      assert(
+        dtDate instanceof dayjs === true,
+        "date must be a string or a dayjs object.",
+        TypeError
+      );
       let sFilter = aFilter.join(",");
       let sDate = encodeURIComponent(dtDate.format("YYYY-MM-DDTHH:MM:ss[Z]"));
       sFilter = encodeURIComponent(sFilter);
@@ -1474,7 +1427,11 @@
     const _getSession = async function(aFilter = [], iFrom = 0, iTo = 19) {
       const HEADER = `${C.NAME}::_getSession()`;
       let bDebug2 = C.DEBUG;
-      assert(isArray(aFilter) === true, "You must provide an array as param aFilter.", TypeError);
+      assert(
+        isArray(aFilter) === true,
+        "You must provide an array as param aFilter.",
+        TypeError
+      );
       if (aFilter.length == 0) {
         aFilter = [
           LIFE_CYCLE_STATUS_CANCELED,
@@ -1522,7 +1479,11 @@
       if (typeof dtDate === "string") {
         dtDate = dayjs(dtDate);
       }
-      assert(dtDate instanceof dayjs === true, "date must be a string or a dayjs object.", TypeError);
+      assert(
+        dtDate instanceof dayjs === true,
+        "date must be a string or a dayjs object.",
+        TypeError
+      );
       let sDate = encodeURIComponent(dtDate.format("YYYY-MM-DDTHH:MM:ss[Z]"));
       const FINAL_URL = `${API_BASE_URL}/users/${iUser}/events?after=${sDate}`;
       let _r2 = await xGet(FINAL_URL);
@@ -1532,7 +1493,11 @@
       if (typeof dtDate === "string") {
         dtDate = dayjs(dtDate);
       }
-      assert(dtDate instanceof dayjs === true, "date must be a string or a dayjs object.", TypeError);
+      assert(
+        dtDate instanceof dayjs === true,
+        "date must be a string or a dayjs object.",
+        TypeError
+      );
       let sDate = encodeURIComponent(dtDate.format("YYYY-MM-DDTHH:MM:ss[Z]"));
       const FINAL_URL = `${API_BASE_URL}/users/${iUser}/events?before=${sDate}`;
       let _r2 = await xGet(FINAL_URL);
@@ -1576,7 +1541,10 @@
       let _r2 = await xPost(API_REQUEST, {}, mData);
       if (typeof _r2 === "string") {
         const data2 = JSON.parse(_r2);
-        if ("errors" in data2 && data2.errors.length == 1 && data2.errors[0].code === "SESSION_ALREADY_EXISTS") {
+        if (
+          //data.hasOwnProperty('errors') &&
+          "errors" in data2 && data2.errors.length == 1 && data2.errors[0].code === "SESSION_ALREADY_EXISTS"
+        ) {
           const e = data2.errors[0];
           console.error("%c[Api.bookStudent()] call bookStudent error[%s] :%s ", APP_ERROR_STYLE, e.code, e.message);
         } else {
@@ -1644,7 +1612,14 @@
           method: "GET",
           url: sUrl,
           responseType: "application/json",
+          //binary: true,
           headers: mHeader
+          //onabort: (_e) => console.log("%c _fetchGet()->onabort  args:%o", APP_DEBUG_STYLE, _e),
+          //onloadstart: (_e) => console.log("%c _fetchGet()->onloadstart args:%o", APP_DEBUG_STYLE, _e),
+          //onprogress: (_e) => console.log("%c _fetchGet()->onprogress args:%o", APP_DEBUG_STYLE, _e),
+          //onreadystatechange: (_e) => console.log("%c _fetchGet()->onreadystatechange  args:%o", APP_DEBUG_STYLE, _e),
+          //onload: (_e) => console.log("%c _fetchGet()->onload args:%o", APP_DEBUG_STYLE, _e),
+          //onerror: (_e) => console.error("%c _fetchGet()->onerror error is:%o", APP_ERROR_STYLE, _e),
         }).catch((error) => {
           if (isNullOrUndefined(response)) {
             if (bThrowError === true) {
@@ -1662,7 +1637,14 @@
           method: "GET",
           url: sUrl,
           responseType: "application/json",
+          //binary: true,
           headers: mHeader
+          //onabort: (_e) => console.log("%c _fetchGet()->onabort  args:%o", APP_DEBUG_STYLE, _e),
+          //onloadstart: (_e) => console.log("%c _fetchGet()->onloadstart args:%o", APP_DEBUG_STYLE, _e),
+          //onprogress: (_e) => console.log("%c _fetchGet()->onprogress args:%o", APP_DEBUG_STYLE, _e),
+          //onreadystatechange: (_e) => console.log("%c _fetchGet()->onreadystatechange  args:%o", APP_DEBUG_STYLE, _e),
+          //onload: (_e) => console.log("%c _fetchGet()->onload args:%o", APP_DEBUG_STYLE, _e),
+          //onerror: (_e) => console.error("%c _fetchGet()->onerror error is:%o", APP_ERROR_STYLE, _e),
         }).catch((error) => {
           console.error("%c[Api_fetchGet()]Error is %o", APP_ERROR_STYLE, error);
         });
@@ -1686,8 +1668,15 @@
         method: "POST",
         url: sUrl,
         responseType: "application/json",
+        //binary: true,
         headers: mHeader,
         data: JSON.stringify(oData)
+        //onabort: (_e) => console.log("%c _fetchPost()->onabort  args:%o", APP_DEBUG_STYLE, _e),
+        //onloadstart: (_e) => console.log("%c _fetchPost()->onloadstart args:%o", APP_DEBUG_STYLE, _e),
+        //onprogress: (_e) => console.log("%c _fetchPost()->onprogress args:%o", APP_DEBUG_STYLE, _e),
+        //onreadystatechange: (_e) => console.log("%c _fetchPost()->onreadystatechange  args:%o", APP_DEBUG_STYLE, _e),
+        //onload: (_e) => console.log("%c _fetchPost()->onload args:%o", APP_DEBUG_STYLE, _e),
+        //onerror: (_e) => console.error("%c _fetchPost()->onerror error is:%o", APP_ERROR_STYLE, _e),
       }).catch((error) => {
         console.error("%c[Api_fetchPost()]Error is %o", APP_ERROR_STYLE, error);
       });
@@ -1784,19 +1773,24 @@
     return Object.freeze({
       bookStudent,
       forge,
+      // -- Logged user
       getMe,
+      // -- Mentor
       getMentor,
       getPendingSessionAfter,
       getPendingSessionBefore,
       getHistorySession,
+      //-- Users
       getUser,
       getUserAvailabilities,
       getUserEvents,
+      //getUserEventsLim, mélangé avec celle du dessus.
       getUserEventsAfter,
       getUserEventsBefore,
       getUserFollowedPath,
       getUserPath,
       getUserStudents,
+      //--Reserved generic get/post
       xGet,
       xPost
     });
@@ -3523,18 +3517,31 @@
   // src/students.js
   var StudentData = tcomb_neutral_default.struct({
     id: tcomb_neutral_default.String,
+    // required string
     fullname: tcomb_neutral_default.String,
+    // required string
     path: tcomb_neutral_default.String,
+    // required string
     funding: tcomb_neutral_default.String,
+    // required string
     created: tcomb_neutral_default.String
+    // required string
   }, "StudentData");
   var _Student = class {
+    /*
+     * Modifiy the type of funding of the student and update all sessions until next element of history of type update fundong
+     * 
+     */
     static modifyFunding(sId, dtFrom2, sNewState) {
       if (typeof dtFrom2 === "string") {
         dtFrom2 = dayjs(dtFrom2);
       }
       ;
-      assert(created instanceof dayjs, "modifyFunding date must be a string, a dayjs instance or null.", TypeError);
+      assert(
+        created instanceof dayjs,
+        "modifyFunding date must be a string, a dayjs instance or null.",
+        TypeError
+      );
       const sCurFunding = _Student.getFunding(sId, dtFrom2);
       if (sNewState.toLower() === sCurFunding.toLower()) {
         console.log(`%cFundingMode ${sNewState} is identical as current: ${sCurrent}, nothing to do`, APP_DEBUG_STYLE);
@@ -3567,7 +3574,37 @@
     }
   };
   var Student = _Student;
+  /**
+  	 * 
+  	 * created: "2020-08-22T22:32:24+02:00Z"
+  ​​
+  fullname: "Maaike Joubert"
+  ​​
+  fundedby: "Auto-financé"
+  ​​
+  id: "7582346"
+  ​​
+  path: "81-expert-en-strategie-marketing-et-communication"
+  * 
+  * Comment gérer les doublons ?
+  	 * 
+  	 * 
+  	 * 
+  	 */
+  /*
+   * Table
+   * 	id(string) id of student as known at oc as Number, is a 64-bit floating point IEEE 754  in js so limited to 2^53 we could use them as key
+   * 	fullname (string)
+   *  path (string) is the slug-path of OC
+   *  created date format YYYY-MM-DDTHH:mm:ssZ[Z]
+   * 	who_id (string) id of student je ne me souviens pas à quoi ça sert vieux champs qui a disparu
+   *  funding (string)
+   * */
   __publicField(Student, "tbl_name", "students");
+  // private field prefixed with # are not currently supported 
+  /*
+   * 
+   */
   __publicField(Student, "ocmapper", async function(o) {
     let bDebug2 = false;
     try {
@@ -3596,6 +3633,13 @@
       console.error("%c,IRRECOVERABLE ERROR in StudentData.ocmapper: %o", APP_ERROR_STYLE, e);
     }
   });
+  /*
+   * 
+   * name: inconnu
+   * @param
+   * @return
+   * 
+   */
   __publicField(Student, "add", function(sStudentId, sStudentFullName = "noname", sStudentPath = "nopath", sStudentFunding = "unknown", created2) {
     let db = src_default.Cfg.dbase;
     var now = dayjs().format("YYYY-MM-DDTHH:mm:ssZ[Z]");
@@ -3606,12 +3650,33 @@
     let bDebug2 = false;
     if (bDebug2 === true)
       console.log("%cChecking object student:%o ", APP_DEBUG_STYLE, oStudent);
-    assert(typeof oStudent.id === "string", "Student object id need to be a string.", TypeError);
-    assert(typeof oStudent.fullname === "string", "Student object fullname need to be a number.", TypeError);
-    assert(typeof oStudent.path === "string", "Student object path need to be a string.", TypeError);
-    assert(typeof oStudent.funding === "string", "Student object funding need to be a string.", TypeError);
-    assert(typeof oStudent.created === "string", "Student object created need to be a string.", TypeError);
+    assert(
+      typeof oStudent.id === "string",
+      "Student object id need to be a string.",
+      TypeError
+    );
+    assert(
+      typeof oStudent.fullname === "string",
+      "Student object fullname need to be a number.",
+      TypeError
+    );
+    assert(
+      typeof oStudent.path === "string",
+      "Student object path need to be a string.",
+      TypeError
+    );
+    assert(
+      typeof oStudent.funding === "string",
+      "Student object funding need to be a string.",
+      TypeError
+    );
+    assert(
+      typeof oStudent.created === "string",
+      "Student object created need to be a string.",
+      TypeError
+    );
   });
+  // save student in db
   __publicField(Student, "_save", function(oStudent) {
     let bDebug2 = false;
     _Student._checkObject(oStudent);
@@ -3627,6 +3692,22 @@
       console.log(`%cStudent ${needle} exists in db ? ${_r2 === void 0 ? false : true}`, APP_DEBUG_STYLE);
     return _r2 === void 0 ? false : true;
   });
+  /*
+   * 
+   * name: find
+   * @param needle the id of student
+   * @param dtFrom the date of the session
+   * @param cache true or false, used because in some function like check forinsertion in must remove cache
+   * @return
+   * 
+   *  Reflexion
+   *    Student could have been saved at 01/07/2020 FUNDED, 15/07/2020 AUTO_FUNDED, 20/07/2020 OTHER
+   *                             
+   *       date of session could be 01/06/2020 => 2 Students how to know good date .... choose oldest
+   *       date of session could be 13/07/2020 => must choose 01/07
+   *       date of session could be 16/072020 => must choose 15/07/2020
+   * 
+   */
   __publicField(Student, "findById", function(sNeedle, dtFrom2 = null) {
     let bUseCache = GM_config.get("use_student_cache");
     if (bUseCache === false)
@@ -3634,7 +3715,11 @@
     if (typeof sNeedle === "number") {
       sNeedle = sNeedle.toString(10);
     }
-    assert(typeof sNeedle === "string", "You must provide a string.", TypeError);
+    assert(
+      typeof sNeedle === "string",
+      "You must provide a string.",
+      TypeError
+    );
     if (typeof dtFrom2 === "string") {
       dtFrom2 = dayjs(dtFrom2);
     }
@@ -3656,6 +3741,12 @@
     }
     return _r2;
   });
+  /*
+   * 
+   * Note giving a date allow us to join students and history
+   * No date, mean no history ...
+   * NOTE STT correct it (giving today) or not ???
+   */
   __publicField(Student, "_findById", function(sNeedle, dtFrom2 = null) {
     let bDebug2 = false;
     let db = src_default.Cfg.dbase;
@@ -3666,7 +3757,12 @@
       console.log(`%c_findById() searching student with id:(${typeof sNeedle})${sNeedle} in db`, APP_DEBUG_STYLE);
     var _r2 = db.get(_Student.tbl_name).find({ id: sNeedle }).value();
     if (bDebug2 === true)
-      console.log("%c_findById() searching student:%s (date not used at this stade of process) in db result in :%o", APP_DEBUG_STYLE, sNeedle, _r2);
+      console.log(
+        "%c_findById() searching student:%s (date not used at this stade of process) in db result in :%o",
+        APP_DEBUG_STYLE,
+        sNeedle,
+        _r2
+      );
     if (_r2 === void 0) {
       return void 0;
     } else {
@@ -3687,20 +3783,46 @@
       return _r2;
     }
   });
-  __publicField(Student, "m_findById", moize.default(_Student._findById, {
-    maxAge: 6e5,
-    isSerialized: true
-  }));
+  /*
+   * find students in db (memoized version)	
+   */
+  __publicField(Student, "m_findById", moize.default(
+    _Student._findById,
+    {
+      maxAge: 6e5,
+      isSerialized: true
+      //onCacheAdd: function(c,o,m){console.log("%c[m_findById]Add data to cache",APP_DEBUG_STYLE); /*console.log("c.keys: %o, o:%o, m:%o", c.keys,o,m);*/},
+      //onCacheHit: function(...args){console.log("%c[m_findById]Get data from cache", APP_DEBUG_STYLE);/*console.log("arguments: %o", args)*/},
+      //onCacheChange: function(c,o,m){console.log("%c[m_findById]Change data from cache", APP_DEBUG_STYLE);/*console.log("c.keys: %o, o:%o, m:%o", c.keys,o,m);*/}
+    }
+  ));
+  /*
+   * 
+   * name: find
+   * @param needle the fullname of student
+   * @param cache true or false, used because in some function like check forinsertion in must remove cache
+   * @return
+   * 
+   * NOTESTT:
+   * 
+   */
   __publicField(Student, "findByFullName", function(sNeedle) {
     let bUseCache = GM_config.get("use_student_cache");
     if (bUseCache === false)
       console.log("%cache \xE9tudiant desactiv\xE9 dans les options", APP_DEBUG_STYLE);
-    assert(typeof sNeedle === "string", "You must provide a string.", TypeError);
+    assert(
+      typeof sNeedle === "string",
+      "You must provide a string.",
+      TypeError
+    );
     if (bUseCache === false) {
       return _Student._findByFullName(sNeedle);
     }
     return _Student.m_findByFullName(sNeedle);
   });
+  /*
+   * find student by fullname
+   */
   __publicField(Student, "_findByFullName", function(sNeedle) {
     let bDebug2 = false;
     let db = src_default.Cfg.dbase;
@@ -3715,10 +3837,24 @@
       return _r2;
     }
   });
-  __publicField(Student, "m_findByFullName", moize.default(_Student._findByFullName, {
-    maxAge: 6e5,
-    isSerialized: true
-  }));
+  /*
+   * find students by fullname (memoized version)	
+   */
+  __publicField(Student, "m_findByFullName", moize.default(
+    _Student._findByFullName,
+    {
+      maxAge: 6e5,
+      isSerialized: true
+      //onCacheAdd: function(c,o,m){console.log("%c[m_findById]Add data to cache",APP_DEBUG_STYLE);/*console.dir(c.keys);console.dir(o);console.dir(m)*/;},
+      //onCacheHit: function(){console.log("%c[m_findById]Get data from cache", APP_DEBUG_STYLE);},
+      //onCacheChange: function(c,o,m){console.log("%c[m_findById]Change data from cache", APP_DEBUG_STYLE);/**/console.dir(c.keys);console.dir(o);console.dir(m);}
+    }
+  ));
+  /*
+   * Return funding mode of student
+   * 
+   * need to search by id if more than an id, use date if any to filter
+   */
   __publicField(Student, "getFunding", async function(sId, dtFrom2 = null) {
     if (typeof dtFrom2 === "string") {
       dtFrom2 = dayjs(dtFrom2);
@@ -3726,6 +3862,9 @@
     ;
     return await _Student.m_getFunding(sId, dtFrom2);
   });
+  /*
+   * Private function
+   */
   __publicField(Student, "_getFunding", async function(sId, dtFrom2 = null) {
     let _r2 = _Student.findById(sId, dtFrom2);
     if (_r2 === void 0) {
@@ -3737,15 +3876,33 @@
       return _r2.funding.toLowerCase();
     }
   });
-  __publicField(Student, "m_getFunding", moize.default(_Student._getFunding, {
-    maxAge: 6e5,
-    isSerialized: true,
-    isPromise: true
-  }));
+  /*
+   * get funded mode (memoized version) 
+   */
+  __publicField(Student, "m_getFunding", moize.default(
+    _Student._getFunding,
+    {
+      maxAge: 6e5,
+      isSerialized: true,
+      isPromise: true
+      //onCacheAdd: function(c,o,m){console.log("%c[m_getFunding]Add data to cache",APP_DEBUG_STYLE);/*console.dir(c.keys);console.dir(o);console.dir(m)*/;},
+      //onCacheHit: function(){console.log("%c[m_getFunding]Get data from cache", APP_DEBUG_STYLE);},
+      //onCacheChange: function(c,o,m){console.log("%c[m_getFunding]Change data from cache", APP_DEBUG_STYLE);/**/console.dir(c.keys);console.dir(o);console.dir(m);}
+    }
+  ));
+  // https://caolan.github.io/async/v3/docs.html ....
+  //static m_getFunding =  async.memoize(Student._getFunding);
+  /*
+   * return true if student is "autofinancé"
+   */
   __publicField(Student, "isAutoFunded", function(iStudentId) {
     console.log(`%cFUNCTION DEPRECATED !!!!!!!!!!!!!!!!!!!!!! `, APP_ERROR_STYLE);
     return _Student.getFunded(iStudentId).toLowerCase() === OC_AUTOFUNDED;
   });
+  /*
+   * browse dashboard of students to get financial mode
+   * depuis la derniere version switch sur les données en json
+   * */
   __publicField(Student, "getFundingFomDashboard", async function(id) {
     const sData = await _fetch(`https://openclassrooms.com/fr/mentorship/students/${id}/dashboard`, "JSON:studentDetailsConfiguration:configStudent.isFinancialAidStudent:PAS DE MODE DE FINANCEMENT");
     if (sData === null) {
@@ -3754,6 +3911,9 @@
     }
     return sData === true ? OC_FUNDED : OC_AUTOFUNDED;
   });
+  /*
+   *  get path of students (in db or not in db)
+   */
   __publicField(Student, "getPath", async function(sId, dtFrom2 = null) {
     let _r2 = _Student.findById(sId, dtFrom2);
     if (_r2 == void 0) {
@@ -3767,6 +3927,17 @@
       return _r2.path;
     }
   });
+  /*
+   * 
+   * name: delete
+   * @param dtFrom dayjs format date from
+   * @param dtTo dayjs format date to
+   * @return
+   * 
+   * Delete elements form DB
+   * 
+   * dayjs could be string, the will be translated to dayjs bu be carreful with format entry
+   */
   __publicField(Student, "delete", function(dtFrom2 = null, dtTo2 = null) {
     let db = src_default.Cfg.dbase;
     if (typeof dtFrom2 === "string") {
@@ -3796,11 +3967,27 @@
       return dayjs(o.created, "YYYY-MM-DDTHH:mm:ssZ[Z]").isBetween(dtFrom2, dtTo2, "day", "[]");
     }).write();
   });
+  /*
+   * 
+   * name: deleteById
+   * @param (string) id 
+   * @param (date) 
+   * @return
+   * 
+   */
+  //static deleteById = function(sId, dtCreated=null){
   __publicField(Student, "deleteById", function(sId, dtCreated = null) {
     let db = src_default.Cfg.dbase;
     db.get("students").remove((o) => o.id === sId).write();
     console.log(`%cAll students with id:${sId} are removed from DataBase`, APP_DEBUG_STYLE);
   });
+  /**
+   * Update the list of student
+   * 
+   * changed since 202006
+   * 	url is https://openclassrooms.com/fr/mentorship/dashboard/students
+   * 
+   */
   __publicField(Student, "getAll", async (e, ctx) => {
     let bDebug2 = false;
     var bForceUpdate = false;
@@ -3838,7 +4025,13 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       if (_r2 === void 0) {
         if (bDebug2 === true)
           console.log(`%cStudent ${theStudent.fullname} (id:${theStudent.id}) not present in student database will create it`, APP_DEBUG_STYLE);
-        _Student.add(theStudent.id, theStudent.fullname, theStudent.path, theStudent.funding, theStudent.created);
+        _Student.add(
+          theStudent.id,
+          theStudent.fullname,
+          theStudent.path,
+          theStudent.funding,
+          theStudent.created
+        );
         continue;
       }
       if (theStudent.funding.toLowerCase() !== _r2.funding.toLowerCase()) {
@@ -3866,6 +4059,13 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     ;
     console.log("%c[Student.getAll]Student cache cleared", APP_DEBUG_STYLE);
   });
+  /*
+   * 
+   * name: inconnu
+   * @param
+   * @return
+   * 
+   */
   __publicField(Student, "showList", function() {
     let db = src_default.Cfg.dbase;
     let _r2 = db.get(_Student.tbl_name).value();
@@ -3901,6 +4101,13 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       }
     });
   });
+  /*
+   * 
+   * name: inconnu
+   * @param
+   * @return
+   * 
+   */
   __publicField(Student, "createManually", async function(sStudentId, sStudentName, sSessionDate) {
     let aPathList = ["non pr\xE9sent dans la liste", "Chef de projet digital", "Chef de projet SI", "D\xE9veloppeur d'application - Frontend", "D\xE9veloppeur Web", "Expert en strat\xE9gie marketing et communication ", "Production de contenu web avec CMS et Content Marketing ", "Tech lead"];
     var sHtml = "";
@@ -3936,6 +4143,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       icon: "info",
       html: sHtml,
       showCloseButton: true,
+      //showCancelButton: true,
       focusConfirm: false,
       position: "top-start",
       grow: "row",
@@ -3946,6 +4154,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
           student_name: document.getElementById("student_name").value,
           student_path: document.getElementById("student_path").value,
           student_funding: document.getElementById("funding").checked,
+          // true mean autofunded
           session_date: document.getElementById("session_date").value
         };
       }
@@ -3957,7 +4166,13 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       } else {
         sFunding = OC_FUNDED;
       }
-      _Student.add(formValues.student_id, formValues.student_name, formValues.student_path, sFunding, formValues.session_date);
+      _Student.add(
+        formValues.student_id,
+        formValues.student_name,
+        formValues.student_path,
+        sFunding,
+        formValues.session_date
+      );
     }
   });
   var students_default = Student;
@@ -3984,7 +4199,10 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       let me = { key1: mKey1, key2: mKey2, type: sType2, created: now, updated: now };
       let _r2 = _save(me);
       pause(50);
-      assert(Array.isArray(_r2) && _r2.length > 0, "Database insertion fail");
+      assert(
+        Array.isArray(_r2) && _r2.length > 0,
+        "Database insertion fail"
+      );
     };
     const _save = function(oRef) {
       let db = src_default.Cfg.dbase;
@@ -3992,7 +4210,11 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       return _r2;
     };
     const getByKey = function(mNeedle, iKey = 1, sType2 = TYPE.DEFAULT) {
-      assert(typeof iKey === "number", "You must provide a number as index of key.", TypeError);
+      assert(
+        typeof iKey === "number",
+        "You must provide a number as index of key.",
+        TypeError
+      );
       let db = src_default.Cfg.dbase;
       let _r2 = null;
       if (iKey == 1) {
@@ -4017,7 +4239,10 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       _r2 = db.get(Ref.tbl_name).find((o) => o.key2 === mNeedle && o.type === sType2).assign({ key1: mValue }).write();
       console.log("%cNeedle  %o mValue %o sType %o", APP_DEBUG_STYLE, mNeedle, mValue, sType2);
       console.log("%c_r %o", APP_DEBUG_STYLE, _r2);
-      assert(Array.isArray(_r2) && _r2.length > 0, "Database insertion fail");
+      assert(
+        Array.isArray(_r2) && _r2.length > 0,
+        "Database insertion fail"
+      );
     };
     const updKey2 = function(mNeedle, mValue, sType2 = TYPE.DEFAULT) {
       let db = src_default.Cfg.dbase;
@@ -4025,7 +4250,10 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       _r2 = db.get(Ref.tbl_name).find((o) => o.key1 === mNeedle && o.type === sType2).assign({ key2: mValue }).write();
       console.log("%cNeedle  %o mValue %o sType %o", APP_DEBUG_STYLE, mNeedle, mValue, sType2);
       console.log("%c_r %o", APP_DEBUG_STYLE, _r2);
-      assert(Array.isArray(_r2) && _r2.length > 0, "Database insertion fail");
+      assert(
+        Array.isArray(_r2) && _r2.length > 0,
+        "Database insertion fail"
+      );
     };
     return Object.freeze({
       tbl_name: TBL_NAME,
@@ -4045,7 +4273,11 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
   var fMeta = function() {
     const TBL_NAME = "meta";
     const setDbVersion = function(sVersion) {
-      assert(typeof sVersion === "string", "You must provide a string.", TypeError);
+      assert(
+        typeof sVersion === "string",
+        "You must provide a string.",
+        TypeError
+      );
       return src_default.Cfg.dbase.get(Meta.tbl_name).find({ "key": "dbVersion" }).assign({ value: sVersion }).write().value;
     };
     const getDbVersion = function() {
@@ -4060,7 +4292,11 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       return src_default.Cfg.dbase.get("meta").find({ key: "dbVersion" }).remove((item) => true).write();
     };
     const setStudentListUpd = function(sValue) {
-      assert(typeof sValue === "string", "You must provide a string.", TypeError);
+      assert(
+        typeof sValue === "string",
+        "You must provide a string.",
+        TypeError
+      );
       return src_default.Cfg.dbase.get(Meta.tbl_name).find({ "key": "studentLstUpd" }).assign({ value: sValue }).write().value;
     };
     const getStudentListUpd = function() {
@@ -4190,7 +4426,11 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       if (typeof dtDate === "string") {
         dtDate = dayjs(dtDate);
       }
-      assert(dtDate instanceof dayjs === true, "date must be a string or a dayjs object.", TypeError);
+      assert(
+        dtDate instanceof dayjs === true,
+        "date must be a string or a dayjs object.",
+        TypeError
+      );
       let _r2 = _HistoryDb.find({ id: +dtDate.format("YYYYMMDD") });
       if (bDebug2)
         console.log(`%cHistory:_exists ${dtDate.format("YYYYMMDD")} in db ? ${_r2 === void 0 ? false : true}`, APP_DEBUG_STYLE);
@@ -4201,7 +4441,11 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       if (typeof dtDate === "string") {
         dtDate = dayjs(dtDate);
       }
-      assert(dtDate instanceof dayjs === true, "date must be a string or a dayjs object.", TypeError);
+      assert(
+        dtDate instanceof dayjs === true,
+        "date must be a string or a dayjs object.",
+        TypeError
+      );
       if (dtDate.get("day") < dtDate.daysInMonth()) {
         dtDate = dtDate.endOf("month");
       }
@@ -4221,7 +4465,11 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       if (typeof dtDate === "string") {
         dtDate = dayjs(dtDate);
       }
-      assert(dtDate instanceof dayjs === true, "date must be a string or a dayjs object.", TypeError);
+      assert(
+        dtDate instanceof dayjs === true,
+        "date must be a string or a dayjs object.",
+        TypeError
+      );
       if (bDebug2 === true)
         console.log(`%cSearch in history session cache NEAREST cached data for id: ${dtDate.format("DD/MM/YYYY")}`, APP_DEBUG_STYLE);
       let _iBaseDay = +dtDate.format("YYYYMMDD");
@@ -4303,7 +4551,11 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       if (typeof dtDate === "string") {
         dtDate = dayjs(dtDate);
       }
-      assert(dtDate instanceof dayjs === true, "date must be a string or a dayjs object.", TypeError);
+      assert(
+        dtDate instanceof dayjs === true,
+        "date must be a string or a dayjs object.",
+        TypeError
+      );
       if (dtDate.get("day") < dtDate.daysInMonth()) {
         dtDate = dtDate.endOf("month");
       }
@@ -4317,6 +4569,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     };
     return Object.freeze({
       tbl_name: TBL_NAME,
+      //getSessionIndex: getSessionIndex,
       getSameOrNearestSessionIndex,
       remove,
       reset,
@@ -4329,14 +4582,23 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
   // src/sessions.js
   var SessionData = tcomb_neutral_default.struct({
     id: tcomb_neutral_default.String,
+    // required string
     cid: tcomb_neutral_default.maybe(tcomb_neutral_default.Integer),
+    // optional string
     who_id: tcomb_neutral_default.String,
+    // required string
     who_name: tcomb_neutral_default.String,
+    // required string
     type: tcomb_neutral_default.String,
+    // required string
     lvl: tcomb_neutral_default.Integer,
+    // required string
     when: tcomb_neutral_default.Date,
+    // required string
     path: tcomb_neutral_default.String,
+    // required string
     funding: tcomb_neutral_default.String
+    // required string
   }, "SessionData");
   SessionData.prototype.ocmapper = function(o) {
   };
@@ -4357,21 +4619,93 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
   };
   var Session = _Session;
   __publicField(Session, "tbl_name", "sessions");
+  // private field prefixed with # are not currently supported 
   __publicField(Session, "_checkObject", function(oSession2) {
     let bDebug2 = false;
     if (bDebug2 === true)
       console.log("%cChecking object session:%o ", APP_DEBUG_STYLE, oSession2);
-    assert(typeof oSession2.id === "string", "Session object id need to be a string.", TypeError);
-    assert(typeof oSession2.cid === "number", "Session object cid need to be a number.", TypeError);
-    assert(typeof oSession2.who_id === "string", "Session object who_id need to be a string.", TypeError);
-    assert(typeof oSession2.who_name === "string", "Session object who_name need to be a string.", TypeError);
-    assert(typeof oSession2.status === "string", "Session object status need to be a string.", TypeError);
-    assert(typeof oSession2.type === "string", "Session object type need to be a string.", TypeError);
-    assert(typeof oSession2.lvl === "string", "Session object lvl need to be a string.", TypeError);
-    assert(typeof oSession2.when === "string", "Session object when need to be a string.", TypeError);
-    assert(typeof oSession2.path === "string", "Session object path need to be a string.", TypeError);
-    assert(typeof oSession2.funding === "string", "Session object funding need to be a string.", TypeError);
+    assert(
+      typeof oSession2.id === "string",
+      "Session object id need to be a string.",
+      TypeError
+    );
+    assert(
+      typeof oSession2.cid === "number",
+      "Session object cid need to be a number.",
+      TypeError
+    );
+    assert(
+      typeof oSession2.who_id === "string",
+      "Session object who_id need to be a string.",
+      TypeError
+    );
+    assert(
+      typeof oSession2.who_name === "string",
+      "Session object who_name need to be a string.",
+      TypeError
+    );
+    assert(
+      typeof oSession2.status === "string",
+      "Session object status need to be a string.",
+      TypeError
+    );
+    assert(
+      typeof oSession2.type === "string",
+      "Session object type need to be a string.",
+      TypeError
+    );
+    assert(
+      typeof oSession2.lvl === "string",
+      "Session object lvl need to be a string.",
+      TypeError
+    );
+    assert(
+      typeof oSession2.when === "string",
+      "Session object when need to be a string.",
+      TypeError
+    );
+    assert(
+      typeof oSession2.path === "string",
+      "Session object path need to be a string.",
+      TypeError
+    );
+    assert(
+      typeof oSession2.funding === "string",
+      "Session object funding need to be a string.",
+      TypeError
+    );
   });
+  /*
+  	 * An session element in db contain :
+  	 *   path: the path of the student when doing the session
+  	 *   
+  	 *   since juin 2021 le type defense (soutenance) est devenu presentation
+  	 * 
+  	 *   collect auto ajoute 
+  {
+      "id": "",
+      "who_id": "7520502",
+      "who_name": "Emmanuel Barencourt",
+      "status": "Emmanuel Barencourt",
+      "type": "mentoring",
+      "lvl": "2",
+      "when": "2021-06-30T14:00:00.000Z",
+      "path": "Chef de projet digital",
+      "funding": "auto-financé",
+      "cid": 746008049893661
+  }
+  
+  
+  * 2021-06-30T14:00:00.000Z
+  * Will search session id:(number)7531056463903914 in database
+  * 
+  * 2021-06-30T14:00:00.000Z
+  * Will search session id:(number)746008049893661 in database
+  * 
+  * 
+  	 *   collect manuel ajoute
+  	 * 
+  	 */
   __publicField(Session, "add", async function(oSession2) {
     const iRefreshStudentDataBaseTreshold = 30;
     let bCheckExistsBeforAdd = false;
@@ -4421,10 +4755,20 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
         oSession2.path = "n/a (defense)";
       } else {
         if (students_default.exists(oSession2.who_id) === false) {
-          console.warn("%c[Session.add()]Student %s[%s] not in Db, will updating student db by fetching students list from dashboard", APP_WARN_STYLE, oSession2.who_name, oSession2.who_id);
+          console.warn(
+            "%c[Session.add()]Student %s[%s] not in Db, will updating student db by fetching students list from dashboard",
+            APP_WARN_STYLE,
+            oSession2.who_name,
+            oSession2.who_id
+          );
           if (dayjs(meta_default.getStudentListUpd()).diff(dayjs(), "m") < -iRefreshStudentDataBaseTreshold) {
             if (bDebug2 === true)
-              console.log("%c[Session.add()]Last Update of Student BDD was %i min ago which was more than treshold for update:%i, so will start to do a full update of student base", APP_DEBUG_STYLE, dayjs(meta_default.getStudentListUpd()).diff(dayjs(), "m"), iRefreshStudentDataBaseTreshold);
+              console.log(
+                "%c[Session.add()]Last Update of Student BDD was %i min ago which was more than treshold for update:%i, so will start to do a full update of student base",
+                APP_DEBUG_STYLE,
+                dayjs(meta_default.getStudentListUpd()).diff(dayjs(), "m"),
+                iRefreshStudentDataBaseTreshold
+              );
             await students_default.getAll();
             if (bDebug2 === true)
               console.log("%c[Session.add()]Student database updated set lastupdate value to:%s", APP_DEBUG_STYLE, dayjs().toISOString());
@@ -4434,7 +4778,13 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
           } else {
             console.log("%c[Session.add()]last Update of database DB was less than %i min ago so will not update it", APP_DEBUG_STYLE, iRefreshStudentDataBaseTreshold);
             if (bDebug2 === true)
-              console.log("%c[Session.add()]student %s[%s] not exists, bd was updated less than %i, i have to manually create student", APP_DEBUG_STYLE, oSession2.who_name, oSession2.who_id, iRefreshStudentDataBaseTreshold);
+              console.log(
+                "%c[Session.add()]student %s[%s] not exists, bd was updated less than %i, i have to manually create student",
+                APP_DEBUG_STYLE,
+                oSession2.who_name,
+                oSession2.who_id,
+                iRefreshStudentDataBaseTreshold
+              );
             await students_default.createManually(oSession2.who_id, oSession2.who_name, oSession2.when);
             if (moize.default.isMoized(students_default.m_findById) && students_default.m_findById.has([oSession2.who_id, null])) {
               if (bDebug2 === true)
@@ -4477,6 +4827,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     if (bDebug2 === true)
       console.log("%c[Session.add()].................................. End", APP_DEBUG_STYLE);
   });
+  // save session in db
   __publicField(Session, "_save", function(oSession2) {
     var dDebug = false;
     _Session._checkObject(oSession2);
@@ -4489,6 +4840,15 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     let db = src_default.Cfg.dbase;
     db.get(_Session.tbl_name).push(JSON.parse(JSON.stringify(oSession2))).write();
   });
+  /*
+   * 
+   * name: inconnu
+   * @param
+   * @return
+   * 
+   * since new version 202106 i have to check two field id and cid
+   * 
+   */
   __publicField(Session, "exists", function(sessionId) {
     let db = src_default.Cfg.dbase;
     var bDebug2 = false;
@@ -4510,6 +4870,19 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     }
     return _r2;
   });
+  /*
+   * 
+   * name: delete
+   * @param dtFrom dayjs format date from
+   * @param dtTo dayjs format date to
+   * @return
+   * 
+   * Delete elements form DB
+   * 
+   * dayjs could be string, the will be translated to dayjs bu be carreful with format entry
+   * 
+   * NOTE STT 20200908 : a renommer en remove
+   */
   __publicField(Session, "delete", function(dtFrom2 = null, dtTo2 = null) {
     let db = src_default.Cfg.dbase;
     if (typeof dtFrom2 === "string") {
@@ -4539,11 +4912,21 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       return dayjs(o.when).isBetween(dtFrom2, dtTo2, "day", "[]");
     }).write();
   });
+  /*
+   * Delete a session by its id 
+   */
   __publicField(Session, "deleteById", function(sId) {
     let db = src_default.Cfg.dbase;
     db.get("sessions").remove((o) => o.id === sId).write();
     console.log(`%cSession ${sId} suppressed from DB`, APP_DEBUG_STYLE);
   });
+  /*
+   * Parse an HTML TABLE to extract
+   * a session
+   * return a session object
+   * 
+   * NOTE STT : need to call it parseRow
+   */
   __publicField(Session, "parseTable", function(oEl) {
     var sWhen = oEl.children[0].children[0].innerText;
     var sId = getKey(oEl.children[0]);
@@ -4559,6 +4942,17 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     var me = { id: sId, when: sWhen, who_id: iWho, who_name: sWho, status: sStatus, type: sType2, lvl: sLvl };
     return me;
   });
+  /*
+   * This is a computed id since i have no access to session
+   * 	sDate is an ISO 8601 String : dayjs('2019-01-25').toISOString() // '2019-01-25T02:00:00.000Z'
+   * 	sId is the value of who_id of a session
+   * return int
+   * 
+   * sample Session.getHashId()
+   * 
+   * test
+   * 	d_Session.getHashId(d_dayjs('2021-06-30T14:00:00+0000').toISOString(),'')
+   */
   __publicField(Session, "getHashId", function(sDate, sId) {
     if (sDate instanceof dayjs) {
       sDate = sDate.toISOString();
@@ -4566,9 +4960,20 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     if (typeof sId === "number") {
       sId = sId.toString(10);
     }
-    assert(typeof sDate === "string" && typeof sId === "string", "getId need two string", TypeError);
+    assert(
+      typeof sDate === "string" && typeof sId === "string",
+      "getId need two string",
+      TypeError
+    );
     return cyrb53(sDate + sId);
   });
+  /*
+   * used only on historical row
+   * 
+   * sample of data 
+   * Mentorat | 27 mai 2021 à 16:15 | Sabrina Kingani | Expertise 3
+   * Note avant mentorat on a un icon svg avec un aria-label qui permet de savoir ce que c'est
+   */
   __publicField(Session, "parseRow", function(oRow) {
     let bDebug2 = true;
     if (bDebug2 === true)
@@ -4585,6 +4990,9 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     var me = { id: "", cid: iId, when: sWhen, who_id: iWho, who_name: sWho, status: sStatus, type: sType2, lvl: sLvl };
     return me;
   });
+  /*
+   * Collect Data from API
+   */
   __publicField(Session, "getSessionsFromAPI", async function(dtFrom2, dtTo2) {
     let bDebug2 = false;
     let iMaxLoop = 999;
@@ -4595,11 +5003,19 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     if (typeof dtFrom2 === "string") {
       dtFrom2 = dayjs(dtFrom2);
     }
-    assert(dtFrom2 instanceof dayjs === true, "dtFrom must be a string or a dayjs object.", TypeError);
+    assert(
+      dtFrom2 instanceof dayjs === true,
+      "dtFrom must be a string or a dayjs object.",
+      TypeError
+    );
     if (typeof dtTo2 === "string") {
       dtTo2 = dayjs(dtTo2);
     }
-    assert(dtTo2 instanceof dayjs === true, "dtTo must be a string or a dayjs object.", TypeError);
+    assert(
+      dtTo2 instanceof dayjs === true,
+      "dtTo must be a string or a dayjs object.",
+      TypeError
+    );
     let _r2 = history_default.getSameOrNearestSessionIndex(dtTo2);
     if (_r2 !== void 0 && typeof _r2 === "number" && _r2 > iIndexStart) {
       iIndexStart = _r2;
@@ -4626,10 +5042,22 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
         console.log("%cgetSessionsFromAPI() Sessions are %o", APP_DEBUG_STYLE, oSessions);
       iIndexStart = iIndexEnd + 1;
       oSession = _Session.parseRowFromApi(oSessions[oSessions.length - 1]);
-      console.log("%c[Session.getSessionsFromAPI()]La derni\xE8re session r\xE9cuper\xE9e par api date de:%s et nous collectons les sessions entre %s et %s", APP_DEBUG_STYLE, dayjs(oSession.when).format("DD/MM/YYYY"), dayjs(dtFrom2).format("DD/MM/YYYY"), dayjs(dtTo2).format("DD/MM/YYYY"));
+      console.log(
+        "%c[Session.getSessionsFromAPI()]La derni\xE8re session r\xE9cuper\xE9e par api date de:%s et nous collectons les sessions entre %s et %s",
+        APP_DEBUG_STYLE,
+        dayjs(oSession.when).format("DD/MM/YYYY"),
+        dayjs(dtFrom2).format("DD/MM/YYYY"),
+        dayjs(dtTo2).format("DD/MM/YYYY")
+      );
       if (bDebug2 === true)
         console.log("%cgetSessionsFromAPI() last session of loaded page is %o", APP_DEBUG_STYLE, oSession);
-      console.log("%c[Session.getSessionsFromAPI()] compare last session date %s avec la date de d\xE9but %s est ce ant\xE9rieur  %o", APP_DEBUG_STYLE, dayjs(oSession.when).format("DD/MM/YYYY"), dayjs(dtFrom2).format("DD/MM/YYYY"), dayjs(oSession.when).isBefore(dtFrom2));
+      console.log(
+        "%c[Session.getSessionsFromAPI()] compare last session date %s avec la date de d\xE9but %s est ce ant\xE9rieur  %o",
+        APP_DEBUG_STYLE,
+        dayjs(oSession.when).format("DD/MM/YYYY"),
+        dayjs(dtFrom2).format("DD/MM/YYYY"),
+        dayjs(oSession.when).isBefore(dtFrom2)
+      );
       if (dayjs(oSession.when).isBefore(dtFrom2) === true) {
         bBrowse = false;
         if (bDebug2 === true)
@@ -4652,6 +5080,19 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     NProgress.done();
     await toastOk(`Collecte des sessions du ${dtFrom2.format("DD/MM/YYYY")} au ${dtTo2.format("DD/MM/YYYY")} termin\xE9e`);
   });
+  /*
+   * Collect Data from API
+   * 	id (string): identifier of session
+   * 	cid (number) : calculated id (used if no id)
+   * 	who_id
+   * 	who_name:
+   *		status
+   * 	type
+   * 	lvl
+   * 	when:
+   * 	path:
+   * 	funding:
+   */
   __publicField(Session, "parseRowFromApi", function(oSession2) {
     bDebug = false;
     if (bDebug === true)
@@ -4696,6 +5137,13 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
   var _Accounting = class {
   };
   var Accounting = _Accounting;
+  /*
+   * 
+   * name: inconnu
+   * @param
+   * @return
+   * 
+   */
   __publicField(Accounting, "calculateBill", function(dtFrom2, dtTo2) {
     let sArchiveId = dtTo2.format("YYYYMM");
     if (archives_default.exists(sArchiveId) === true) {
@@ -4711,6 +5159,13 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     }
     return _Accounting.m_calculateBill(dtFrom2, dtTo2);
   });
+  /*
+   * 
+   * name: inconnu
+   * @param
+   * @return
+   * 
+   */
   __publicField(Accounting, "_calculateBill", function(dtFrom2, dtTo2) {
     if (typeof dtFrom2 === "string") {
       dtFrom2 = dayjs(dtFrom2);
@@ -4827,10 +5282,40 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     }
     return theSessionsMatrix;
   });
-  __publicField(Accounting, "m_calculateBill", moize.default(_Accounting._calculateBill, {
-    maxAge: 12e4,
-    isSerialized: true
-  }));
+  // memoize
+  // isSerialized allow function to use object cf doc : isSerialized -> should the parameters be serialized instead of directly referenced
+  /*
+   * 
+   * name: inconnu
+   * @param
+   * @return
+   * 
+   * NOTE STT
+   *   Je voudrais pouvoir utiliser dans la fonction memoizd GM_config.get("datacachelifetime"), cependant au moment ou je la lance cette valeur est inconnue puisque je n'ai pas fait l'init de la configuration
+   */
+  //static memoized = moize.default(
+  __publicField(Accounting, "m_calculateBill", moize.default(
+    _Accounting._calculateBill,
+    {
+      maxAge: 12e4,
+      // in ms //GM_config.get("datacachelifetime"),
+      isSerialized: true
+      //onCacheAdd: function(c,o,m){console.log("%cAdd data to cache",APP_DEBUG_STYLE);/*console.dir(c.keys);console.dir(o);console.dir(m)*/;},
+      //onCacheHit: function(){console.log("%cGet data from cache", APP_DEBUG_STYLE);}
+    }
+  ));
+  /*
+   * 
+   * name: inconnu
+   * 
+   * Generate Price list for a date
+   * 
+   * @param
+   * @return matrix( lvl, type, state, funding);
+   * 
+   * Pierre lelevé niveau 2, session, réalisé, financé = (2, 0, 0, 1) 
+   * NO NEED CACHE due to performance cached version= 0ms, non cached = 1ms;
+   */
   __publicField(Accounting, "getPriceList", function(dtFrom2) {
     if (typeof dtFrom2 === "string") {
       dtFrom2 = dayjs(dtFrom2);
@@ -4973,6 +5458,15 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
   var List = class {
   };
   __publicField(List, "detail_bill", "truc");
+  // reference les fonctions a appeller pour les détails ... je sais pas si ça va me servir au fond
+  /*
+   * 
+   * name: inconnu
+   * Get price for a list of sessions
+   * @param
+   * @return
+   * 
+   */
   __publicField(List, "getListDetailBill", function(dtFrom2, dtTo2) {
     let db = src_default.Cfg.dbase;
     let _r2 = db.get(sessions_default.tbl_name).filter((v) => dayjs(v.when).isSameOrBefore(dtTo2, "day") && dayjs(v.when).isSameOrAfter(dtFrom2, "day")).sortBy(function(o) {
@@ -5350,6 +5844,10 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
 
   // src/pdf.js
   var PDF = class {
+    /**
+     * check if i need to change page
+     * 
+     */
     static changePgIfNeeded(iCurrentHeigth, iBottomPg, iCurLine, oPdf) {
       var iCurPage = oPdf.getPageCount();
       var oCurPage = oPdf.getPages()[iCurPage - 1];
@@ -5366,6 +5864,13 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       return [iCurLine, oCurPage];
     }
   };
+  /*
+   * 
+   * name: inconnu
+   * @param
+   * @return
+   * TODO add more options : fonts...
+   */
   __publicField(PDF, "addFooter", async function(doc, sLeft, options = {}) {
     const { degrees, PDFDocument, rgb, StandardFonts } = PDFLib;
     const pageCnt = doc.getPageCount();
@@ -5521,6 +6026,10 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
             content.textContent = `Traitement termin\xE9 : ${i2}/${aListToUpdate2.length}`;
         }
       },
+      /*
+       par ailleurs je découvre que : "La section “Autres” correspond aux apprenants qui ne sont ni “autofinancés” ni “financés”. 
+       il faudra donc prévoir une catégorie autre que financé et non financé dans les calculs
+      */
       {
         title: "Migration de la table des Sessions",
         html: '<p>Correction de la liste des sessions, suppression du champs "isFunded"</p>',
@@ -5632,19 +6141,50 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
   };
 
   // src/dbase.js
-  var import_papaparse_min = __toModule(require_papaparse_min());
+  var import_papaparse_min = __toESM(require_papaparse_min());
   var _Dbase = class {
   };
   var Dbase = _Dbase;
+  /*
+   * 
+   * name: save
+   * @param
+   * @return string
+   * 
+   */
   __publicField(Dbase, "save", function() {
     console.log(`%cWanna save DBASE`, APP_DEBUG_STYLE);
     return JSON.stringify(src_default.Cfg.dbase.getState());
   });
+  /*
+   * 
+   * name: load
+   * @param sFileName : database format json
+   * @return
+   * TODO: add checking
+   */
   __publicField(Dbase, "load", function(sFileName) {
     console.log(`%cWanna load ${sFileName} in DBASE`, APP_DEBUG_STYLE);
     console.log(`%c !!!!!! TYPE NOT CHECKED BE CARREFULL`, APP_DEBUG_STYLE);
     return src_default.Cfg.dbase.setState(JSON.parse(sFileName)).write();
   });
+  //static version = App.Cfg.dbase.get("meta").values() === undefined ? '1.0.0' : App.Cfg.dbase.get("meta").values().dbVersion;
+  //static version = App.Cfg.dbase.get("meta").value().dbVersion;
+  /*
+   * name: update
+   * @param sVersion : string version of dbase
+   * @return nil
+   * 
+   * Process
+   *   By default database is same version of the app, if this is not
+   *    the case, i must check if any update is created
+   *   As there is only one update to db, the process is not really
+   *    optimized, the ideal way is to update a array version by 
+   *    loading the update_database file, process the whole array and 
+   *    check if update needed.
+   *   Another way could be to define a constant array and 
+   *    fetch_inject the code 
+   */
   __publicField(Dbase, "update", async function(sVersion) {
     console.log(`%cIs there any update to DB to go to version ${sVersion}`, APP_DEBUG_STYLE);
     const aDbNeedUpdate = [
@@ -5671,10 +6211,19 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     let _r2 = meta_default.setDbVersion(sVersion);
     console.log(`%cChanged DB to version ${_r2}`, APP_DEBUG_STYLE);
   });
+  /*
+   * erase data of a table
+   * 
+   * (string) the name of the table
+   */
   __publicField(Dbase, "erase", function(sTableName) {
     console.log(`%cErase all data of table: ${sTableName}`, APP_DEBUG_STYLE);
     return src_default.Cfg.dbase.get(sTableName).remove().write();
   });
+  /*
+   * seen here
+   * https://jsfiddle.net/typicode/4kd7xxbu/
+   */
   __publicField(Dbase, "loadTable", function(sTableName, aValue) {
     if (table_exist(sTableName)) {
       return src_default.Cfg.dbase.set(sTableName, aValue).write();
@@ -5690,17 +6239,29 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     throw "Table :" + sTableName + ", not exists id DB !";
     return -1;
   });
+  // table_exist(tbl) = App.Cfg.dbase.has(tbl).value
+  // create_table(tbl) = App.Cfg.dbase.assign({tbl:[]}).write
+  // delete_table(tbl_id) = App.Cfg.dbase.unset([tbl_id]).write NOTESTT même si tbl_id est un nombre (suite à mauvaise manip)
+  // delete_field on data -> use unset : sample delete isFunded on field 0....get(0).unset(['isFunded']).write();
+  /* 
+   * export to CSV
+   * depend on papa parse lib
+   *
+   */
   __publicField(Dbase, "exportTblToCSV", function(sTableName = "", sDateFrom, sDateTo) {
     const data = _Dbase.exportTblToJSON(sTableName, sDateFrom, sDateTo);
     const config = {
       quotes: false,
+      //or array of booleans
       quoteChar: '"',
       escapeChar: '"',
       delimiter: ",",
       header: true,
       newline: "\r\n",
       skipEmptyLines: false,
+      //other option is 'greedy', meaning skip delimiters, quotes, and whitespace.
       columns: null
+      //or array of strings
     };
     return import_papaparse_min.default.unparse(data, config);
   });
@@ -5744,8 +6305,10 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       method: "GET",
       url: "https://raw.githubusercontent.com/StephaneTy-Pro/OC-Mentors-AccountAddon/master/README.md",
       responseType: "text/html",
+      //binary: true,
       headers: {
         "User-Agent": "Mozilla/5.0"
+        // If not specified, navigator.userAgent will be used.
       }
     });
     var md = response.responseText;
@@ -5759,6 +6322,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       icon: "info",
       html: sHtml,
       showCloseButton: true,
+      //showCancelButton: true,
       focusConfirm: false,
       position: "center-start",
       grow: "fullscreen"
@@ -6093,6 +6657,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       icon: "info",
       html: sHtml,
       showCloseButton: true,
+      //showCancelButton: true,
       focusConfirm: false,
       position: "center-start",
       grow: "fullscreen",
@@ -6237,6 +6802,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
         size: fontSize,
         font: timesRomanFont,
         color: rgb(116 / 255, 81 / 255, 235 / 255)
+        // couleur bouton OC
       });
       let font_size = 12;
       let line_space = 1.25;
@@ -6581,6 +7147,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
           document.getElementById("answer2").value
         ];
       },
+      //deprecated onOpen: (el) => {
       didOpen: (el) => {
         console.log("%conOpen popup", "color:coral");
         htmx.process(document.querySelector(".swal2-container"));
@@ -6694,6 +7261,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       icon: "info",
       html: sHtml,
       showCloseButton: true,
+      //showCancelButton: true,
       focusConfirm: false,
       position: "top-start",
       grow: "row",
@@ -7206,8 +7774,10 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     sHtml += `<p>Soit un total g\xE9n\xE9ral \xE0 facturer de ${iTotG}\u20AC`;
     Swal.fire({
       title: `<strong>Liste des formations tarif\xE9es du ${dtFrom2.format("DD/MM/YYYY")} au ${dtTo2.format("DD/MM/YYYY")}</strong>`,
+      //icon: 'info',
       html: sHtml,
       showCloseButton: true,
+      //showCancelButton: true,
       focusConfirm: false,
       position: "center-start",
       grow: "fullscreen"
@@ -7677,8 +8247,10 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
     sHtml += `<p>Soit un total g\xE9n\xE9ral \xE0 facturer de ${iTotGMa + iTotGMf + iTotGMo + iTotG}\u20AC</p>`;
     Swal.fire({
       title: `<strong>Liste des formations tarif\xE9es du ${dtFrom2.format("DD/MM/YYYY")} au ${dtTo2.format("DD/MM/YYYY")}</strong>`,
+      //icon: 'info',
       html: sHtml,
       showCloseButton: true,
+      //showCancelButton: true,
       focusConfirm: false,
       position: "center-start",
       grow: "fullscreen"
@@ -7836,6 +8408,7 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
       icon: "info",
       html: sHtml,
       showCloseButton: true,
+      //showCancelButton: true,
       focusConfirm: false,
       position: "center-start",
       grow: "fullscreen",
@@ -7848,11 +8421,25 @@ cela peut prendre du temps ~ ${(performance.now() - t0) * aStudents.length / 1e3
   var _UI = class {
   };
   var UI = _UI;
+  /*
+   * 
+   * name: inconnu
+   * @param
+   * @return
+   * 
+   */
   __publicField(UI, "init", function() {
     console.log("%cin initUI", APP_DEBUG_STYLE);
     _UI.build();
     var draggie = new Draggabilly(".draggable", { handle: ".handle" });
   });
+  /*
+   * 
+   * name: inconnu
+   * @param
+   * @return
+   * 
+   */
   __publicField(UI, "build", function() {
     console.log("%c in buildUI", "background-color:green;color:white");
     GM_addStyle(`
@@ -7918,36 +8505,6 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
     Object.keys(cssObj).forEach((key) => btnStyle[key] = cssObj[key]);
     return button;
   });
-  var FpsTracker = class {
-  };
-  __publicField(FpsTracker, "start", function(id) {
-    const element = document.getElementById(id);
-    const moveTo = (xCoord2) => element.style.transform = `translateX(${xCoord2}px)`;
-    let xCoord = 0;
-    const delta = 7;
-    const slideRight = (timestamp) => {
-      moveTo(xCoord);
-      xCoord += delta;
-      if (xCoord > 100) {
-        requestAnimationFrame(slideLeft);
-      } else {
-        requestAnimationFrame(slideRight);
-      }
-    };
-    const slideLeft = (timestamp) => {
-      moveTo(xCoord);
-      xCoord -= delta;
-      if (xCoord < -100) {
-        requestAnimationFrame(slideRight);
-      } else {
-        requestAnimationFrame(slideLeft);
-      }
-    };
-    return requestAnimationFrame(slideRight);
-  });
-  __publicField(FpsTracker, "stop", function(animationId) {
-    window.cancelAnimationFrame(animationId);
-  });
   var ui_default = UI;
 
   // src/gmc.lib.js
@@ -7957,6 +8514,14 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
     id: "OCAddonsCfg",
     title: "Configuration du module",
     fields: {
+      /*userid:{
+      	section: ['Application', 'paramètres'],
+      	label: "Id utilisateur",
+      	title: "identifiant utilisateur oc",
+      	labelPos: 'left',
+      	type: 'input',
+      	default: 0,
+      },*/
       nbHrsAfM: {
         section: ["Statistiques", "param\xE8tres"],
         label: "Nombre de minutes pour une session d'\xE9tudiant auto financ\xE9",
@@ -8046,6 +8611,14 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
         type: "checkbox",
         default: true
       },
+      /*
+      show_throttle:{
+      	label: 'Afficher le temoin d\'utilisation du CPU',
+      	title: 'Affiche le point rouge qui circule dans la barre de menu. Quand il s\'arrête le CPU est utilisé',
+      	labelPos: 'left',
+      	type: 'checkbox',
+      	default: true,
+      },*/
       "hackheaderzindex": {
         section: ["", "Hack"],
         label: "Changer le zindex du bandeau haut",
@@ -8078,6 +8651,8 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
     },
     css: windowcss,
     events: {
+      "init": () => {
+      },
       save: function() {
         GM_config.close();
       }
@@ -8087,55 +8662,6 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
     GM_config.open();
     OCAddonsCfg.style = iframecss;
   };
-
-  // src/gm_perf.js
-  var Performance = class {
-  };
-  __publicField(Performance, "longTaskTiming", function() {
-    if (window.self !== window.top) {
-      return;
-    }
-    console.log("LongTasks: Initializing");
-    var observer = new window.PerformanceObserver(function(list) {
-      var perfEntries = list.getEntries();
-      for (var i2 = 0; i2 < perfEntries.length; i2++) {
-        console.log("LongTasks: ", perfEntries[i2].name, perfEntries[i2].duration, perfEntries[i2].attribution.length, perfEntries[i2].attribution.length > 0 ? perfEntries[i2].attribution[0].containerType : null, perfEntries[i2].attribution.length > 0 ? perfEntries[i2].attribution[0].containerName : null, perfEntries[i2].attribution.length > 0 ? perfEntries[i2].attribution[0].containerSrc : null, perfEntries[i2].attribution.length > 0 ? perfEntries[i2].attribution[0].containerId : null, perfEntries[i2]);
-      }
-    });
-    if (typeof window.PerformanceLongTaskTiming !== "undefined") {
-      console.log("LongTasks: Appears to be supported");
-    } else {
-      console.log("LongTasks: Not supported");
-    }
-    try {
-      observer.observe({ entryTypes: ["longtask"] });
-    } catch (e) {
-      console.log("LongTasks: Not supported");
-    }
-  });
-  __publicField(Performance, "paintTiming", function() {
-    if (window.self !== window.top) {
-      return;
-    }
-    console.log("PaintTiming: Initializing");
-    var observer = new window.PerformanceObserver(function(list) {
-      var perfEntries = list.getEntries();
-      for (var i2 = 0; i2 < perfEntries.length; i2++) {
-        console.log("PaintTiming: ", perfEntries[i2].name, perfEntries[i2].startTime);
-      }
-    });
-    if (typeof window.PerformancePaintTiming !== "undefined") {
-      console.log("PaintTiming: Appears to be supported");
-    } else {
-      console.log("PaintTiming: Not supported");
-      return;
-    }
-    try {
-      observer.observe({ entryTypes: ["paint"], buffered: true });
-    } catch (e) {
-      console.log("PaintTiming: Not supported");
-    }
-  });
 
   // src/vendor/fetch-inject/injectors.js
   var head = function(i2, n, j, e, c, t, s) {
@@ -8156,13 +8682,15 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
     const resources = [];
     const deferreds = promise ? [].concat(promise) : [];
     const thenables = [];
-    inputs.forEach((input) => deferreds.push(window.fetch(input).then((res) => {
-      return [res.clone().text(), res.blob()];
-    }).then((promises) => {
-      return Promise.all(promises).then((resolved) => {
-        resources.push({ text: resolved[0], blob: resolved[1] });
-      });
-    })));
+    inputs.forEach((input) => deferreds.push(
+      window.fetch(input).then((res) => {
+        return [res.clone().text(), res.blob()];
+      }).then((promises) => {
+        return Promise.all(promises).then((resolved) => {
+          resources.push({ text: resolved[0], blob: resolved[1] });
+        });
+      })
+    ));
     return Promise.all(deferreds).then(() => {
       resources.forEach((resource) => {
         thenables.push({
@@ -8189,6 +8717,7 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
         matchesSelector: function(elem, selector) {
           return elem instanceof HTMLElement && matches.call(elem, selector);
         },
+        // to enable function overloading - By John Resig (MIT Licensed)
         addMethod: function(object, name, fn) {
           var old = object[name];
           object[name] = function() {
@@ -8209,9 +8738,14 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
             }
           }
           if (registrationData && registrationData.options.onceOnly && registrationData.firedElems.length == 1) {
-            registrationData.me.unbindEventWithSelectorAndCallback.call(registrationData.target, registrationData.selector, registrationData.callback);
+            registrationData.me.unbindEventWithSelectorAndCallback.call(
+              registrationData.target,
+              registrationData.selector,
+              registrationData.callback
+            );
           }
         },
+        // traverse through all descendants of a node to check if event should be fired for any descendant
         checkChildNodesRecursively: function(nodes, registrationData, matchFunc, callbacksToBeCalled) {
           for (var i2 = 0, node; node = nodes[i2]; i2++) {
             if (matchFunc(node, registrationData, callbacksToBeCalled)) {
@@ -8554,6 +9088,7 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
           return compressed.charCodeAt(index) - 32;
         });
       },
+      //compress into uint8array (UCS-2 big endian format)
       compressToUint8Array: function(uncompressed) {
         var compressed = LZString2.compress(uncompressed);
         var buf = new Uint8Array(compressed.length * 2);
@@ -8564,6 +9099,7 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
         }
         return buf;
       },
+      //decompress from uint8array (UCS-2 big endian format)
       decompressFromUint8Array: function(compressed) {
         if (compressed === null || compressed === void 0) {
           return LZString2.decompress(compressed);
@@ -8579,6 +9115,7 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
           return LZString2.decompress(result.join(""));
         }
       },
+      //compress into a string that is already URI encoded
       compressToEncodedURIComponent: function(input) {
         if (input == null)
           return "";
@@ -8586,6 +9123,7 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
           return keyStrUriSafe.charAt(a);
         });
       },
+      //decompress from an output of compressToEncodedURIComponent
       decompressFromEncodedURIComponent: function(input) {
         if (input == null)
           return "";
@@ -8972,11 +9510,11 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
   var __getOwnPropNames2 = Object.getOwnPropertyNames;
   var __getProtoOf2 = Object.getPrototypeOf;
   var __hasOwnProp2 = Object.prototype.hasOwnProperty;
-  var __markAsModule2 = (target) => __defProp2(target, "__esModule", { value: true });
+  var __markAsModule = (target) => __defProp2(target, "__esModule", { value: true });
   var __commonJS3 = (cb, mod) => function __require() {
     return mod || (0, cb[Object.keys(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
   };
-  var __reExport2 = (target, module, desc) => {
+  var __reExport = (target, module, desc) => {
     if (module && typeof module === "object" || typeof module === "function") {
       for (let key of __getOwnPropNames2(module))
         if (!__hasOwnProp2.call(target, key) && key !== "default")
@@ -8984,8 +9522,8 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
     }
     return target;
   };
-  var __toModule2 = (module) => {
-    return __reExport2(__markAsModule2(__defProp2(module != null ? __create2(__getProtoOf2(module)) : {}, "default", module && module.__esModule && "default" in module ? { get: () => module.default, enumerable: true } : { value: module, enumerable: true })), module);
+  var __toModule = (module) => {
+    return __reExport(__markAsModule(__defProp2(module != null ? __create2(__getProtoOf2(module)) : {}, "default", module && module.__esModule && "default" in module ? { get: () => module.default, enumerable: true } : { value: module, enumerable: true })), module);
   };
   var require_cross_fetch = __commonJS3({
     "vendor/cross-fetch.js"(exports) {
@@ -9486,7 +10024,7 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
       callback(null);
     }
   };
-  var import_cross_fetch = __toModule2(require_cross_fetch());
+  var import_cross_fetch = __toModule(require_cross_fetch());
   function get2(response, callback) {
     const transportOptions = {
       headers: {
@@ -9635,12 +10173,26 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
     Cfg: {
       dbase: null
     },
+    // request animation frame id
     raf: null,
+    // SINCE 20210630
     cssMainDataSelector: OC_DASHBOARDCSSMAINDATASELECTOR,
+    // before 'table[id*="session"]
+    // menu
     ID_MENU_FORCE_LOADING: null,
     ID_MENU_FORCE_ADDTOLEFTMENU: null,
     ID_MENU_FORCE_BAR_ON_TOP: null,
+    // visiblemenet l'element donc je me servait pour définir si l'application était chargée ou non est chargée deux fois
+    // je suis donc contraint de définir une variable pour supprimer le double chargement
+    //_isWarmingUp: false,
     _isStarted: false,
+    /*
+     *
+     * name: inconnu
+     * @param
+     * @return
+     *
+     */
     start: async function() {
       console.log(`%cIn start check Facturier._isStarted: ${Facturier._isStarted}`, APP_DEBUG_STYLE);
       if (Facturier._isStarted === true) {
@@ -9660,9 +10212,23 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
         Facturier._warmup();
       }
     },
+    /*
+     *
+     * name: inconnu
+     * @param
+     * @return
+     *
+     */
     checkSupport: function() {
       return true;
     },
+    /*
+     *
+     * name: inconnu
+     * @param
+     * @return
+     *
+     */
     _warmup: function() {
       document.unbindArrive(Facturier._warmup);
       if (Facturier._isStarted === true) {
@@ -9684,12 +10250,22 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
       GM_config.init(appmenu);
       GM_registerMenuCommand("collectauto", opencfg, "a");
       GM_registerMenuCommand("configure", opencfg, "a");
-      Facturier.ID_MENU_FORCE_BAR_ON_TOP = GM_registerMenuCommand("Menu Bar on Top", function() {
-        document.querySelector(".panel.draggable").scrollIntoView();
+      Facturier.ID_MENU_FORCE_BAR_ON_TOP = GM_registerMenuCommand(
+        "Menu Bar on Top",
+        function() {
+          document.querySelector(".panel.draggable").scrollIntoView();
+        }
+      );
+      let onInit = (config) => new Promise((resolve) => {
+        let isInit = () => setTimeout(() => config.isInit ? resolve() : isInit(), 0);
+        isInit();
       });
-      if (GM_config.get("hackheaderzindex") === true) {
-        document.getElementById("header").style.zIndex = 0;
-      }
+      let init = onInit(appmenu);
+      init.then(() => {
+        if (GM_config.get("hackheaderzindex") === true) {
+          document.getElementById("header").style.zIndex = 0;
+        }
+      });
       GM_addStyle(".swal2-title{font-size:1.275em}");
       GM_addStyle(`
 		.button {
@@ -9765,10 +10341,20 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
         Facturier._main();
       }
     },
+    // this fonction force the
     _forceCbox: function() {
       Facturier._applyInjectionForSessionsHistory();
     },
+    /**
+     * on href change detection
+     * https://stackoverflow.com/questions/3522090/event-when-window-location-href-changes
+     *
+     * NOTESTT changed to pathname change because of #param which sometimes follow href
+     */
     pathname: document.location.pathname,
+    /*
+     * must return STRING else detection will failed
+     */
     _getOCMainClass: function() {
       try {
         const _sOCMainCntClass = document.querySelector(Facturier.cssMainDataSelector).classList.value;
@@ -9781,6 +10367,7 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
         return "";
       }
     },
+    /** Hack for OC **/
     _sOCMainSrvClassName: "",
     _eventMonitor: function() {
       var bodyList = document.querySelector("body"), observer = new MutationObserver(function(mutations) {
@@ -9862,6 +10449,7 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
       }
     },
     _lastMutation: 0,
+    // timestamp in milliseconds //.unix() if in seconds
     _applyInjectionForSessionsToComplete: function() {
       if (document.querySelector(`${Facturier.cssMainDataSelector} .Facturier__cbox_all`) !== null) {
         document.querySelector(`${Facturier.cssMainDataSelector} .Facturier__cbox_all`).style.display = "none";
@@ -9913,6 +10501,9 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
         document.querySelector(`${Facturier.cssMainDataSelector} .Facturier__cbox_all`).style.display = "none";
       }
     },
+    /*
+     *  (int) iDelayBetweenTwoMutations : default 100 ms of delay between to mutation on dom
+     */
     _applyInjectionForSessionsHistory: function(iDelayBetweenTwoMutations = 100) {
       if (document.querySelector(`${Facturier.cssMainDataSelector} .Facturier__cbox_all`) !== null) {
         document.querySelector(`${Facturier.cssMainDataSelector} .Facturier__cbox_all`).style.display = "block";
@@ -9997,6 +10588,37 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
       oRoot.style = "margin-left: auto";
       oPanelSelectorContainer.appendChild(oRoot);
     },
+    /*
+    	 *
+    	 *
+    	 * autre option pour la partie facturation
+    <thead style="
+        display: block;
+    "><tr style="
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid #e0e0e0;
+        flex-direction: row;
+        background-color: #fff;
+    "><td>Facturier 1.12</td><td style="
+        font-size: 1rem;
+        max-width: 280px;
+        font-family: Montserrat;
+        font-weight: 400;
+        line-height: 1.625rem;
+        text-transform: inherit;
+        margin-left: auto;
+    ">Fact.(o/n)</td></tr>
+    </thead>
+    	 *
+    	 */
+    /*
+     *
+     * name: inconnu
+     * @param
+     * @return
+     * This function is used when i'm not in a UserScript env (no tampermonkey...)
+     */
     _userscriptless() {
       console.log(`%cIm'not in a Tamper environment so i need to load js scripts`, APP_DEBUG_STYLE);
     },
@@ -10033,13 +10655,19 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
         console.log(`%cDB is in version: ${meta_default.getDbVersion()} need to go to version ${GM.info.script.version}`, APP_DEBUG_STYLE);
         dbase_default.update(GM.info.script.version);
       }
-      fetch_inject_default(["https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js"]).then(async function(e) {
-        console.log("%cALPINE js fetched", APP_DEBUG_STYLE);
-      });
-      fetch_inject_default([
-        "https://unpkg.com/htmx.org@1.1.0",
-        "https://unpkg.com/htmx.org@1.1.0/dist/ext/debug.js"
-      ]).then(async function(e) {
+      fetch_inject_default(
+        ["https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js"]
+      ).then(
+        async function(e) {
+          console.log("%cALPINE js fetched", APP_DEBUG_STYLE);
+        }
+      );
+      fetch_inject_default(
+        [
+          "https://unpkg.com/htmx.org@1.1.0",
+          "https://unpkg.com/htmx.org@1.1.0/dist/ext/debug.js"
+        ]
+      ).then(async function(e) {
         htmx.on("htmx:configRequest", function(evt) {
         });
         htmx.on("htmx:beforeRequest", function(evt) {
@@ -10077,10 +10705,15 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
         htmx.on("htmx:xhr:loadstart", function(evt) {
         });
       });
-      fetch_inject_default(["https://cdn.jsdelivr.net/npm/sweetalert2@10"]).then(async function(e) {
-        console.log("%cSweetAlert fetched", APP_DEBUG_STYLE);
-      });
-      if (GM_config.get("use_custom_css") === true) {
+      fetch_inject_default(
+        ["https://cdn.jsdelivr.net/npm/sweetalert2@10"]
+      ).then(
+        async function(e) {
+          console.log("%cSweetAlert fetched", APP_DEBUG_STYLE);
+        }
+      );
+      let FacturierMonkeyCfg_use_custom_css = false;
+      if (FacturierMonkeyCfg_use_custom_css === true) {
         let sDependencies = GM_config.get("custom_css_url");
         let aDependencies = sDependencies.split(",");
         if (aDependencies.length !== 0) {
@@ -10134,6 +10767,7 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
         console.log(`%c GM.info.script.downloadURL url : ${GM.info.script.downloadURL}`, APP_DEBUG_STYLE);
       }
     },
+    // add an option to oc menu to show hide the bar
     _addLinkToMenu: function() {
       console.log(`%cSide menu will be added`, APP_DEBUG_STYLE);
       document.unbindArrive(Facturier._addLinkToMenu);
@@ -10175,6 +10809,8 @@ grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); /* 
         console.log(`dependencies ${rDependencies} loaded`);
       });
     },
+    /*
+     */
     dbUpdate: function() {
       console.log("%c Need to update DB", APP_DEBUG_STYLE);
       if (semverCompare(GM.info.script.version, "1.00.0006") == 0) {
@@ -10196,12 +10832,6 @@ v5.3.0
 https://github.com/mholt/PapaParse
 License: MIT
 */
-/*!
- * Sheetrock
- * Quickly connect to, query, and lazy-load data from Google Sheets.
- * https://chriszarate.github.io/sheetrock/
- * License: MIT
- */
 /*! @preserve
  *
  * tcomb.js - Type checking and DDD for JavaScript
@@ -10224,5 +10854,11 @@ License: MIT
  * @throws {SyntaxError} Via DOM upon attempting to parse unexpected tokens.
  * @returns {Promise<Object[]>} A promise which resolves to an `Array` of
  *     Objects containing `Response` `Body` properties used by the module.
+ */
+/*!
+ * Sheetrock
+ * Quickly connect to, query, and lazy-load data from Google Sheets.
+ * https://chriszarate.github.io/sheetrock/
+ * License: MIT
  */
 //# sourceMappingURL=app.js.map
