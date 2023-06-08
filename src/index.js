@@ -199,9 +199,31 @@ const Facturier = {
 				function(){document.querySelector(".panel.draggable").scrollIntoView()});
 		//GM_registerMenuCommand('force - cbox', Facturier._forceCbox);
 		/* hacks */
+
+      // cf https://github.com/sizzlemctwizzle/GM_config/wiki/Asynchronous-read-and-write-migration
+		// Promise resolves when initialization completes
+		let onInit = config => new Promise(resolve => {
+		  let isInit = () => setTimeout(() =>
+			config.isInit ? resolve() : isInit(), 0);
+		  isInit();
+		});
+
+		// Generate a Promise
+		let init = onInit(appmenu);
+
+		// Break up get() calls
+		init.then(() => {
+		  // initialization complete
+		  // value is now available
+		  if (GM_config.get("hackheaderzindex") === true) {
+			document.getElementById("header").style.zIndex = 0;
+		  }
+		});
+
+		/*
 		if(GM_config.get('hackheaderzindex') === true){
 			document.getElementById('header').style.zIndex = 0; // because z index is 1000 in oc rules
-		}
+		}*/
 		/* set size of content */
 		//GM_addStyle('.swal2-content{font-size:'+GM_config.get('sizeofcontentlist')+'}');
 		GM_addStyle('.swal2-title{font-size:1.275em}'); // set by default to 1.875em by CSS of SWAL
@@ -1038,8 +1060,12 @@ if(STT_VERSION) {
 			}
 		);
 
+		// NOTESTT Ajout Juin2023 pour gérer un changement de la librairie GM_config
+		// je suis obligé de désactiver cette option car tout le code doit changer
+		let FacturierMonkeyCfg_use_custom_css = false
 
-		if (GM_config.get("use_custom_css") === true) {
+		//if (GM_config.get("use_custom_css") === true) {
+		if ( FacturierMonkeyCfg_use_custom_css === true ) {
 			let sDependencies = GM_config.get("custom_css_url");
 			/*
 			fetchInject(['https://raw.githubusercontent.com/brettz9/load-stylesheets/master/dist/index-umd.min.js'])

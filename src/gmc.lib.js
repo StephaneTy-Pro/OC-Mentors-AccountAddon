@@ -3,6 +3,8 @@
 const windowcss = '#OCAddonsCfg {background-color: lightblue;} #OCAddonsCfg .reset_holder {float: left; position: relative; bottom: -1em;} #OCAddonsCfg .saveclose_buttons {margin: .7em;}';
 const iframecss = 'height: 16.7em; width: 30em; border: 1px solid; border-radius: 3px; position: fixed; z-index: 999;';
 const dbgcss    = 'position: absolute;top: 5px; left: 5px; right: 5px; bottom: 5px;padding: 10px;overflow-y: auto;display: none;background: rgba(250, 250, 250, 0.3);border: 3px solid #888;font: 14px Consolas,Monaco,Monospace;color: #ddd;z-index: 500';
+
+
 const appmenu = {
 	id: 'OCAddonsCfg',
 	title: 'Configuration du module',
@@ -66,7 +68,7 @@ const appmenu = {
 			type: 'input',
 			default: 120000,
 		},
-		
+
 		checksessionalreadyexists: {
 			section: ['Application', 'Base de donnée'],
 			label: 'sessions: vérifier existence avant insertion',
@@ -82,14 +84,14 @@ const appmenu = {
 			type: 'input',
 			default: '1em;',
 		},
-		
+
 		use_custom_css: {
 			label: 'utiliser des styles personnalisés',
 			labelPos: 'left',
 			type: 'checkbox',
 			default: false,
 		},
-		
+
 		custom_css_url: {
 			label: 'url de la feuille de style (si plusieurs les séparer par des virgules)',
 			labelPos: 'left',
@@ -118,7 +120,7 @@ const appmenu = {
 			labelPos: 'left',
 			type: 'checkbox',
 			default: true,
-		},*/		
+		},*/
 		'hackheaderzindex':{
 			section: ['', 'Hack'],
 			label: 'Changer le zindex du bandeau haut',
@@ -152,6 +154,10 @@ const appmenu = {
 	css: windowcss,
 	events:
 	{
+		'init': () => {
+			// initialization complete
+			// value is now available
+		},
 		save: function() {
 			GM_config.close();
 		}
@@ -164,9 +170,9 @@ var opencfg = function()
     GM_config.open();
     OCAddonsCfg.style = iframecss;
 }
-    
-    
-export { 
+
+
+export {
 	appmenu,
 	opencfg,
-};     
+};

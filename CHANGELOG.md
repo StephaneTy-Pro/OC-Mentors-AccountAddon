@@ -2,6 +2,10 @@
 
 LEGENDE: C: Corrections(Fixes) / B: Corrections de Bug (BugFixes) / F: Ajout de fonctionnalité (Features) / D: Divers (Misc)
 
+## 1.10.0015 (08/06/2023)
+	- C: Prise en compte d'une modification d'une librairie utilisée dans l'application (GM_Config) qui a évolué et impacte la récuperation des données de configuration,
+	 certaines options mineures comme la configuration de fichier css personnalisés sont non utilisées désormais (mais pas non activées).
+
 ## 1.10.0014 (09/08/2022)
 	- C: Prise en compte des évolutions d'interface utilisateur openclassrooms
 	- B: Correction d'un bug en supprsseion d'historique (bookmarks) quand on ne donnait pas de date pour filtrer les élements

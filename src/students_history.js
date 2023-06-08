@@ -1,20 +1,20 @@
 /**
  * used by students to store history of students life
- * 
+ *
  * a student history is a data with time of change, a type of data and an old value
- * 
+ *
  * Example debug
- * 
+ *
  * d_StudentHistory.addFunding('7582346',"financé par un tiers","20200801") Ajoute à MAAIKE un changement de financement ancienne valeur 1 avant le 01.08.2020
  * d_StudentHistory.addFunding('7582346',"auto-financé","20200630") Ajoute à MAAIKE un changement de financement ancienne valeur 3 avant le 30.06.2020
  * d_StudentHistory.find('7582346',d_StudentHistory.getType('FUNDING'),"20200901") doit rien sortir
  * d_StudentHistory.find('7582346',d_StudentHistory.getType('FUNDING'),"20200701") doit sortir 1 la valeur avant le 01.08 mais pas 3 qui est une valeur plus ancienne encore
- * 
+ *
  */
- 
+
 /**
  *  date: timestamp, type: integer, id: string, value: mixed
- **/ 
+ **/
 
 import {
 	APP_DEBUG_STYLE, APP_WARN_STYLE, APP_ERROR_STYLE,
@@ -26,25 +26,25 @@ import {assert} from './utils.js';
  * Factory function
  */
 var fStudentHistory = function(){
-	
+
 	const TBL_NAME = 'students_history';
-	
-	
+
+
 	// https://codeforwin.org/2018/05/10-cool-bitwise-operator-hacks-and-tricks.html paragraph 4.
 	const TYPE_FUNDING  = 1;
 	const TYPE_PATH		= 2;
-	
+
 	/*
 	 * return the type by giving
 	 */
-	
+
 	const getType = function(sType){
 		if(sType.toUpperCase() === 'FUNDING') return TYPE_FUNDING;
 		if(sType.toUpperCase() === 'PATH') return TYPE_PATH;
 	    throw Error('Erreur qui ne devrait jamais arriver en getype');
         return false;
 	}
-	
+
     const addFunding = function(sStudentId, data, created=null){
 		return add(sStudentId, TYPE_FUNDING ,data, created);
 	};
@@ -59,13 +59,13 @@ var fStudentHistory = function(){
 		if (typeof sStudentId === 'number'){
 			sStudentId = sStudentId.toString(10)
 		}
-	
+
 		assert(
 			typeof sStudentId === 'string',
 			'You must provide a string.',
 			TypeError
 			);
-        const db=App.Cfg.dbase; 
+        const db=App.Cfg.dbase;
         //if (typeof created === 'string'){ dtFrom = dayjs(created).format('YYYY-MM-DDTHH:mm:ssZZ')}
         if (typeof created === 'string'){ created = dayjs(created); }
         if(created === null){
@@ -86,7 +86,7 @@ var fStudentHistory = function(){
     };
     // delete all = d_dbase.get('students_history').remove().write();
     const remove = function(sStudentId, iType=null, dtFrom=null){
-		const db=App.Cfg.dbase; 
+		const db=App.Cfg.dbase;
 		if (sStudentId == null && iType == null && dtFrom == null){
 			console.log(`%cRemove all in student history`,APP_DEBUG_STYLE);
 			return db.get(TBL_NAME).remove().write();
@@ -107,9 +107,9 @@ var fStudentHistory = function(){
 		return db.get(TBL_NAME).remove( {id:sStudentId, type:iType, date:dtFrom.valueOf()} ).write();
 		//return db.get(TBL_NAME).remove( {id: _r.id} ).write();
 	};
-    
+
     /* get Data for a specified type before a specified date */
-    
+
     const find = function(sStudentId, iType, dtFrom=null){
 		const bDebug = false;
 		const db=App.Cfg.dbase;
@@ -149,12 +149,54 @@ var fStudentHistory = function(){
 		const min = arr => Math.min(...arr); // clone de la fonction min qui prend désormais en charge un array et plus une liste
 		let _needle = _iBaseDay + min(_r);
 		return db.get(TBL_NAME).filter(o =>  o.id === sStudentId && (o.type & iType) && o.date == _needle).value()[0];
+	};
+
+	/* modifie un element d'historique
+	 * NOTESTT 20220911 non testé en plus je m'aperçois que la recherche n'est pas des plus efficaces puisque je ne peux pas chercher une valeur
+	 * le plus simple reste encore de supprimer et recrée l'évenement
+	 */
+
+	const modify_value = function(sStudentId, iType, dtOfEvent=null, data){
+		const bDebug = false;
+		let _r;
+		_r = find(sStudentId, iType, dtOfEvent);
+		if (typeof _r === 'undefined'){
+			if(bDebug===true) console.log(`%cAs we find nothing there is nothing to modfiy`, APP_DEBUG_STYLE);
+			return undefined;
+		}
+
+
+        const db=App.Cfg.dbase;
+        //if (typeof created === 'string'){ dtFrom = dayjs(created).format('YYYY-MM-DDTHH:mm:ssZZ')}
+        if (typeof dtOfEvent === 'string'){ dtOfEvent = dayjs(dtOfEvent); }
+        if(dtOfEvent === null){
+			//dtOfEvent = dayjs().format('YYYY-MM-DDTHH:mm:ssZZ'); // FORMAT ISO 8601 for testing d_dayjs(d_dayjs().format('YYYY-MM-DDTHH:mm:ssZZ')) create date at today
+			// https://www.ionos.fr/digitalguide/sites-internet/developpement-web/iso-8601/
+			dtOfEvent = dayjs(); //prefer to timestamp
+		}
+		assert(
+			dtOfEvent instanceof dayjs,
+			'created date must be a string, a dayjs instance or null.',
+			TypeError
+			);
+
+		if(bDebug===true)console.log(`%cModify student history at date ${dayjs(dtOfEvent).format("YYYY-MM-DDTHH:mm:ssZZ")} data ${data} with type:${iType} cf const of object`,APP_DEBUG_STYLE);
+		db.get(TBL_NAME).find({id:_r.id}).assign({value:data}).write(); // update database
+
 	}
-	
+
+	/*
+	 *
+	 *
+	 */
+
+	const modify_date = function(sStudentId, iType, dtOfEvent=null, data){
+	}
+
 	const isFunding = function(data){
 		return is(data, TYPE_FUNDING);
 	}
-	
+
 	const isPath = function(data){
 		return is(data, TYPE_PATH);
 	}
@@ -173,7 +215,7 @@ var fStudentHistory = function(){
 		isPath,
 		tbl_name: TBL_NAME,
  	});
-  
+
 }
 
 const StudentHistory = fStudentHistory();
