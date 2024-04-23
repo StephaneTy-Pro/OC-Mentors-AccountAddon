@@ -1,3 +1,10 @@
+# !!!!!!!!!!!!!!!!!! ATTENTION !!!!!!!!!!!!!!!!!!!!!!!!!
+Depuis mars 2024 et les changements dans le modèle de facturation openclassrooms, cet outil n'est plus fonctionnel, je vous enjoint à regarder du côté de https://github.com/StephaneTy-Pro/OC-Mentors-Tools pour son évolution
+
+--------------------------------------------------
+
+
+
 # OC-Mentors-AccountAddon
 
 ![](https://img.shields.io/badge/build-pass-success)
